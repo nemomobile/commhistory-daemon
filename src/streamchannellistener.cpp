@@ -159,14 +159,13 @@ void StreamChannelListener::channelReady()
                                             const Tp::Contacts&,
                                             const Tp::Channel::GroupMemberChangeDetails&)));
         connect(mediaChannel.data(),
-                SIGNAL(streamStateChanged(const Tp::MediaStreamPtr &, Tp::MediaStreamState)),
+                SIGNAL(streamStateChanged(const Tp::StreamedMediaStreamPtr &, Tp::MediaStreamState)),
                 this,
-                SLOT(slotStreamStateChanged(const Tp::MediaStreamPtr &, Tp::MediaStreamState)));
+                SLOT(slotStreamStateChanged(const Tp::StreamedMediaStreamPtr &, Tp::MediaStreamState)));
 
         if (!m_Event.isEmergencyCall()) {
             Tp::Client::ChannelInterfaceServicePointInterface *servicePointIf =
                     mediaChannel->optionalInterface<Tp::Client::ChannelInterfaceServicePointInterface>();
-
             if (servicePointIf) {
                 connect(servicePointIf, SIGNAL(ServicePointChanged(const Tp::ServicePoint &)),
                         this, SLOT(slotServicePointChanged(const Tp::ServicePoint &)));
@@ -204,14 +203,10 @@ void StreamChannelListener::slotGroupMembersChanged(
             // call not started, new member added, members > 1
             if (!groupMembersAdded.isEmpty() &&
                 mediaChannel->groupContacts().count() >= 2) {
-                Tp::MediaStreams streams;
-                Tp::MediaContents mediaContents = mediaChannel->contentsForType(Tp::MediaStreamTypeAudio);
-                if(mediaContents.count()){
-                    streams = mediaContents.first()->streams();
-                }
+                Tp::StreamedMediaStreams streams = mediaChannel->streamsForType(Tp::MediaStreamTypeAudio);
 
                 if (streams.count()
-                    && streams.first()->localSendingState() == Tp::MediaStream::SendingStateSending) {
+                    && streams.first()->localSendingState() == Tp::StreamedMediaStream::SendingStateSending) {
                     callStarted();
                 }
 
@@ -249,10 +244,10 @@ void StreamChannelListener::slotGroupMembersChanged(
     }
 }
 
-void StreamChannelListener::slotStreamStateChanged(const Tp::MediaStreamPtr &stream,
+void StreamChannelListener::slotStreamStateChanged(const Tp::StreamedMediaStreamPtr &stream,
                                                    Tp::MediaStreamState state)
 {
-    if (stream->content()->type() == Tp::MediaStreamTypeAudio
+    if (stream->type() == Tp::MediaStreamTypeAudio
         && state == Tp::MediaStreamStateConnected) {
         Tp::StreamedMediaChannelPtr mediaChannel =
             Tp::StreamedMediaChannelPtr::dynamicCast(m_Channel);

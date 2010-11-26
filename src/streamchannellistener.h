@@ -60,7 +60,7 @@ private Q_SLOTS:
             const Tp::Contacts &groupRemotePendingMembersAdded,
             const Tp::Contacts &groupMembersRemoved,
             const Tp::Channel::GroupMemberChangeDetails &details);
-    void slotStreamStateChanged(const Tp::MediaStreamPtr &stream,
+    void slotStreamStateChanged(const Tp::StreamedMediaStreamPtr &stream,
                                 Tp::MediaStreamState state);
     virtual void invalidated(Tp::DBusProxy *proxy,
         const QString &errorName, const QString &errorMessage);

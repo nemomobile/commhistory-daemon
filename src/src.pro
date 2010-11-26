@@ -47,7 +47,7 @@ PKGCONFIG += TelepathyQt4 \
              contextsubscriber-1.0 \
              meegotouch \
              MNgfClient \
-             RTComTelepathyQt4
+             RTComTelepathyQt4-1
 
 # -----------------------------------------------------------------------------
 # input

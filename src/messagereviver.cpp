@@ -55,7 +55,8 @@ void MessageReviver::onConnectionReady(const Tp::ConnectionPtr& connection)
 
 void MessageReviver::fetchMessages(const Tp::ConnectionPtr &connection)
 {
-    Client::DBus::PropertiesInterface *props = connection->propertiesInterface();
+    Client::DBus::PropertiesInterface *props =
+        connection->interface<Client::DBus::PropertiesInterface>();
 
     QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher
         (props->Get(RTComTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName(),

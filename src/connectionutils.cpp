@@ -63,7 +63,7 @@ void ConnectionUtils::prepareAccounts()
                 Qt::UniqueConnection);
 
         // initialise valid accounts
-        foreach(Tp::AccountPtr account, m_AccountManager->validAccountsSet()->accounts()) {
+        foreach(const Tp::AccountPtr &account, m_AccountManager->validAccounts()->accounts()) {
             prepareAccount(account);
         }
     }
@@ -101,7 +101,7 @@ void ConnectionUtils::slotAccountReady( Tp::PendingOperation *op )
         }
 
         Tp::AccountPtr account =
-                Tp::AccountPtr(qobject_cast<Tp::Account *>(pr->object()));
+                Tp::AccountPtr::qObjectCast(pr->proxy());
         if ( !account.isNull() && account->isReady() ) {
             prepareConnection(account);
         }
@@ -132,7 +132,7 @@ void ConnectionUtils::prepareConnection(const Tp::AccountPtr &account)
             SLOT(slotAccountValidityChanged(bool)),
             Qt::UniqueConnection);
 
-    if(account->haveConnection()) {
+    if(account->connection()) {
         Tp::ConnectionPtr connection = account->connection();
         connect(connection->becomeReady(),
                 SIGNAL(finished(Tp::PendingOperation*)),
@@ -166,7 +166,7 @@ void ConnectionUtils::slotConnectionReady(Tp::PendingOperation* operation)
     if(operation && !operation->isError()) {
         Tp::PendingReady *pr = qobject_cast<Tp::PendingReady*>(operation);
         if(pr){
-            Tp::ConnectionPtr connection(qobject_cast<Tp::Connection*>(pr->object()));
+            Tp::ConnectionPtr connection = Tp::ConnectionPtr::qObjectCast(pr->proxy());
 
             if (!connection.isNull() && connection->isValid()) {
                 emit connectionReady(connection);

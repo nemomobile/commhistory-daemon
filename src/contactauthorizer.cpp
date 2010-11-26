@@ -35,6 +35,7 @@
 #include <MRemoteAction>
 
 // Tp
+#include <TelepathyQt4/AvatarData>
 #include <TelepathyQt4/ContactManager>
 #include <TelepathyQt4/PendingReady>
 #include <TelepathyQt4/PendingContacts>
@@ -98,7 +99,7 @@ void ContactAuthorizer::listenToAuthorization(const Tp::ConnectionPtr& connectio
 
     qDebug() << Q_FUNC_INFO << "connected to presence publication changes";
 
-        connect(m_pContactManager,
+        connect(m_pContactManager.data(),
                 SIGNAL(presencePublicationRequested
                        (Tp::Contacts, const Tp::Channel::GroupMemberChangeDetails)),
                 SLOT(slotPresencePublicationRequested
@@ -189,7 +190,7 @@ void ContactAuthorizer::upgradeContacts(const Tp::Contacts& contacts)
 {
     qDebug() << Q_FUNC_INFO;
 
-    QSet<Tp::Contact::Feature> features;
+    Tp::Features features;
     features << Tp::Contact::FeatureAlias
             << Tp::Contact::FeatureAvatarData
             << Tp::Contact::FeatureAvatarToken;

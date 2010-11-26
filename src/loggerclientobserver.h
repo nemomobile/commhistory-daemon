@@ -50,7 +50,7 @@ public:
      * \param instance of logger. When new channel should be observed, logger
      * interface is used to create new channel listeners
      */
-    explicit LoggerClientObserver(const Tp::ChannelClassList &channelFilter,
+    explicit LoggerClientObserver(const Tp::ChannelClassSpecList &channelFilter,
                          Logger *logger);
 
     /*!
@@ -62,7 +62,7 @@ public:
             const QList<Tp::ChannelPtr> &channels,
             const Tp::ChannelDispatchOperationPtr &dispatchOperation,
             const QList<Tp::ChannelRequestPtr> &requestsSatisfied,
-            const QVariantMap &observerInfo);
+            const Tp::AbstractClientObserver::ObserverInfo &observerInfo);
 
 private:
     Logger* m_pLogger;

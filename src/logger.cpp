@@ -26,6 +26,7 @@
 #include <TelepathyQt4/ClientRegistrar>
 #include <TelepathyQt4/Debug>
 #include <TelepathyQt4/Channel>
+#include <TelepathyQt4/ChannelClassSpec>
 
 #include "logger.h"
 #include "channellistener.h"
@@ -74,7 +75,7 @@ Logger::Logger(const Tp::AccountManagerPtr &accountManager,
                   QDBusVariant(Tp::HandleTypeContact));
     channelFilters.append(mediaFilter);
 
-    LoggerClientObserver* observer = new LoggerClientObserver( channelFilters, this );
+    LoggerClientObserver* observer = new LoggerClientObserver( ChannelClassSpecList(channelFilters), this );
     bool registered = m_Registrar->registerClient(
       AbstractClientPtr::dynamicCast(SharedPtr<LoggerClientObserver>(observer)),
       COMMHISTORY_CHANNEL_OBSERVER);

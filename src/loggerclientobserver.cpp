@@ -27,7 +27,7 @@
 
 using namespace RTComLogger;
 
-LoggerClientObserver::LoggerClientObserver(const Tp::ChannelClassList &channelFilter,
+LoggerClientObserver::LoggerClientObserver(const Tp::ChannelClassSpecList &channelFilter,
                                            Logger* logger)
         : QObject(logger),
           Tp::AbstractClientObserver(channelFilter, true),
@@ -42,7 +42,7 @@ void LoggerClientObserver::observeChannels(const Tp::MethodInvocationContextPtr<
             const QList<Tp::ChannelPtr> &channels,
             const Tp::ChannelDispatchOperationPtr &dispatchOperation,
             const QList<Tp::ChannelRequestPtr> &requestsSatisfied,
-            const QVariantMap &observerInfo)
+            const Tp::AbstractClientObserver::ObserverInfo &observerInfo)
 {
     Q_UNUSED(dispatchOperation)
     Q_UNUSED(requestsSatisfied)

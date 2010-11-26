@@ -121,7 +121,7 @@ private:
 private:
     Tp::ConnectionPtr m_connection;
     Tp::AccountPtr m_account;
-    Tp::ContactManager* m_pContactManager;
+    Tp::ContactManagerPtr m_pContactManager;
     // ready to be fired auth., requests
     AuthRequests m_authRequests;
     // Published auth requests

@@ -1471,10 +1471,8 @@ bool TextChannelListener::storeVCard(const QString & vcard, QString & name)
     return true;
 }
 
-void TextChannelListener::slotPresenceChanged(const Tp::Presence & presence)
+void TextChannelListener::slotPresenceChanged(const Tp::Presence &presence)
 {
-    qDebug() << Q_FUNC_INFO << presence.status();
-
     // if online status changed
     if (m_TpContactPresenceStatus != presence.status()) {
         // save new status
@@ -1505,7 +1503,6 @@ void TextChannelListener::slotPresenceChanged(const Tp::Presence & presence)
     m_TpContactStatusMessage = presence.statusMessage();
 
     if (!m_TpContactStatusMessage.isEmpty() && groupId() != -1) {
-
         CommHistory::Event event;
         event.setType(CommHistory::Event::StatusMessageEvent);
         event.setDirection(CommHistory::Event::Inbound);
@@ -1591,12 +1588,12 @@ void TextChannelListener::channelReady()
                                                  const Tp::Channel::GroupMemberChangeDetails &)));
 
         // request contact for target id to track presence
-        Tp::ContactManager *contactManager = m_Connection->contactManager();
+        Tp::ContactManagerPtr contactManager = m_Connection->contactManager();
         if (contactManager->supportedFeatures().contains(Tp::Contact::FeatureSimplePresence)) {
             Tp::UIntList handles;
             handles << m_Channel->targetHandle();
 
-            QSet<Tp::Contact::Feature> features;
+            Tp::Features features;
             features << Tp::Contact::FeatureSimplePresence;
 
             Tp::PendingContacts* pendingContacts = contactManager->contactsForHandles(handles,
@@ -1738,7 +1735,7 @@ void TextChannelListener::slotGroupMembersChanged(
     }
 
     if (!groupMembersAdded.isEmpty()) {
-        QSet<Tp::Contact::Feature> features;
+        Tp::Features features;
         features << Tp::Contact::FeatureSimplePresence;
 
         Tp::PendingContacts *pc = m_Channel->connection()->contactManager()->upgradeContacts(
