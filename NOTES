@@ -1,0 +1,13 @@
+ NOTES
+-------
+
+** generate proxy header and cpp files, and the wrapper header file in commhistory-service folder:
+
+    dui-servicefwgen -p CommHistoryIf
+
+** generate adaptor h and cpp files in src folder:
+    make a soft link of ../commhistory-service/CommHistoryIf.xml, and run command
+    dui-servicefwgen -a CommHistoryIf
+
+-- End of File --
+

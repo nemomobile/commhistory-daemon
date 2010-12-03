@@ -227,15 +227,9 @@ void NotificationManager::init()
 
     // start contact tracking
     contactManager();
-    groupModel();
-    connect(m_GroupModel,
-            SIGNAL(rowsInserted(const QModelIndex &, int, int)),
-            this,
-            SLOT(slotGroupInserted(const QModelIndex&, int, int)));
-    connect(m_GroupModel,
-            SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
-            this,
-            SLOT(slotGroupRemoved(const QModelIndex&, int, int)));
+
+    if (hasMessageNotification())
+        groupModel();
 
     m_pMWIListener = new MWIListener(this);
     connect(m_pMWIListener,
@@ -1119,7 +1113,7 @@ void NotificationManager::slotContactsAdded(const QList<QContactLocalId> &contac
 
     qDebug() << Q_FUNC_INFO;
 
-    // we can't match contactIds with local unknown contactss
+    // we can't match contactIds with local unknown contacts
     // therefore request all unknown contacts from notification contacts
     QMutableHashIterator<TpContactUid, QContact> i(m_contacts);
     while (i.hasNext()) {
@@ -1152,22 +1146,6 @@ void NotificationManager::slotContactsRemoved(const QList<QContactLocalId> &cont
         }
     }
 
-    // update group model
-    QList<CommHistory::Group> updatedGroups;
-    for (int row = 0; row < m_GroupModel->rowCount(); row++) {
-        QModelIndex index = m_GroupModel->index(row, 0);
-        CommHistory::Group group = m_GroupModel->group(index);
-        if (group.isValid()
-            && contactIds.contains((QContactLocalId)group.contactId())) {
-            group.setContactId(0);
-            group.setContactName(QString());
-            updatedGroups << group;
-        }
-    }
-
-    if (!updatedGroups.isEmpty())
-        m_GroupModel->updateGroups(updatedGroups);
-
     updateNotifcationContacts(updatedContactIds);
 }
 
@@ -1178,34 +1156,9 @@ void NotificationManager::slotContactsChanged(const QList<QContactLocalId> &cont
 
     qDebug() << Q_FUNC_INFO;
 
-    QSet<QContactLocalId> requestContactIds;
-
-    if (groupModel()->isReady()) {
-        foreach (QContactLocalId modifiedContactId, contactIds) {
-            for (int row = 0; row < m_GroupModel->rowCount(); row++) {
-                QModelIndex index = m_GroupModel->index(row, 0);
-                CommHistory::Group group = m_GroupModel->group(index);
-                if (group.isValid()
-                    && (QContactLocalId)group.contactId() == modifiedContactId) {
-                    requestContactIds << modifiedContactId;
-                }
-            }
-        }
-    }
-
-    foreach (QContactLocalId localId, contactIds) {
-        QMutableHashIterator<TpContactUid, QContact> i(m_contacts);
-        while (i.hasNext()) {
-            i.next();
-            if (i.value().localId() == localId) {
-                requestContactIds << localId;
-            }
-        }
-    }
-
-    if (!requestContactIds.isEmpty()) {
+    if (!m_contacts.isEmpty() || !m_Notifications.isEmpty()) {
         QContactLocalIdFilter filter;
-        filter.setIds(requestContactIds.toList());
+        filter.setIds(contactIds);
         m_ContactFilter = addContactFilter(m_ContactFilter, filter);
 
         startContactsTimer();
@@ -1216,6 +1169,12 @@ CommHistory::GroupModel* NotificationManager::groupModel()
 {
     if (!m_GroupModel) {
         m_GroupModel = new CommHistory::GroupModel(this);
+        m_GroupModel->enableContactChanges(false);
+        connect(m_GroupModel,
+                SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
+                this,
+                SLOT(slotGroupRemoved(const QModelIndex&, int, int)));
+
         if (!m_GroupModel->getGroups()) {
             qCritical() << "Failed to request group "
                         << m_GroupModel->lastError().text();
@@ -1248,18 +1207,6 @@ void NotificationManager::fireUnknownContactsRequest()
 
     qDebug() << Q_FUNC_INFO;
 
-    // add to request all unresloved contacts from group model
-    for (int row = 0; row < m_GroupModel->rowCount(); row++) {
-        QModelIndex index = m_GroupModel->index(row, 0);
-        CommHistory::Group group = m_GroupModel->group(index);
-
-        if (group.isValid() && group.contactId() == 0) {
-            QContactFilter filter = createContactFilter(group.localUid(),
-                                                        group.remoteUids().first());
-            m_ContactFilter = addContactFilter(m_ContactFilter, filter);
-        }
-    }
-
     if (m_ContactFilter != QContactFilter()) {
         startContactRequest(m_ContactFilter,
                             SLOT(slotResultsAvailableForUnknown()));
@@ -1277,35 +1224,11 @@ void NotificationManager::slotResultsAvailableForUnknown()
 
     qDebug() << Q_FUNC_INFO << request->contacts().size() << "contacts";
 
-    QList<CommHistory::Group> updatedGroups;
     QList<QContactLocalId> updatedContactIds;
 
     foreach (QContact contact, request->contacts()) {
         QList<QContactOnlineAccount> accounts = contact.details<QContactOnlineAccount>();
         QList<QContactPhoneNumber> phones = contact.details<QContactPhoneNumber>();
-
-        // check group model
-        for (int row = 0; row < m_GroupModel->rowCount(); row++) {
-            QModelIndex index = m_GroupModel->index(row, 0);
-            CommHistory::Group group = m_GroupModel->group(index);
-
-            if (!group.isValid())
-                continue;
-
-            if (group.contactId() == 0) {
-                qDebug() << group.localUid() << group.remoteUids().first();
-
-                if (matchContact(accounts, phones,
-                                 group.localUid(), group.remoteUids().first())) {
-                    group.setContactId(contact.localId());
-                    group.setContactName(contact.displayLabel());
-                    updatedGroups << group;
-                }
-            } else if ((QContactLocalId)group.contactId() == contact.localId()) {
-                group.setContactName(contact.displayLabel());
-                updatedGroups << group;
-            }
-        }
 
         // check notifications contact
         QMutableHashIterator<TpContactUid, QContact> i(m_contacts);
@@ -1313,54 +1236,19 @@ void NotificationManager::slotResultsAvailableForUnknown()
             i.next();
             TpContactUid cuid = i.key();
             QContact cacheContact = i.value();
-            if (!cacheContact.isEmpty()) {
-                if (cacheContact.localId() == contact.localId()) {
-                    i.setValue(contact);
-                    updatedContactIds << contact.localId();
-                }
-            } else if (matchContact(accounts, phones, cuid.first, cuid.second)) {
+            if (matchContact(accounts, phones, cuid.first, cuid.second)) {
                 i.setValue(contact);
+                updatedContactIds << contact.localId();
+            } else if (cacheContact.localId() == contact.localId()) {
+                i.setValue(QContact());
                 updatedContactIds << contact.localId();
             }
         }
     }
 
-    if (!updatedGroups.isEmpty())
-        m_GroupModel->updateGroups(updatedGroups);
-
     updateNotifcationContacts(updatedContactIds);
 
     request->deleteLater();
-}
-
-void NotificationManager::slotGroupInserted(const QModelIndex &index, int start, int end)
-{
-    qDebug() << Q_FUNC_INFO;
-    // get new group
-    for (int i = start; i <= end; i++) {
-
-        QModelIndex row = m_GroupModel->index(i, 0, index);
-        Group group = m_GroupModel->group(row);
-
-        qDebug() << Q_FUNC_INFO << "found the new group:" << group.id() << group.remoteUids();
-        // resolve contact if not yet done
-        if (group.isValid()
-            && !group.remoteUids().isEmpty()
-            && group.contactId() == 0) {
-
-            QContactFilter filter = createContactFilter(group.localUid(),
-                                                        group.remoteUids().first());
-            m_ContactFilter = addContactFilter(m_ContactFilter, filter);
-        }
-    }
-
-    if (m_ContactFilter != QContactFilter()) {
-
-        // launch contact resolving
-        startContactRequest(m_ContactFilter,
-                            SLOT(slotResultsAvailableForUnknown()));
-        m_ContactFilter = QContactFilter();
-    }
 }
 
 void NotificationManager::slotGroupRemoved(const QModelIndex &index, int start, int end)
@@ -1456,4 +1344,17 @@ void NotificationManager::slotMWICountChanged(int count)
 
     saveState();
     fireNotifications();
+}
+
+bool NotificationManager::hasMessageNotification() const
+{
+    foreach(NotificationGroup g, m_Notifications.keys()) {
+        int eventType = g.type();
+        if (eventType == CommHistory::Event::IMEvent
+            || eventType == CommHistory::Event::SMSEvent
+            || eventType == CommHistory::Event::MMSEvent)
+            return true;
+    }
+
+    return false;
 }

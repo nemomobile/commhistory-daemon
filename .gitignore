@@ -10,6 +10,14 @@ Makefile
 build-stamp
 builddir/
 configure-stamp
+debian/commhistory-daemon-dbg/
+debian/commhistory-daemon-l10n-engineering-english/
+debian/commhistory-daemon-tests.substvars
+debian/commhistory-daemon-tests/
+debian/commhistory-daemon.substvars
+debian/commhistory-daemon/
+debian/files
+debian/tmp/
 tests/bin/
 translations/telephony/telephony.qm
 translations/messaging/messaging.qm

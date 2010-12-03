@@ -126,7 +126,6 @@ private Q_SLOTS:
     void slotContactsChanged(const QList<QContactLocalId> &contactIds);
     void fireUnknownContactsRequest();
     void slotOnModelReady();
-    void slotGroupInserted(const QModelIndex &index, int start, int end);
     void slotGroupRemoved(const QModelIndex &index, int start, int end);
     void slotMWICountChanged(int count);
     void slotChannelClosed(ChannelListener *channelListener);
@@ -196,6 +195,7 @@ private:
     QContactFetchRequest* startContactRequest(QContactFilter &filter,
                                               const char *resultSlot);
     void updateNotifcationContacts(const QList<QContactLocalId> &contactIds);
+    bool hasMessageNotification() const;
 
 private:
     static NotificationManager* m_pInstance;
