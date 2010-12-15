@@ -613,7 +613,13 @@ void TextChannelListener::handleMessages()
                 if (event.isValid()) {
                     modifyEvents << event;
                     modifyMessages << message;
-                    modifyTokens.insertMulti(event.id(), message.messageToken());
+
+                    QString token = message.messageToken();
+                    if (token.isEmpty()) {
+                        qDebug() << "Message doesn't have token. Using one in event:" << event.messageToken();
+                        token = event.messageToken();
+                    }
+                    modifyTokens.insertMulti(event.id(), token);
                 } else {
                     // recovered message should be added
                     addEvents << event;
@@ -786,18 +792,19 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::getEventForToke
                                                                                   CommHistory::Event &event)
 {
     DeliveryHandlingStatus result = DeliveryHandlingFailed;
+    QString eventKey = token + "+" + mmsId;
 
-    if (m_pendingEvents.contains(token)) {
-        CommHistory::SingleEventModel *model = m_pendingEvents.value(token);
+    if (m_pendingEvents.contains(eventKey)) {
+        CommHistory::SingleEventModel *model = m_pendingEvents.value(eventKey);
 
         if (!model) {
-            m_pendingEvents.remove(token);
+            m_pendingEvents.remove(eventKey);
         } else if (!model->isReady()) {
             result = DeliveryHandlingPending;
         } else {
             if (model->rowCount() > 0)
                 event = model->event(model->index(0, 0));
-            m_pendingEvents.remove(token);
+            m_pendingEvents.remove(eventKey);
             model->deleteLater();
             result = DeliveryHandlingResolved;
         }
@@ -805,7 +812,7 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::getEventForToke
         CommHistory::SingleEventModel *model = new CommHistory::SingleEventModel(this);
         if (model->getEventByTokens(token, mmsId, groupId)) {
             connect(model, SIGNAL(modelReady()), SLOT(slotSingleModelReady()));
-            m_pendingEvents.insert(token, model);
+            m_pendingEvents.insert(eventKey, model);
             result = DeliveryHandlingPending;
         } else {
             qWarning() << "Failed query single event model" << model->lastError();
@@ -848,7 +855,7 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
     }
 
     bool messageFound = false;
-    if (!deliveryToken.isEmpty()) {
+    if (!deliveryToken.isEmpty() || !mmsId.isEmpty()) {
         result = getEventForToken(deliveryToken, mmsId, m_Group.id(), event);
         if (result != DeliveryHandlingResolved)
             return result;
