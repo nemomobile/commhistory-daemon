@@ -1444,9 +1444,12 @@ QString TextChannelListener::fetchContactLabelFromVCard(const QString &vcard)
 
             if (!contacts.isEmpty()) {
                 QContact contact = contacts.first();
+                // Let's ensure the display label is set:
+                QContactManager manager;
+                manager.synthesizeContactDisplayLabel(&contact);
                 QString label = contact.displayLabel();
                 if (label.isEmpty()) {
-                    qWarning() << __PRETTY_FUNCTION__ << "The contact has an empty label.";
+                    qWarning() << __PRETTY_FUNCTION__ << "The contact has an empty label, dispite our efforts.";
                 }
                 return label;
             }
