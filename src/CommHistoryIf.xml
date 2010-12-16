@@ -1,0 +1,9 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node>
+  <interface name="com.nokia.CommHistoryIf">
+    <method name="activateNotification">
+      <arg name="groupId" type="i" direction="in"/>
+      <arg name="remoteActionString" type="s" direction="in"/>
+    </method>
+  </interface>
+</node>

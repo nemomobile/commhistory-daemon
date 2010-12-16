@@ -1,0 +1,17 @@
+*.o
+*~
+moc_*
+commhistoryd
+tests/commhistorytest
+Makefile
+*.pro.user*
+.cproject
+.project
+build-stamp
+builddir/
+configure-stamp
+tests/bin/
+translations/telephony/telephony.qm
+translations/messaging/messaging.qm
+translations/commhistoryd.qm
+translations/commhistoryd.ts

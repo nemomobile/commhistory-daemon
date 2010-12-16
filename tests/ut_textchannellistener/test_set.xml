@@ -1,0 +1,6 @@
+<set description="commhistory-daemon-tests:ut_textchannellistener" name="ut_textchannellistener">
+                <case description="commhistory-daemon-tests:ut_textchannellistener" name="textchannellistener">
+			<step expected_result="0">/usr/share/commhistory-daemon-tests/ut_textchannellistener </step>
+                 </case>
+                 <environments><scratchbox>false</scratchbox><hardware>true</hardware></environments>
+</set>
