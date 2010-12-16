@@ -103,12 +103,17 @@ public:
      */
     CommHistory::GroupModel* groupModel();
 
-   /*!
+    /*!
      * \brief Show voicemail notification or removes it if count is 0
      * \param count number of voicemails if it's known,
      *              a negative number if the number is unknown
      */
     void showVoicemailNotification(int count);
+
+    /*!
+     * \brief Get the QContactManager.
+     */
+    QContactManager* contactManager();
 
 private Q_SLOTS:
     /*!
@@ -171,7 +176,6 @@ private:
     void loadState();
 
     /* contacts fetching */
-    QContactManager* contactManager();
     void requestContact(TpContactUid contactUid, ChannelListener * = 0);
     void resolveEvents();
     QString contactName(const QString &localUid, const QString &remoteUid);
