@@ -77,7 +77,8 @@ StreamChannelListener::StreamChannelListener(const Tp::AccountPtr &account,
     }
     m_Event.setDirection(m_Direction);
 
-    if (!addEvent())
+    // postpone adding event for incoming event to speed up call handling
+    if (m_Direction == CommHistory::Event::Outbound && !addEvent())
         qWarning() << Q_FUNC_INFO << "failed to add event";
 }
 
