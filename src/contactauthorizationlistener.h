@@ -41,6 +41,7 @@ class ContactAuthorizationListener : public QObject
 public:
     explicit ContactAuthorizationListener(ConnectionUtils *connectionUtils,
                                           QObject *parent = 0);
+    virtual ~ContactAuthorizationListener();
 
 private Q_SLOTS:
     void slotConnectionReady(const Tp::ConnectionPtr& connection);

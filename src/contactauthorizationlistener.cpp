@@ -24,6 +24,7 @@
 #include "contactauthorizer.h"
 #include "connectionutils.h"
 #include "locstrings.h"
+#include "constants.h"
 
 // Tp
 #include <TelepathyQt4/PendingReady>
@@ -65,19 +66,23 @@ ContactAuthorizationListener::ContactAuthorizationListener(ConnectionUtils *conn
                                                        QString, QString, QString)));
 }
 
+ContactAuthorizationListener::~ContactAuthorizationListener()
+{
+    qDebug() << Q_FUNC_INFO;
+}
 
 void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& connection)
 {
     qDebug() << Q_FUNC_INFO;
 
-    if(!connection){
+    if(!connection)
         return;
-    }
 
     Tp::AccountPtr account;
     Tp::AccountManagerPtr accountManager = m_pConnectionUtils->accountManager();
 
     if(accountManager && accountManager->isReady()) {
+        qDebug() << Q_FUNC_INFO << "Connection object path: " << connection->objectPath();
 #if 1
         foreach (Tp::AccountPtr a, accountManager->validAccounts()->accounts()) {
             if (a->connection() && a->connection()->objectPath() == connection->objectPath()) {
@@ -98,12 +103,26 @@ void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& 
     }
 
     if(account) {
-        ContactAuthorizer* authorizer = new ContactAuthorizer(connection, account, this);
-        if(parent()) {
-            connect(parent(), SIGNAL(showAuthorizationDialog(QString, QString, QString,
-                                                             QString, QString, QString)),
-                    authorizer, SLOT(slotShowAuthorizationDialog(QString, QString, QString,
-                                                                 QString, QString, QString)));
+        // Create ContactAuthorizer only for IM accounts:
+        if ((account->protocolName() != PROTOCOL_TEL) && (account->protocolName() != PROTOCOL_MMS)) {
+            /* After connection is ready we need to listen account's connection status changes so that we can
+               instantiate ContactAuthorizer again when account goes from offline (ContactAuthorizer destroyed then)
+               state to online state: */
+            // TODO: when porting against tpqt4 v. 0.5 after DAYOD change listened signal to be connectionStatusChanged(Tp::ConnectionStatus)
+            connect(account.data(),
+                SIGNAL(connectionStatusChanged(Tp::ConnectionStatus, Tp::ConnectionStatusReason)),
+                m_pConnectionUtils,
+                SLOT(slotConnectionStatusChanged(Tp::ConnectionStatus, Tp::ConnectionStatusReason)),
+                Qt::UniqueConnection);
+
+            ContactAuthorizer* authorizer = new ContactAuthorizer(connection, account, this);
+            if(parent()) {
+                qDebug() << Q_FUNC_INFO << "connecting showAuthorizationDialog signal to ContactAuthorizer slot";
+                connect(parent(), SIGNAL(showAuthorizationDialog(QString, QString, QString,
+                                                                 QString, QString, QString)),
+                        authorizer, SLOT(slotShowAuthorizationDialog(QString, QString, QString,
+                                                                     QString, QString, QString)));
+            }
         }
     }
 }

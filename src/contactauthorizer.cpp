@@ -39,6 +39,7 @@
 #include <TelepathyQt4/ContactManager>
 #include <TelepathyQt4/PendingReady>
 #include <TelepathyQt4/PendingContacts>
+#include <TelepathyQt4/Contact>
 
 // constants
 static const char* AuthorizationNotificationType = "x-nokia.messaging.authorizationrequest";
@@ -66,27 +67,50 @@ ContactAuthorizer::ContactAuthorizer(const Tp::ConnectionPtr& connection,
     connect(connection.data(), SIGNAL(invalidated(Tp::DBusProxy*,QString,QString)),
             this, SLOT(slotConnectionInvalidated(Tp::DBusProxy*,QString,QString)));
 
-    if(connection->isReady(Tp::Connection::FeatureRoster)) {
-        listenToAuthorization(connection);
-    } else {
-        Tp::PendingOperation* po = connection->becomeReady(Tp::Connection::FeatureCore
+    if (connection->status() == Tp::Connection::StatusConnected) {
+        qDebug() << Q_FUNC_INFO << "Account's' connection status is CONNECTED!";
+        if(connection->isReady(Tp::Connection::FeatureRoster)) {
+            listenToAuthorization(connection);
+        } else {
+            qDebug() << Q_FUNC_INFO << "Asking FeatureRoster to be downloaded...";
+            Tp::PendingOperation* po = connection->becomeReady(Tp::Connection::FeatureCore
+                                    | Tp::Connection::FeatureRoster);
+            connect(po, SIGNAL(finished(Tp::PendingOperation*)),
+                    SLOT(slotConnectionFeaturesReady(Tp::PendingOperation*)));
+        }
+    }
+    else
+    {
+        qDebug() << Q_FUNC_INFO << "Account is not connected yet. Waiting to be connected...";
+        connect(connection.data(), SIGNAL(statusChanged(Tp::Connection::Status)),
+                this, SLOT(slotConnectionStatusChanged(Tp::Connection::Status)));
+    }
+}
+
+ContactAuthorizer::~ContactAuthorizer()
+{
+    qDebug() << Q_FUNC_INFO;
+}
+
+void ContactAuthorizer::slotConnectionStatusChanged(Tp::Connection::Status connectionStatus)
+{
+    qDebug() << Q_FUNC_INFO << "Connection status changed to " << connectionStatus;
+
+    if (connectionStatus == Tp::Connection::StatusConnected) {
+        qDebug() << Q_FUNC_INFO << "Asking FeatureRoster to be downloaded...";
+        Tp::PendingOperation* po = m_connection->becomeReady(Tp::Connection::FeatureCore
                                 | Tp::Connection::FeatureRoster);
         connect(po, SIGNAL(finished(Tp::PendingOperation*)),
                 SLOT(slotConnectionFeaturesReady(Tp::PendingOperation*)));
     }
 }
 
-ContactAuthorizer::~ContactAuthorizer()
-{
-}
-
 void ContactAuthorizer::slotConnectionFeaturesReady(Tp::PendingOperation* op)
 {
     qDebug() << Q_FUNC_INFO;
 
-    if(op && !op->isError() && !m_connection.isNull() && m_connection->isReady()){
-            listenToAuthorization(m_connection);
-    }
+    if(op && !op->isError() && !m_connection.isNull() && m_connection->isReady())
+        listenToAuthorization(m_connection);
 }
 
 void ContactAuthorizer::listenToAuthorization(const Tp::ConnectionPtr& connection)
@@ -95,23 +119,61 @@ void ContactAuthorizer::listenToAuthorization(const Tp::ConnectionPtr& connectio
 
     m_pContactManager = connection->contactManager();
 
+    //This method requires Connection::FeatureSelfContact to be enabled.
+    //Tp::ContactPtr meContact = connection->selfContact();
+    //qDebug() << Q_FUNC_INFO << "This connection belongs to " << meContact->id();
+
+    // CHECK IF THERE ARE PENDING presencePublicationRequests in ContactManager queue!
+
     if(m_pContactManager){
-
-    qDebug() << Q_FUNC_INFO << "connected to presence publication changes";
-
+        // Connect to listen invitation requests:
         connect(m_pContactManager.data(),
                 SIGNAL(presencePublicationRequested
                        (const Tp::Contacts &, const QString &)),
                 SLOT(slotPresencePublicationRequested
                      (const Tp::Contacts &, const QString &)),
                 Qt::UniqueConnection);
+
+        // Check if there are pending invitation requests in ContactManager's queue (like if invitation
+        // request has been triggered during offline mode):
+        Tp::Contacts contacts = m_pContactManager->allKnownContacts();
+        Tp::Contacts pendingContacts;
+
+        foreach(Tp::ContactPtr contact, contacts) {
+            QString notificationIdentifier = contact->id() + m_account->objectPath();
+            Tp::Contact::PresenceState state = contact->publishState();
+            qDebug() << Q_FUNC_INFO << "Publish state for contact " << contact->id() << " is " << state;
+            if (state == Tp::Contact::PresenceStateAsk) {
+                qDebug() << Q_FUNC_INFO << "Contact " << contact->id() << " has requested an invitation.";
+                bool notificationExists = false;
+                // Invitation requests should not be shown anymore if they already exist as notifications
+                // from previous device start-up:
+                QList<MNotification*> notifications = MNotification::notifications();
+                foreach (MNotification *n, notifications) {
+                   if (notificationIdentifier == n->identifier()) {
+                       qDebug() << Q_FUNC_INFO << "Invitation request is already being shown as a notification.";
+                       notificationExists = true;
+                       break;
+                    }
+                }
+                if (!notificationExists)
+                    pendingContacts.insert(contact);
+            }
+        }
+
+        // TODO: We do not yet get the publish state details from Tp::Contact, but in 0.5.2 tp-qt4 (to be ported after DAYOD):
+        // -> Contact::publishStateDetails accessor
+        Tp::Channel::GroupMemberChangeDetails details;
+
+        if (pendingContacts.size()>0)
+            slotPresencePublicationRequested(pendingContacts, details);
     }
 }
 
 void ContactAuthorizer::slotPresencePublicationRequested
     (const Tp::Contacts &contacts, const QString &message)
 {
-    qDebug() << Q_FUNC_INFO << "contact count: " << contacts.count();
+    qDebug() << Q_FUNC_INFO;
 
     if(!contacts.isEmpty()){
         if(m_pContactManager
@@ -478,6 +540,8 @@ void ContactAuthorizer::authorizeContact(const Tp::ContactPtr& contact)
 
 void ContactAuthorizer::slotAuthorizationAccepted(Tp::PendingOperation *operation)
 {
+    qDebug() << Q_FUNC_INFO;
+
     if (operation && operation->isError()) {
         qWarning() << "Unable to accept authorization request: " << operation->errorMessage();
         return;
@@ -512,6 +576,8 @@ void ContactAuthorizer::slotContactBlocked(Tp::PendingOperation *operation)
 
 void ContactAuthorizer::removeNotificationForOngoingRequest()
 {
+    qDebug() << Q_FUNC_INFO;
+
     QList<MNotification*> notifications = MNotification::notifications();
     foreach (MNotification *n, notifications) {
        if (m_ongoingRequest.notificationId == n->identifier()) {
