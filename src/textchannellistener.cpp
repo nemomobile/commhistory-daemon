@@ -865,6 +865,7 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
 
     // echo recovery
     if (!messageFound) {
+        result = DeliveryHandlingFailed;
         messageFound = recoverDeliveryEcho(message, event);
         if (messageFound) {
             event.setMessageToken(deliveryToken);
