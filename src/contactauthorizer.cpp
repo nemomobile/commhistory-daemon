@@ -215,7 +215,7 @@ void ContactAuthorizer::slotContactsUpgraded(Tp::PendingOperation* op)
     qDebug() << Q_FUNC_INFO;
 
     Tp::PendingContacts * pc = qobject_cast<Tp::PendingContacts*>(op);
-    if(!pc && !m_pContactManager)
+    if (pc == 0)
         return;
 
     // Handle those cases in which we have the avatar already, so that avatarDataChanged is never
