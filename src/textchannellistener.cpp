@@ -279,29 +279,6 @@ void TextChannelListener::requestConversationId()
 
 TextChannelListener::~TextChannelListener()
 {
-    qDebug() << __PRETTY_FUNCTION__;
-
-    if ( m_Group.isValid() )
-    {
-        /* We have to delete the in-memory group from the group model in case it is still there
-         * when listener is closing because otherwise it will mess things in MUI (it is filtered out in
-         * MUI inbox as being in-memory group and if new messages arrive to that group then they are not
-         * shown in inbox).
-         * This can happen when user deletes all msgs in conversation page and then closes the empty page.
-         */
-        if ( !m_Group.isPermanent() )
-        {
-            qDebug() << __PRETTY_FUNCTION__ << "Group " << m_Group.id() << " is in-memory group!";
-
-            if ( m_GroupModel && m_GroupModel->isReady() )
-            {
-                QList<int> groupIds;
-                groupIds << m_Group.id();
-                if( !m_GroupModel->deleteGroups(groupIds) )
-                    qDebug() << __PRETTY_FUNCTION__ << "Error while deleting group!";
-            }
-        }
-    }
 }
 
 void TextChannelListener::slotGroupDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
@@ -453,28 +430,6 @@ int TextChannelListener::groupId()
 
             qWarning() << "Group id is requested in invalid state";
         }
-    }
-    else if (!m_Group.isPermanent()) {
-
-        if (m_IsGroupChat) {
-            if (!m_GroupChatName.isEmpty()) {
-                qDebug() << Q_FUNC_INFO << "setting group chat name to " << m_GroupChatName;
-                m_Group.setChatName(m_GroupChatName);
-            }
-        }
-
-        if (!m_GroupModel->addGroup(m_Group)) {
-
-            qCritical() << Q_FUNC_INFO << "error adding group";
-        }
-        else {
-
-            qDebug() << Q_FUNC_INFO << "added group (transient->permanent):" << m_Group.id();
-        }
-    }
-    else
-    {
-        qDebug() << Q_FUNC_INFO << "existing permanent group";
     }
 
     return m_Group.id();
