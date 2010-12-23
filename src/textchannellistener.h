@@ -41,6 +41,7 @@ namespace Tp {
     class Message;
     class ReceivedMessage;
     class PendingOperation;
+    class Presence;
 
     namespace Client {
         class PropertiesInterfaceInterface;
@@ -73,7 +74,7 @@ private Q_SLOTS:
                        Tp::MessageSendingFlags flags,
                        const QString &messageToken);
     void slotOnModelReady();
-    void slotSimplePresenceChanged(const QString &, uint, const QString &);
+    void slotPresenceChanged(const Tp::Presence & presence);
     void slotGroupRemoved(const QModelIndex &index, int start, int end);
     void slotGroupInserted(const QModelIndex &index, int start, int end);
     void slotGroupDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);

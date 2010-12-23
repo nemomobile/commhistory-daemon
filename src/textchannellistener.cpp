@@ -76,9 +76,6 @@
 #define MODEM_ERROR_DESTINATION_ADDRESS_FDN_RESTRICTED "com.nokia.Modem.SMS.Errors.DestinationAddressFDNRestricted"
 #define MODEM_ERROR_SMS_ADDRESS_FDN_RESTRICTED         "com.nokia.Modem.SMS.Errors.SMSCAddressFDNRestricted"
 
-// presence status
-#define PRESENCE_STATUS_OFFLINE QLatin1String("offline")
-
 // voicemail
 #define TXT_VOICE            QLatin1String("voice")
 #define MAILBOX_NOTIFICATION QLatin1String("x-nokia-mailbox-notification")
@@ -1044,8 +1041,7 @@ void TextChannelListener::handleMessageFailed(const Tp::ReceivedMessage &message
             }
             // offline chatting
             else if (event.type() == CommHistory::Event::IMEvent
-                     // FIXME :
-                     /*&& m_TpContactPresenceStatus == PRESENCE_STATUS_OFFLINE*/) {
+                     && m_TpContactPresenceStatus == Tp::Presence::offline().status()) {
 
                 errorMsgToUser = txt_qtn_msg_general_does_not_support_offline;
             }
@@ -1264,7 +1260,7 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
     }
 
     if (event.type() == CommHistory::Event::IMEvent
-        && m_TpContactPresenceStatus == PRESENCE_STATUS_OFFLINE
+        && m_TpContactPresenceStatus == Tp::Presence::offline().status()
         && m_ShowOfflineChatError) {
         showErrorNote(txt_qtn_msg_general_supports_offline);
         m_ShowOfflineChatError = false;
@@ -1522,23 +1518,20 @@ bool TextChannelListener::storeVCard(const QString & vcard, QString & name)
     return true;
 }
 
-void TextChannelListener::slotSimplePresenceChanged(const QString &status, uint type,
-                                                    const QString &statusMessage)
+void TextChannelListener::slotPresenceChanged(const Tp::Presence & presence)
 {
-    Q_UNUSED(type)
-
-    qDebug() << "Adding status message:" << status << "Message:" << statusMessage;
+    qDebug() << Q_FUNC_INFO << presence.status();
 
     // if online status changed
-    if (m_TpContactPresenceStatus != status) {
+    if (m_TpContactPresenceStatus != presence.status()) {
         // save new status
-        m_TpContactPresenceStatus = status;
+        m_TpContactPresenceStatus = presence.status();
         // re-enable showing offline chatting error messages
         m_ShowOfflineChatError = true;
     }
 
     // if only presence status changed, but status message didnt => do nothing
-    if (m_TpContactStatusMessage == statusMessage) {
+    if (m_TpContactStatusMessage == presence.statusMessage()) {
         return;
     }
 
@@ -1556,9 +1549,9 @@ void TextChannelListener::slotSimplePresenceChanged(const QString &status, uint 
         remoteId = contact->id();
 
     // otherwise save new status message and proceed...
-    m_TpContactStatusMessage = statusMessage;
+    m_TpContactStatusMessage = presence.statusMessage();
 
-    if (!statusMessage.isEmpty() && groupId() != -1) {
+    if (!m_TpContactStatusMessage.isEmpty() && groupId() != -1) {
 
         CommHistory::Event event;
         event.setType(CommHistory::Event::StatusMessageEvent);
@@ -1566,7 +1559,7 @@ void TextChannelListener::slotSimplePresenceChanged(const QString &status, uint 
         event.setRemoteUid(remoteId);
         event.setGroupId(groupId());
         event.setLocalUid(m_Account->objectPath());
-        event.setFreeText(statusMessage);
+        event.setFreeText(m_TpContactStatusMessage);
         event.setStartTime(QDateTime::currentDateTime());
         event.setEndTime(QDateTime::currentDateTime());
         event.setIsRead(true);
@@ -1726,9 +1719,14 @@ void TextChannelListener::slotContactsReady(Tp::PendingOperation* operation)
 
         for ( int i = 0; i < contacts.count(); i++ )
         {
+            // initialise presence value for p2p chat
+            if(!contacts.value(i).isNull() && !m_IsGroupChat) {
+                m_TpContactPresenceStatus = contacts.value(i)->presence().status();
+            }
+
             connect(contacts.value(i).data(),
-                    SIGNAL(simplePresenceChanged(const QString &, uint, const QString &)),
-                    SLOT(slotSimplePresenceChanged(const QString &, uint, const QString &)));
+                    SIGNAL(presenceChanged(const Tp::Presence &)),
+                    SLOT(slotPresenceChanged(const Tp::Presence &)));
         }
     } else {
         qCritical() << Q_FUNC_INFO << "Invalid TpPendingOperation when requesting target contact";
