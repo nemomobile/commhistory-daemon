@@ -45,6 +45,7 @@
 #include <QContactPhoneNumber>
 #include <QContactId>
 #include <QContactName>
+#include <QContactDisplayLabel>
 
 // ContextKit includes
 #include <contextproperty.h>
@@ -852,7 +853,8 @@ QContactFetchRequest* NotificationManager::startContactRequest(QContactFilter &f
 
     QStringList details;
     details << QContactName::DefinitionName
-            << QContactOnlineAccount::DefinitionName;
+            << QContactOnlineAccount::DefinitionName
+            << QContactDisplayLabel::DefinitionName;
 
     QContactFetchHint hint;
     hint.setDetailDefinitionsHint(details);
@@ -986,6 +988,7 @@ QString NotificationManager::contactName(const QString &localUid,
             result = remoteUid;
     }
 
+    qDebug() << Q_FUNC_INFO << localUid << remoteUid << result;
     return result;
 }
 
