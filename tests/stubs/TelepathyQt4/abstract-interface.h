@@ -52,16 +52,6 @@ protected Q_SLOTS:
     virtual void invalidate(Tp::DBusProxy *proxy,
             const QString &error, const QString &message);
 
-protected:
-    AbstractInterface(DBusProxy *proxy, const char *interface);
-    AbstractInterface(const QString &busName, const QString &path,
-            const char *interface, const QDBusConnection &connection,
-            QObject *parent);
-
-    PendingVariant *internalRequestProperty(const QString &name) const;
-    PendingOperation *internalSetProperty(const QString &name, const QVariant &newValue);
-    PendingVariantMap *internalRequestAllProperties() const;
-
 private:
     struct Private;
     friend struct Private;

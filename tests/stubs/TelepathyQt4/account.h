@@ -23,8 +23,6 @@ public:
     Account();
 
     static const Feature FeatureCore;
-    static const Feature FeatureAvatar;
-    static const Feature FeatureProtocolInfo;
 
     SimplePresence requestedPresence() const;
 

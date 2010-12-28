@@ -6,8 +6,6 @@
 #include <QString>
 
 const Tp::Feature Tp::Account::FeatureCore = Tp::Feature(Tp::Account::staticMetaObject.className(), 0, true);
-const Tp::Feature Tp::Account::FeatureAvatar = Tp::Feature(Tp::Account::staticMetaObject.className(), 1);
-const Tp::Feature Tp::Account::FeatureProtocolInfo = Tp::Feature(Tp::Account::staticMetaObject.className(), 2);
 
 Tp::Account::Account()
         :Tp::PendingReady()

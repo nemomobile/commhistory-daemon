@@ -39,11 +39,9 @@ Q_SIGNALS:
     void accountValidityChanged(const QString &path, bool valid);
 
 private slots:
-
     void ut_accountValidityChanged(const bool);
 
 private:
-
     QList<AccountPtr> m_fakeAccountList;
 
 

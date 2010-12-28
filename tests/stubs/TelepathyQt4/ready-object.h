@@ -31,7 +31,6 @@ namespace Tp
 
 class DBusProxy;
 class PendingReady;
-class ReadinessHelper;
 
 class ReadyObject
 {
@@ -43,9 +42,6 @@ public:
 
     virtual bool isReady(const Features &features = Features()) const;
     virtual PendingReady *becomeReady(const Features &requestedFeatures = Features());
-
-protected:
-    ReadinessHelper *readinessHelper() const;
 
 private:
     struct Private;

@@ -28,15 +28,12 @@ public:
 
 Q_SIGNALS:
 
-//    void finished( Tp::PendingOperation* op);
-
     void ut_validityChanged( bool );
 
 
 protected:
 
     quint32 m_pendingDelay;
-
 
 private:
 

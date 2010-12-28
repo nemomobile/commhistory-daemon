@@ -66,7 +66,6 @@ public:
     QStringList interfaces() const {return QStringList();}
 
     static const Feature FeatureCore;
-    static const Feature FeatureConferenceInitialInviteeContacts;
 
     virtual ~Channel();
 

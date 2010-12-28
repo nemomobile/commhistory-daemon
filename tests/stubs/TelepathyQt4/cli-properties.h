@@ -17,13 +17,10 @@
 #include "AbstractInterface"
 #include "DBusProxy"
 
-namespace Tp{
-class PendingVariant;
-class PendingOperation;
-}
-
 namespace Tp
 {
+
+    class PendingOperation;
 
 namespace Client
 {

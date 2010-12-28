@@ -40,9 +40,7 @@ class TextChannel : public Channel
 
 public:
     static const Feature FeatureMessageQueue;
-    static const Feature FeatureMessageCapabilities;
     static const Feature FeatureMessageSentSignal;
-    static const Feature FeatureChatState;
 
     TextChannel();
     TextChannel(const ConnectionPtr &connection, const QString &objectPath,
