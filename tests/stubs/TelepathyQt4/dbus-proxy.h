@@ -63,8 +63,6 @@ private Q_SLOTS:
     void emitInvalidated();
 
 private:
-    friend class TestBackdoors;
-
     struct Private;
     friend struct Private;
     Private *mPriv;

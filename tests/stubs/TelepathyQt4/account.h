@@ -54,6 +54,7 @@ public:
     const Avatar& avatar();
 
     void ut_setUniqueID( const QString& newUID );
+    void ut_setProtocolName( const QString& newUID );
     void ut_setProtocol( const QString& newProtocol );
     void ut_setConnectionManagerName( const QString& newCMname );
     void ut_setNickname( const QString& nickname );
@@ -117,7 +118,7 @@ private:
     QString m_CMname;
     QString m_NickName;
     QString m_DisplayName;
-
+    QString m_protocolName;
     bool m_Enabled;
 };
 

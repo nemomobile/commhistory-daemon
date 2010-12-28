@@ -16,6 +16,7 @@ Tp::Account::Account()
         ,m_CMname(QString(""))
         ,m_NickName(QString(""))
         ,m_DisplayName(QString(""))
+        ,m_protocolName(QString(""))
         ,m_Enabled(true)
 {
     m_CurrentPresence.type = Tp::ConnectionPresenceTypeUnset;
@@ -24,9 +25,6 @@ Tp::Account::Account()
     m_CurrentAvatar.MIMEType = QString();
 
     ut_setObject( this );
-
-//    disconnectNotify( SIGNAL(requestedPresenceChanged(Tp::SimplePresence)) );
-//    connectNotify( SIGNAL(currentPresenceChanged(Tp::SimplePresence)));
 
     connect( this, SIGNAL( ut_validityChanged(bool)),
              this, SIGNAL( validityChanged(bool)) );
@@ -52,7 +50,7 @@ Tp::SimplePresence Tp::Account::currentPresence() const
 
 Tp::PendingOperation* Tp::Account::setRequestedPresence(
         const Tp::SimplePresence &value)
-{    
+{
     if ( differentPresences( value, m_CurrentPresence ) ) {
         m_CurrentPresence = value;
         QTimer::singleShot(m_pendingDelay, this, SLOT(ut_emitRequestetPresenceChanged()) );
@@ -72,6 +70,11 @@ Tp::PendingOperation* Tp::Account::setAutomaticPresence(
 QString Tp::Account::protocol() const
 {
     return m_protocol;
+}
+
+QString Tp::Account::protocolName() const
+{
+    return m_protocolName;
 }
 
 QString Tp::Account::uniqueIdentifier() const
@@ -165,6 +168,11 @@ void Tp::Account::ut_setProtocol( const QString& newProtocol )
 void Tp::Account::ut_setConnectionManagerName( const QString& newCMname )
 {
    m_CMname = newCMname;
+}
+
+void Tp::Account::ut_setProtocolName(const QString& protocolName)
+{
+    m_protocolName = protocolName;
 }
 
 void Tp::Account::ut_setNickname( const QString& nickname )

@@ -41,26 +41,15 @@ public:
     Presence(const Presence &other);
     ~Presence();
 
-    static Presence available(const QString &statusMessage = QString());
-    static Presence away(const QString &statusMessage = QString());
-    static Presence brb(const QString &statusMessage = QString());
-    static Presence busy(const QString &statusMessage = QString());
-    static Presence xa(const QString &statusMessage = QString());
-    static Presence hidden(const QString &statusMessage = QString());
     static Presence offline(const QString &statusMessage = QString());
-
-    bool isValid() const { return mPriv.constData() != 0; }
 
     Presence &operator=(const Presence &other);
 
-    ConnectionPresenceType type() const;
     QString status() const;
     QString statusMessage() const;
     void setStatus(const SimplePresence &value);
     void setStatus(ConnectionPresenceType type, const QString &status,
             const QString &statusMessage);
-
-    SimplePresence barePresence() const;
 
 private:
     struct Private;

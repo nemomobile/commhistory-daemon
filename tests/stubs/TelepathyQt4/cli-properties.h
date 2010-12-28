@@ -24,6 +24,7 @@ class PendingOperation;
 
 namespace Tp
 {
+
 namespace Client
 {
 
@@ -64,29 +65,6 @@ public:
     );
 
     /**
-     * Creates a PropertiesInterfaceInterface associated with the given object on the given bus.
-     *
-     * \param connection The bus via which the object can be reached.
-     * \param busName Name of the service the object is on.
-     * \param objectPath Path to the object on the service.
-     * \param parent Passed to the parent class constructor.
-     */
-    PropertiesInterfaceInterface(
-        const QDBusConnection& connection,
-        const QString& busName,
-        const QString& objectPath,
-        QObject* parent = 0
-    );
-
-    /**
-     * Creates a PropertiesInterfaceInterface associated with the same object as the given proxy.
-     *
-     * \param proxy The proxy to use. It will also be the QObject::parent()
-     *               for this object.
-     */
-    PropertiesInterfaceInterface(Tp::DBusProxy *proxy);
-
-    /**
      * Creates a PropertiesInterfaceInterface associated with the same object as the given proxy.
      * Additionally, the created proxy will have the same parent as the given
      * proxy.
@@ -95,25 +73,6 @@ public:
      */
     explicit PropertiesInterfaceInterface(const Tp::AbstractInterface& mainInterface);
 
-    /**
-     * Creates a PropertiesInterfaceInterface associated with the same object as the given proxy.
-     * However, a different parent object can be specified.
-     *
-     * \param mainInterface The proxy to use.
-     * \param parent Passed to the parent class constructor.
-     */
-    PropertiesInterfaceInterface(const Tp::AbstractInterface& mainInterface, QObject* parent);
-
-    /**
-     * Request all of the DBus properties on the interface.
-     *
-     * \return A pending variant map which will emit finished when the properties have
-     *          been retrieved.
-     */
-    Tp::PendingVariantMap *requestAllProperties() const
-    {
-        return internalRequestAllProperties();
-    }
 
 public Q_SLOTS:
     /**
@@ -134,18 +93,10 @@ public Q_SLOTS:
      *       <li>variant boxed values</li>
      *     </ul>
      */
-    inline QDBusPendingReply<Tp::PropertyValueList> GetProperties(const Tp::UIntList& properties)
+    QDBusPendingReply<Tp::PropertyValueList> GetProperties(const Tp::UIntList& properties)
     {
-        if (!invalidationReason().isEmpty()) {
-            return QDBusPendingReply<Tp::PropertyValueList>(QDBusMessage::createError(
-                invalidationReason(),
-                invalidationMessage()
-            ));
-        }
-
-        QList<QVariant> argumentList;
-        argumentList << QVariant::fromValue(properties);
-        return asyncCallWithArgumentList(QLatin1String("GetProperties"), argumentList);
+        Q_UNUSED(properties)
+        return asyncCall(QLatin1String("GetProperties"));
     }
 
     /**
@@ -159,47 +110,9 @@ public Q_SLOTS:
      *     property name a string representing the D-Bus signature of this
      *     property a bitwise OR of the flags applicable to this property
      */
-    inline QDBusPendingReply<Tp::PropertySpecList> ListProperties()
+    QDBusPendingReply<Tp::PropertySpecList> ListProperties()
     {
-        if (!invalidationReason().isEmpty()) {
-            return QDBusPendingReply<Tp::PropertySpecList>(QDBusMessage::createError(
-                invalidationReason(),
-                invalidationMessage()
-            ));
-        }
-
         return asyncCall(QLatin1String("ListProperties"));
-    }
-
-    /**
-     * Begins a call to the D-Bus method "SetProperties" on the remote object.
-     *
-     * <p>Takes an array of (identifier, value) pairs containing desired
-     *   values to set the given properties. In the case of any errors, no
-     *   properties will be changed. When the changes have been acknowledged
-     *   by the server, the PropertiesChanged signal will be emitted.</p>
-     *
-     * <p>All properties given must have the PROPERTY_FLAG_WRITE flag, or
-     * PermissionDenied will be returned. If any variants are of the wrong
-     * type, NotAvailable will be returned.  If any given property identifiers
-     * are invalid, InvalidArgument will be returned.</p>
-     *
-     * \param properties
-     *
-     *     An array mapping integer property identifiers to boxed values
-     */
-    inline QDBusPendingReply<> SetProperties(const Tp::PropertyValueList& properties)
-    {
-        if (!invalidationReason().isEmpty()) {
-            return QDBusPendingReply<>(QDBusMessage::createError(
-                invalidationReason(),
-                invalidationMessage()
-            ));
-        }
-
-        QList<QVariant> argumentList;
-        argumentList << QVariant::fromValue(properties);
-        return asyncCallWithArgumentList(QLatin1String("SetProperties"), argumentList);
     }
 
 Q_SIGNALS:
@@ -220,26 +133,11 @@ Q_SIGNALS:
      */
     void PropertiesChanged(const Tp::PropertyValueList& properties);
 
-    /**
-     * Represents the signal "PropertyFlagsChanged" on the remote object.
-     *
-     * Emitted when the flags of some room properties have changed.
-     *
-     * \param properties
-     *
-     *     <p>An array of structs containing:</p>
-     *     <ul>
-     *       <li>integer identifiers</li>
-     *       <li>a bitwise OR of the current flags</li>
-     *     </ul>
-     *     <p>The array should contain only properties whose flags have actually
-     *       changed.</p>
-     */
-    //void PropertyFlagsChanged(const Tp::PropertyFlagsChangeList& properties);
-
-protected:
-    virtual void invalidate(Tp::DBusProxy *, const QString &, const QString &);
+public: // stub methods
+    void ut_setPropertyValues(const Tp::PropertyValueList& properties);
+    void ut_setPropertySpecList(const Tp::PropertySpecList& specList);
 };
 }
 }
+
 Q_DECLARE_METATYPE(Tp::Client::PropertiesInterfaceInterface*)

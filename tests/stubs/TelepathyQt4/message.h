@@ -43,6 +43,10 @@ class TextChannel;
 class Message
 {
 public:
+    Message();
+    Message(const MessagePartList &parts);
+    Message(uint, uint, const QString &);
+
     Message(ChannelTextMessageType, const QString &);
     Message(const Message &other);
     ~Message();
@@ -60,14 +64,7 @@ public:
 
     ChannelTextMessageType messageType() const;
 
-    bool isTruncated() const;
-
-    bool hasNonTextContent() const;
-
     QString messageToken() const;
-
-    bool isSpecificToDBusInterface() const;
-    QString dbusInterface() const;
 
     QString text() const;
 
@@ -83,10 +80,6 @@ private:
     friend class TextChannel;
     friend class ReceivedMessage;
 
-    Message();
-    Message(const MessagePartList &parts);
-    Message(uint, uint, const QString &);
-
     struct Private;
     friend struct Private;
     QSharedDataPointer<Private> mPriv;
@@ -95,6 +88,10 @@ private:
 class ReceivedMessage : public Message
 {
 public:
+    ReceivedMessage(const MessagePartList &parts,
+            const TextChannelPtr &channel);
+    ReceivedMessage();
+
     ReceivedMessage(const ReceivedMessage &other);
     ReceivedMessage &operator=(const ReceivedMessage &other);
     ~ReceivedMessage();
@@ -102,23 +99,9 @@ public:
     QDateTime received() const;
     ContactPtr sender() const;
     bool isScrollback() const;
-    bool isRescued() const;
-
-    bool isFromChannel(const TextChannelPtr &channel) const;
 
 private:
     friend class TextChannel;
-
-    ReceivedMessage(const MessagePartList &parts,
-            const TextChannelPtr &channel);
-    ReceivedMessage();
-
-    uint senderHandle() const;
-    uint pendingId() const;
-
-    void setForceNonText();
-    void clearSenderHandle();
-    void setSender(const ContactPtr &sender);
 };
 
 } // Tp

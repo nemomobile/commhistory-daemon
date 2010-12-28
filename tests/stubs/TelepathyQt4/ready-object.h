@@ -44,10 +44,6 @@ public:
     virtual bool isReady(const Features &features = Features()) const;
     virtual PendingReady *becomeReady(const Features &requestedFeatures = Features());
 
-    virtual Features requestedFeatures() const;
-    virtual Features actualFeatures() const;
-    virtual Features missingFeatures() const;
-
 protected:
     ReadinessHelper *readinessHelper() const;
 
