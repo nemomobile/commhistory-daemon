@@ -8,6 +8,16 @@ HEADERS += ./stubs/TelepathyQt4/account-manager.h
 HEADERS += ./stubs/TelepathyQt4/account.h
 HEADERS += ./stubs/TelepathyQt4/types.h
 HEADERS += ./stubs/TelepathyQt4/pending-ready.h
+HEADERS += ./stubs/TelepathyQt4/abstract-interface.h
+HEADERS += ./stubs/TelepathyQt4/constants.h
+HEADERS += ./stubs/TelepathyQt4/channel.h
+HEADERS += ./stubs/TelepathyQt4/connection.h
+HEADERS += ./stubs/TelepathyQt4/contact.h
+HEADERS += ./stubs/TelepathyQt4/dbus-proxy.h
+HEADERS += ./stubs/TelepathyQt4/message.h
+HEADERS += ./stubs/TelepathyQt4/presence.h
+HEADERS += ./stubs/TelepathyQt4/referenced-handles.h
+HEADERS += ./stubs/TelepathyQt4/text-channel.h
 
 SOURCES += ./stubs/TelepathyQt4/pending-operation.cpp
 SOURCES += ./stubs/TelepathyQt4/pending-ready.cpp

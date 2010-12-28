@@ -37,6 +37,7 @@ class ReadyObject
     Q_DISABLE_COPY(ReadyObject)
 
 public:
+    ReadyObject();
     ReadyObject(QObject *object, const Feature &featureCore);
     virtual ~ReadyObject();
 

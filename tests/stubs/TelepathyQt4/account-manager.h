@@ -21,25 +21,10 @@ public:
 
     AccountManager();
 
-    QList<AccountPtr> validAccounts();
-
     static AccountManagerPtr create();
-
-    AccountPtr accountForPath(const QString &path);
-
-    void ut_clearAccountList();
-    void ut_restoreDefaultState();
 
     void ut_addAccount( AccountPtr );
     void ut_deletAccount( AccountPtr );
-
-Q_SIGNALS:
-    void accountCreated(const QString &path);
-    void accountRemoved(const QString &path);
-    void accountValidityChanged(const QString &path, bool valid);
-
-private slots:
-    void ut_accountValidityChanged(const bool);
 
 private:
     QList<AccountPtr> m_fakeAccountList;

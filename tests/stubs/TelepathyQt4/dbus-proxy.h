@@ -30,14 +30,13 @@ class QDBusError;
 namespace Tp
 {
 
-class TestBackdoors;
-
 class DBusProxy : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(DBusProxy)
 
 public:
+    DBusProxy();
     DBusProxy(const QDBusConnection &dbusConnection, const QString &busName,
             const QString &objectPath, QObject *parent = 0);
     virtual ~DBusProxy();
@@ -74,6 +73,7 @@ class StatelessDBusProxy : public DBusProxy
     Q_DISABLE_COPY(StatelessDBusProxy)
 
 public:
+    StatelessDBusProxy();
     StatelessDBusProxy(const QDBusConnection &dbusConnection,
         const QString &busName, const QString &objectPath,
         QObject *parent = 0);
@@ -92,6 +92,7 @@ class StatefulDBusProxy : public DBusProxy
     Q_DISABLE_COPY(StatefulDBusProxy)
 
 public:
+    StatefulDBusProxy();
     StatefulDBusProxy(const QDBusConnection &dbusConnection,
         const QString &busName, const QString &objectPath,
         QObject *parent = 0);
