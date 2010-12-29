@@ -32,8 +32,6 @@
 namespace Tp
 {
 
-class ContactManager;
-class PendingOperation;
 class Presence;
 class ReferencedHandles;
 
@@ -60,18 +58,22 @@ public:
          PresenceStateYes
     };
 
-    Contact(){}
-    Contact(ContactManager *manager, const ReferencedHandles &handle,
-            const QSet<Feature> &requestedFeatures, const QVariantMap &attributes);
-    ~Contact(){}
+    Contact();
+    ~Contact();
 
     ReferencedHandles handle() const;
-    QString id() const; // TODO filter: exact, prefix, substring match
+    QString id() const;
 
     Presence presence() const;
 
 Q_SIGNALS:
     void presenceChanged(const Tp::Presence &presence);
+
+public: // ut
+    void ut_setId(const QString& id);
+    void ut_setHandle(const ReferencedHandles& handles);
+    void ut_setPresence(const Presence& presence);
+    void ut_emitPresenceChanged();
 
 private:
 

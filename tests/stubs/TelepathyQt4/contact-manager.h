@@ -22,10 +22,6 @@
 #ifndef _TelepathyQt4_contact_manager_h_HEADER_GUARD_
 #define _TelepathyQt4_contact_manager_h_HEADER_GUARD_
 
-#ifndef IN_TELEPATHY_QT4_HEADER
-#error IN_TELEPATHY_QT4_HEADER
-#endif
-
 #include <QObject>
 
 #include <QList>
@@ -36,22 +32,10 @@
 #include "Channel"
 #include "ReferencedHandles"
 #include "PendingOperation"
+#include "PendingContacts"
 
 namespace Tp
 {
-
-class Connection;
-
-class PendingContacts : public PendingOperation {
-        Q_OBJECT
-    public:
-        QList<Tp::ContactPtr> contacts();
-        void ut_setPendingContacts(const QList<Tp::ContactPtr>& contacts);
-    private:
-        struct Private;
-        friend struct Private;
-        Private *mPriv;
-};
 
 class ContactManager : public QObject
 {
@@ -59,18 +43,12 @@ class ContactManager : public QObject
     Q_DISABLE_COPY(ContactManager)
 
 public:
-    ContactManager(Connection *parent);
+    ContactManager();
     ~ContactManager();
-
-    ConnectionPtr connection() const;
 
     QSet<Contact::Feature> supportedFeatures() const;
 
-    Contacts groupContacts(const QString &group) const;
-
     PendingContacts *contactsForHandles(const UIntList &handles,
-            const QSet<Contact::Feature> &features = QSet<Contact::Feature>());
-    PendingContacts *contactsForHandles(const ReferencedHandles &handles,
             const QSet<Contact::Feature> &features = QSet<Contact::Feature>());
 
     PendingContacts *upgradeContacts(const QList<ContactPtr> &contacts,
@@ -81,13 +59,16 @@ Q_SIGNALS:
             const Tp::Contacts &groupMembersAdded,
             const Tp::Contacts &groupMembersRemoved,
             const Tp::Channel::GroupMemberChangeDetails &details);
-private:
-    friend class Connection;
-    friend class PendingContacts;
 
-    struct Private;
-    friend struct Private;
-    Private *mPriv;
+public: // ut
+    void ut_setSupportedFeatures(const QSet<Contact::Feature>& features);
+    void ut_emitGroupMembersChanged(const QString &group,
+                                    const Tp::Contacts &groupMembersAdded,
+                                    const Tp::Contacts &groupMembersRemoved,
+                                    const Tp::Channel::GroupMemberChangeDetails &details);
+
+private:
+    QSet<Contact::Feature> m_supportedFeatures;
 };
 
 } // Tp

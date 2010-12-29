@@ -68,8 +68,7 @@ public:
      *
      * \param mainInterface The proxy to use.
      */
-    explicit PropertiesInterfaceInterface(const Tp::AbstractInterface& mainInterface);
-
+    explicit PropertiesInterfaceInterface(const Tp::AbstractInterface&);
 
 public Q_SLOTS:
     /**

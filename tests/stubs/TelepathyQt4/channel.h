@@ -23,14 +23,13 @@
 #define _TelepathyQt4_channel_h_HEADER_GUARD_
 
 
-#include "cli-properties.h"
-
 #include "Constants"
 #include "Contact"
 #include "DBusProxy"
 #include "Types"
 #include "ReadyObject"
 #include "AbstractInterface"
+#include "Properties"
 
 #include <QSet>
 #include <QSharedDataPointer>
