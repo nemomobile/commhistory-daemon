@@ -57,13 +57,15 @@ class Channel : public StatefulDBusProxy,
 
 public:
 
+    Channel(const QString &objectPath = QString(), QObject *parent = 0);
+
     template <typename Interface>
     inline Interface *interface() const
     {
         return new Interface;
     }
 
-    QStringList interfaces() const {return QStringList();}
+    QStringList interfaces() const;
 
     static const Feature FeatureCore;
 
@@ -89,7 +91,7 @@ public:
     class GroupMemberChangeDetails
     {
     public:
-        GroupMemberChangeDetails();
+        GroupMemberChangeDetails(){}
     };
 
     bool groupAreHandleOwnersAvailable() const;
@@ -110,6 +112,14 @@ Q_SIGNALS:
 
 
 public: // stub methods
+    void ut_setInterfaces(const QStringList& interfaces);
+    void ut_setChannelType(const QString& channelType);
+    void ut_setTargetHandleType(uint targetHandleType);
+    void ut_setTargetHandle(uint targetHandle);
+    void ut_setGroupContacts(const Contacts& contacts);
+    void ut_setGroupAreHandleOwnersAvailable(bool handlesAvailable);
+    void ut_setGroupHandleOwners(const HandleOwnerMap& ownerMap);
+    void ut_setGroupSelfContact(const ContactPtr& selfContact);
     void ut_setImmutableProperties(const QVariantMap &immutableProperties);
     void ut_setConnection(const ConnectionPtr &connection);
 

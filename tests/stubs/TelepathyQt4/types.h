@@ -243,8 +243,9 @@ namespace Tp
     class MethodInvocationContext : public RefCounted
     {
         public:
-        bool isFinished() const { return true; }
-        bool isError() const { return false; }
+        MethodInvocationContext(){}
+        bool isFinished() const { return m_isFinished; }
+        bool isError() const { return m_isError; }
         QString errorName() const { return ""; }
         QString errorMessage() const { return ""; }
 
@@ -260,9 +261,22 @@ namespace Tp
             Q_UNUSED(t6)
             Q_UNUSED(t7)
             Q_UNUSED(t8)
+            ut_setIsFinished(true);
         }
 
-        void setFinishedWithError(const QString &,const QString &){}
+        void setFinishedWithError(const QString &,const QString &)
+        {
+            ut_setIsFinished(true);
+            ut_setIsError(true);
+        }
+
+    public: // ut
+        void ut_setIsFinished(bool finished) {m_isFinished = finished;}
+        void ut_setIsError(bool error) {m_isError = error;}
+
+    private:
+        bool m_isFinished;
+        bool m_isError;
     };
 
     template<typename T1 = MethodInvocationContextTypes::Nil, typename T2 = MethodInvocationContextTypes::Nil,
@@ -289,8 +303,8 @@ namespace Tp
         QDBusVariant value;
     };
 
-    QDBusArgument& operator<<(QDBusArgument& arg, const PropertyValue& val);
-    const QDBusArgument& operator>>(const QDBusArgument& arg, PropertyValue& val);
+    QDBusArgument& operator<<(QDBusArgument& arg, const PropertyValue&);
+    const QDBusArgument& operator>>(const QDBusArgument& arg, PropertyValue&);
 
     typedef QList<PropertyValue> PropertyValueList;
 
@@ -358,8 +372,8 @@ namespace Tp
         return !operator==(v1, v2);
     }
 
-    QDBusArgument& operator<<(QDBusArgument& arg, const PropertySpec& val);
-    const QDBusArgument& operator>>(const QDBusArgument& arg, PropertySpec& val);
+    QDBusArgument& operator<<(QDBusArgument& arg, const PropertySpec&);
+    const QDBusArgument& operator>>(const QDBusArgument& arg, PropertySpec&);
 
 
     typedef QList<PropertySpec> PropertySpecList;

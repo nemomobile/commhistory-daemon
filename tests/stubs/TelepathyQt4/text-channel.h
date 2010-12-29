@@ -42,9 +42,7 @@ public:
     static const Feature FeatureMessageQueue;
     static const Feature FeatureMessageSentSignal;
 
-    TextChannel();
-    TextChannel(const ConnectionPtr &connection, const QString &objectPath,
-            const QVariantMap &immutableProperties);
+    TextChannel(const QString &objectPath = QString(), QObject *parent = 0);
 
     virtual ~TextChannel();
 
@@ -57,11 +55,18 @@ public Q_SLOTS:
 Q_SIGNALS:
     // FeatureMessageSentSignal
     void messageSent(const Tp::Message &message,
-            Tp::MessageSendingFlags flags,
-            const QString &sentMessageToken);
+                     Tp::MessageSendingFlags flags,
+                     const QString &sentMessageToken);
 
     // FeatureMessageQueue
     void messageReceived(const Tp::ReceivedMessage &message);
+
+public:
+    void ut_setMessageQueue(const QList<ReceivedMessage>& receivedMessages);
+    void ut_receiveMessage(const Tp::ReceivedMessage &message);
+    void ut_sendMessage(const Tp::Message &message,
+                        Tp::MessageSendingFlags flags,
+                        const QString &sentMessageToken);
 
 private:
     struct Private;

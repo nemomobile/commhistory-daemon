@@ -60,10 +60,10 @@ public:
          PresenceStateYes
     };
 
-    Contact();
+    Contact(){}
     Contact(ContactManager *manager, const ReferencedHandles &handle,
             const QSet<Feature> &requestedFeatures, const QVariantMap &attributes);
-    ~Contact();
+    ~Contact(){}
 
     ReferencedHandles handle() const;
     QString id() const; // TODO filter: exact, prefix, substring match

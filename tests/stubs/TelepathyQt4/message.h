@@ -88,8 +88,7 @@ private:
 class ReceivedMessage : public Message
 {
 public:
-    ReceivedMessage(const MessagePartList &parts,
-            const TextChannelPtr &channel);
+    ReceivedMessage(const MessagePartList &parts);
     ReceivedMessage();
 
     ReceivedMessage(const ReceivedMessage &other);
@@ -99,6 +98,9 @@ public:
     QDateTime received() const;
     ContactPtr sender() const;
     bool isScrollback() const;
+
+public: //ut
+    void ut_setSender(const ContactPtr& sender);
 
 private:
     friend class TextChannel;

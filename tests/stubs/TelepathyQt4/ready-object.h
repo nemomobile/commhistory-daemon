@@ -23,6 +23,7 @@
 #define _TelepathyQt4_ready_object_h_HEADER_GUARD_
 
 #include "Types"
+#include "PendingReady"
 
 #include <QObject>
 
@@ -37,17 +38,26 @@ class ReadyObject
     Q_DISABLE_COPY(ReadyObject)
 
 public:
-    ReadyObject();
-    ReadyObject(QObject *object, const Feature &featureCore);
-    virtual ~ReadyObject();
+    ReadyObject(){}
+    virtual ~ReadyObject(){}
 
-    virtual bool isReady(const Features &features = Features()) const;
-    virtual PendingReady *becomeReady(const Features &requestedFeatures = Features());
+    virtual bool isReady(const Features &features = Features()) const
+    {
+        Q_UNUSED(features)
+        return m_isReady;
+    }
+
+    virtual PendingReady *becomeReady(const Features &requestedFeatures = Features())
+    {
+        Q_UNUSED(requestedFeatures)
+        return new PendingReady();
+    }
+
+public: // ut
+    void ut_setIsReady(bool isReady) {m_isReady = isReady;}
 
 private:
-    struct Private;
-    friend struct Private;
-    Private *mPriv;
+    bool m_isReady;
 };
 
 } // Tp

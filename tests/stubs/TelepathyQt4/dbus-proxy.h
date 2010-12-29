@@ -36,35 +36,24 @@ class DBusProxy : public QObject
     Q_DISABLE_COPY(DBusProxy)
 
 public:
-    DBusProxy();
-    DBusProxy(const QDBusConnection &dbusConnection, const QString &busName,
-            const QString &objectPath, QObject *parent = 0);
-    virtual ~DBusProxy();
+    DBusProxy(const QString &objectPath = QString(), QObject *parent = 0) : QObject(parent),
+    m_objectPath(objectPath){}
 
-    QDBusConnection dbusConnection() const;
-    QString busName() const;
-    QString objectPath() const;
+    virtual ~DBusProxy(){}
 
-    bool isValid() const;
-    QString invalidationReason() const;
-    QString invalidationMessage() const;
+    QString objectPath() const {return m_objectPath;}
+    bool isValid() const {return m_isValid;}
 
 Q_SIGNALS:
     void invalidated(Tp::DBusProxy *proxy,
             const QString &errorName, const QString &errorMessage);
 
-protected:
-    void setBusName(const QString &busName);
-    void invalidate(const QString &reason, const QString &message);
-    void invalidate(const QDBusError &error);
-
-private Q_SLOTS:
-    void emitInvalidated();
+public: // ut
+    void ut_setIsValid(bool valid){m_isValid=valid;}
 
 private:
-    struct Private;
-    friend struct Private;
-    Private *mPriv;
+    QString m_objectPath;
+    bool m_isValid;
 };
 
 class StatelessDBusProxy : public DBusProxy
@@ -73,17 +62,10 @@ class StatelessDBusProxy : public DBusProxy
     Q_DISABLE_COPY(StatelessDBusProxy)
 
 public:
-    StatelessDBusProxy();
-    StatelessDBusProxy(const QDBusConnection &dbusConnection,
-        const QString &busName, const QString &objectPath,
-        QObject *parent = 0);
+    StatelessDBusProxy(const QString &objectPath = QString(), QObject *parent = 0)
+        : DBusProxy(objectPath,parent){}
 
-    virtual ~StatelessDBusProxy();
-
-private:
-    struct Private;
-    friend struct Private;
-    Private *mPriv;
+    virtual ~StatelessDBusProxy(){}
 };
 
 class StatefulDBusProxy : public DBusProxy
@@ -92,25 +74,10 @@ class StatefulDBusProxy : public DBusProxy
     Q_DISABLE_COPY(StatefulDBusProxy)
 
 public:
-    StatefulDBusProxy();
-    StatefulDBusProxy(const QDBusConnection &dbusConnection,
-        const QString &busName, const QString &objectPath,
-        QObject *parent = 0);
+    StatefulDBusProxy(const QString &objectPath = QString(), QObject *parent = 0)
+    : DBusProxy(objectPath,parent){}
 
-    virtual ~StatefulDBusProxy();
-
-    static QString uniqueNameFrom(const QDBusConnection &bus, const QString &wellKnownOrUnique);
-    static QString uniqueNameFrom(const QDBusConnection &bus, const QString &wellKnownOrUnique,
-            QString &error, QString &message);
-
-private Q_SLOTS:
-    void onServiceOwnerChanged(const QString &name, const QString &oldOwner,
-            const QString &newOwner);
-
-private:
-    struct Private;
-    friend struct Private;
-    Private *mPriv;
+    virtual ~StatefulDBusProxy(){}
 };
 
 } // Tp

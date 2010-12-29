@@ -1,26 +1,35 @@
 
 #include "types.h"
 
-void Tp::registerTypes()
+namespace Tp {
+
+void registerTypes()
 {
 }
 
-Tp::Feature::Feature(const QString &className, uint id, bool critical )
+Feature::Feature(const QString &className, uint id, bool critical )
 {
     Q_UNUSED( className );
     Q_UNUSED( id );
     Q_UNUSED( critical );
 }
 
-Tp::Feature::Feature(const Feature &other)
+Feature::Feature(const Feature &other)
         :QPair<QString,uint>()
 {
     Q_UNUSED( other );
 }
 
-Tp::Feature::~Feature()
+Feature::~Feature()
 {
 }
 
 
+QDBusArgument& operator<<(QDBusArgument& arg, const PropertyValue&){return arg;}
+const QDBusArgument& operator>>(const QDBusArgument& arg, PropertyValue&){return arg;}
+
+QDBusArgument& operator<<(QDBusArgument& arg, const PropertySpec&){return arg;}
+const QDBusArgument& operator>>(const QDBusArgument& arg, PropertySpec&){return arg;}
+
+}
 //Q_DECLARE_METATYPE(Tp::SimplePresence)

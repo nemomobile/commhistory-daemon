@@ -26,32 +26,41 @@
 namespace Tp
 {
 
-class DBusProxy;
-class PendingVariant;
-class PendingOperation;
-class PendingVariantMap;
-
 class AbstractInterface : public QDBusAbstractInterface
 {
     Q_OBJECT
     Q_DISABLE_COPY(AbstractInterface)
 
+    #define UT_FAKE_INTERFACE "com.nokia.fake.interface"
+
 public:
-    AbstractInterface();
-    virtual ~AbstractInterface();
+    AbstractInterface(const QString &service = QString(),
+                      const QString &path = QString(),
+                      const char *interface = UT_FAKE_INTERFACE,
+                      const QDBusConnection &connection = QDBusConnection::sessionBus(),
+                      QObject *parent = 0) : QDBusAbstractInterface(service,
+                                                                    path,
+                                                                    interface,
+                                                                    connection,
+                                                                    parent)
+                                             ,m_isValid(true)
+    {
+        Q_UNUSED(service)
+        Q_UNUSED(path)
+        Q_UNUSED(interface)
+        Q_UNUSED(connection)
+        Q_UNUSED(parent)
+    }
 
-    bool isValid() const;
-    QString invalidationReason() const;
-    QString invalidationMessage() const;
+    virtual ~AbstractInterface(){}
 
-protected Q_SLOTS:
-    virtual void invalidate(Tp::DBusProxy *proxy,
-            const QString &error, const QString &message);
+    bool isValid() const {return m_isValid;}
+
+public:
+    void ut_setIsValid(bool valid) {m_isValid = valid;}
 
 private:
-    struct Private;
-    friend struct Private;
-    Private *mPriv;
+    bool m_isValid;
 };
 
 } // Tp

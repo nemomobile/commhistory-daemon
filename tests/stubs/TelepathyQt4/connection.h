@@ -64,7 +64,7 @@ public:
         StatusUnknown = 0xFFFFFFFF
     };
 
-    virtual ~Connection();
+    virtual ~Connection(){}
 
     QStringList interfaces() const;
 

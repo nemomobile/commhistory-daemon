@@ -24,3 +24,7 @@ SOURCES += ./stubs/TelepathyQt4/pending-ready.cpp
 SOURCES += ./stubs/TelepathyQt4/account-manager.cpp
 SOURCES += ./stubs/TelepathyQt4/account.cpp
 SOURCES += ./stubs/TelepathyQt4/types.cpp
+SOURCES += ./stubs/TelepathyQt4/channel.cpp
+SOURCES += ./stubs/TelepathyQt4/text-channel.cpp
+SOURCES += ./stubs/TelepathyQt4/message.cpp
+SOURCES += ./stubs/TelepathyQt4/connection.cpp
