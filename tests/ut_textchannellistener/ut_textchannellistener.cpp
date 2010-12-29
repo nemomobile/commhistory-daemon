@@ -36,14 +36,15 @@
 #include <CommHistory/SingleEventModel>
 
 #include "textchannellistener.h"
+#include "notificationmanager.h"
 
 // constants
-#define IM_USERNAME "dut@localhost"
-#define SENT_MESSAGE "Hello, how is life mon?"
-#define RECEIVED_MESSAGE "Good, good"
-#define IM_ACCOUNT_PATH "/org/freedesktop/Telepathy/Account/gabble/jabber/dut_40localhost0"
-#define SMS_ACCOUNT_PATH "/org/freedesktop/Telepathy/Account/ring/tel/ring"
-#define SMS_NUMBER "+358987654321"
+#define IM_USERNAME QLatin1String("dut@localhost")
+#define SENT_MESSAGE QLatin1String("Hello, how is life mon?")
+#define RECEIVED_MESSAGE QLatin1String("Good, good")
+#define IM_ACCOUNT_PATH QLatin1String("/org/freedesktop/Telepathy/Account/gabble/jabber/dut_40localhost0")
+#define SMS_ACCOUNT_PATH QLatin1String("/org/freedesktop/Telepathy/Account/ring/tel/ring")
+#define SMS_NUMBER QLatin1String("+358987654321")
 
 using namespace RTComLogger;
 
@@ -143,6 +144,10 @@ void Ut_TextChannelListener::testImSending()
 {
     QString message = QString(SENT_MESSAGE) + QString(" : ") + QTime::currentTime().toString(Qt::ISODate);
 
+    NotificationManager *nm = NotificationManager::instance();
+    QVERIFY(nm);
+    nm->postedNotifications.clear();
+
     Tp::Account acc;
     //acc.setObjectPath(IM_ACCOUNT_PATH); //set uid
     //acc.setProtocol(); //tel mms
@@ -169,11 +174,19 @@ void Ut_TextChannelListener::testImSending()
     CommHistory::Event e = fetchEvent(g.lastEventId());
     QCOMPARE(e.direction(), CommHistory::Event::Outbound);
     QCOMPARE(e.freeText(), message);
+
+    QCOMPARE(nm->postedNotifications.size(), 0);
 }
 
 void Ut_TextChannelListener::testImReceiving()
 {
     QString message = QString(RECEIVED_MESSAGE) + QString(" : ") + QTime::currentTime().toString(Qt::ISODate);
+
+    NotificationManager *nm = NotificationManager::instance();
+    QVERIFY(nm);
+    nm->postedNotifications.clear();
+
+
     Tp::Account acc;
     //acc.setObjectPath(IM_ACCOUNT_PATH); //set uid
     //acc.setProtocol(); //tel mms
@@ -188,6 +201,23 @@ void Ut_TextChannelListener::testImReceiving()
                             Tp::MethodInvocationContextPtr<>(&ctx));
 
     // catch group
+    CommHistory::Group g = fetchGroup(IM_ACCOUNT_PATH, IM_USERNAME, true);
+
+    QVERIFY(g.isValid());
+    QCOMPARE(g.localUid(), QLatin1String(IM_ACCOUNT_PATH));
+    QCOMPARE(g.remoteUids().first(), QLatin1String(IM_USERNAME));
+    QCOMPARE(g.lastMessageText(), message);
+    QCOMPARE(g.lastEventType(), CommHistory::Event::IMEvent);
+
+    CommHistory::Event e = fetchEvent(g.lastEventId());
+    QCOMPARE(e.id(), g.lastEventId());
+    QCOMPARE(e.direction(), CommHistory::Event::Inbound);
+    QCOMPARE(e.freeText(), message);
+
+    QCOMPARE(nm->postedNotifications.size(), 1);
+    QCOMPARE(nm->postedNotifications.first().event.id(), e.id());
+    QCOMPARE(nm->postedNotifications.first().channelTargetId, IM_USERNAME);
+    QCOMPARE(nm->postedNotifications.first().chatType, CommHistory::Group::ChatTypeP2P);
 }
 
 void Ut_TextChannelListener::testSmsSending()

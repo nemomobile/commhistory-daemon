@@ -37,6 +37,12 @@ public:
 
 
     int voicemailNotifications;
+    struct Notification {
+        CommHistory::Event event;
+        QString channelTargetId;
+        CommHistory::Group::ChatType chatType;
+    };
+    QList<Notification> postedNotifications;
 
     static NotificationManager* m_pInstance;
     QContactManager *m_pContactManager;
