@@ -30,6 +30,12 @@ void NotificationManager::showNotification(ChannelListener *channelListener,
                       CommHistory::Group::ChatType chatType)
 {
     qDebug() << channelListener << event.toString() << channelTargetId << chatType;
+    Notification n;
+    n.event = event;
+    n.channelTargetId = channelTargetId;
+    n.chatType = chatType;
+
+    postedNotifications.append(n);
 }
 
 
