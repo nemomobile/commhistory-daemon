@@ -45,6 +45,8 @@
 #define IM_ACCOUNT_PATH QLatin1String("/org/freedesktop/Telepathy/Account/gabble/jabber/dut_40localhost0")
 #define SMS_ACCOUNT_PATH QLatin1String("/org/freedesktop/Telepathy/Account/ring/tel/ring")
 #define SMS_NUMBER QLatin1String("+358987654321")
+#define IM_CHANNEL_PATH QLatin1String("/org/freedesktop/Telepathy/Account/gabble/jabber/dut_40localhost0")
+#define SMS_CHANNEL_PATH QLatin1String("/org/freedesktop/Telepathy/Connection/ring/tel/ring/text0")
 
 using namespace RTComLogger;
 
@@ -148,12 +150,9 @@ void Ut_TextChannelListener::testImSending()
     QVERIFY(nm);
     nm->postedNotifications.clear();
 
-    Tp::Account acc;
-    //acc.setObjectPath(IM_ACCOUNT_PATH); //set uid
-    //acc.setProtocol(); //tel mms
-    Tp::Channel ch;
-    //ch.setObjectPath(CH_OBJ_PATH);
-    //ch.setIsRequested();
+    Tp::Account acc(IM_ACCOUNT_PATH);
+    Tp::Channel ch(IM_CHANNEL_PATH);
+    ch.ut_setIsRequested(true);
     //ch.immutableProperties(); // add targetID or persitent
     //ch. add pending sent message;
     Tp::MethodInvocationContext<> ctx; // used to check that finished() was called on it
@@ -187,12 +186,9 @@ void Ut_TextChannelListener::testImReceiving()
     nm->postedNotifications.clear();
 
 
-    Tp::Account acc;
-    //acc.setObjectPath(IM_ACCOUNT_PATH); //set uid
-    //acc.setProtocol(); //tel mms
-    Tp::Channel ch;
-    //ch.setObjectPath(CH_OBJ_PATH);
-    //ch.setIsRequested();
+    Tp::Account acc(IM_ACCOUNT_PATH);
+    Tp::Channel ch(IM_CHANNEL_PATH);
+    ch.ut_setIsRequested(false);
     //ch.immutableProperties(); // add targetID or persitent
     //ch. add pending received message;
     Tp::MethodInvocationContext<> ctx; // used to check that finished() was called on it
@@ -224,12 +220,10 @@ void Ut_TextChannelListener::testSmsSending()
 {
     QString message = QString(SENT_MESSAGE) + QString(" : ") + QTime::currentTime().toString(Qt::ISODate);
 
-    Tp::Account acc;
-    //acc.setObjectPath(ACCOUNT_OBJ_PATH); //set uid
-    //acc.setProtocol(); //tel mms
-    Tp::Channel ch;
-    //ch.setObjectPath(CH_OBJ_PATH);
-    //ch.setIsRequested();
+    Tp::Account acc(SMS_ACCOUNT_PATH);
+    acc.ut_setProtocolName("tel");
+    Tp::Channel ch(SMS_CHANNEL_PATH);
+    ch.ut_setIsRequested(true);
     //ch.immutableProperties(); // add targetID or persitent
     //ch. add pending sent message;
     Tp::MethodInvocationContext<> ctx; // used to check that finished() was called on it
@@ -247,12 +241,11 @@ void Ut_TextChannelListener::testSmsSending()
 void Ut_TextChannelListener::testSmsReceiving()
 {
     QString message = QString(RECEIVED_MESSAGE) + QString(" : ") + QTime::currentTime().toString(Qt::ISODate);
-    Tp::Account acc;
-    //acc.setObjectPath(SMS_ACCOUNT_PATH); //set uid
-    //acc.setProtocol(); //tel mms
-    Tp::Channel ch;
-    //ch.setObjectPath(CH_OBJ_PATH);
-    //ch.setIsRequested();
+    Tp::Account acc(SMS_ACCOUNT_PATH);
+    acc.ut_setProtocolName("tel");
+
+    Tp::Channel ch(SMS_CHANNEL_PATH);
+    ch.ut_setIsRequested(false);
     //ch.immutableProperties(); // add targetID or persitent
     //ch. add pending received message;
     Tp::MethodInvocationContext<> ctx; // used to check that finished() was called on it

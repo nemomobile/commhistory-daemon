@@ -121,6 +121,7 @@ public: // stub methods
     void ut_setGroupSelfContact(const ContactPtr& selfContact);
     void ut_setImmutableProperties(const QVariantMap &immutableProperties);
     void ut_setConnection(const ConnectionPtr &connection);
+    void ut_setIsRequested(bool requested);
 
 private:
     struct Private;

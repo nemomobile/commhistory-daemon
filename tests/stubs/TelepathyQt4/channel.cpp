@@ -137,3 +137,8 @@ void Channel::ut_setConnection(const ConnectionPtr &connection)
 {
     mPriv->m_connection = connection;
 }
+
+void Channel::ut_setIsRequested(bool requested)
+{
+    mPriv->m_isRequested = requested;
+}

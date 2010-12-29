@@ -7,8 +7,9 @@
 
 const Tp::Feature Tp::Account::FeatureCore = Tp::Feature(Tp::Account::staticMetaObject.className(), 0, true);
 
-Tp::Account::Account()
-        :Tp::ReadyObject()
+Tp::Account::Account(const QString &objectPath)
+    :Tp::StatelessDBusProxy(objectPath)
+        ,Tp::ReadyObject()
         ,m_protocol(QString(""))
         ,m_protocolName(QString(""))
 {

@@ -24,7 +24,7 @@ class Account : public StatelessDBusProxy,
 
 public:
 
-    Account();
+    Account(const QString &objectPath);
 
     static const Feature FeatureCore;
 
