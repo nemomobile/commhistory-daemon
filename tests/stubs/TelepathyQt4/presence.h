@@ -28,6 +28,7 @@
 
 #include "Constants"
 #include "Types"
+#include <QSharedDataPointer>
 
 namespace Tp
 {
@@ -35,21 +36,22 @@ namespace Tp
 class Presence
 {
 public:
+
     Presence();
-    Presence(const SimplePresence &sp);
-    Presence(ConnectionPresenceType type, const QString &status, const QString &statusMessage);
-    Presence(const Presence &other);
+    Presence(const QString& status, const QString& statusMessage);
+    Presence(const Presence& other);
     ~Presence();
 
     static Presence offline(const QString &statusMessage = QString());
 
-    Presence &operator=(const Presence &other);
-
     QString status() const;
     QString statusMessage() const;
-    void setStatus(const SimplePresence &value);
-    void setStatus(ConnectionPresenceType type, const QString &status,
-            const QString &statusMessage);
+
+    Presence &operator=(const Presence &other);
+
+public: //ut
+    void ut_setStatus(const QString& status);
+    void ut_setStatusMessage(const QString& statusMessage);
 
 private:
     struct Private;

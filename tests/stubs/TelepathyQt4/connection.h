@@ -48,6 +48,8 @@ class  Connection : public StatefulDBusProxy,
 
 public:
 
+    Connection(const QString &objectPath = QString(), QObject *parent = 0);
+
     template <typename Interface>
     inline Interface *interface() const
     {
@@ -57,20 +59,17 @@ public:
     static const Feature FeatureCore;
     static const Feature FeatureSimplePresence;
 
-    enum Status {
-        StatusDisconnected = ConnectionStatusDisconnected,
-        StatusConnecting = ConnectionStatusConnecting,
-        StatusConnected = ConnectionStatusConnected,
-        StatusUnknown = 0xFFFFFFFF
-    };
-
-    virtual ~Connection(){}
+    virtual ~Connection();
 
     QStringList interfaces() const;
 
     bool hasInterface(const char *);
 
     ContactManager *contactManager() const;
+
+public: // ut
+    void ut_setContactManager(ContactManager* manager);
+    void ut_setInterfaces(const QStringList& interfaces);
 
 private:
     struct Private;

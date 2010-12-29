@@ -40,8 +40,6 @@
 namespace Tp
 {
 
-class Connection;
-
 class ReferencedHandles
 {
 public:
@@ -58,8 +56,6 @@ public:
     ReferencedHandles();
     ReferencedHandles(const ReferencedHandles &other);
     ~ReferencedHandles();
-
-    ConnectionPtr connection() const;
     uint handleType() const;
 
     uint at(int i) const;
@@ -243,8 +239,7 @@ private:
     friend class PendingContacts;
     friend class PendingHandles;
 
-    ReferencedHandles(const ConnectionPtr &connection,
-            uint handleType, const UIntList& handles);
+    ReferencedHandles(uint handleType, const UIntList& handles);
 
     struct Private;
     friend struct Private;

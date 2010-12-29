@@ -49,5 +49,5 @@ void TextChannel::ut_sendMessage(const Tp::Message &message,
 
 TextChannel::~TextChannel()
 {
-
+    delete mPriv;
 }

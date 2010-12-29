@@ -394,6 +394,7 @@ namespace Tp
     typedef SharedPtr<AccountManager> AccountManagerPtr;
     typedef QSharedPointer<Contact> ContactPtr;
     typedef SharedPtr<TextChannel> TextChannelPtr;
+
 };
 
 Q_DECLARE_METATYPE(Tp::SimplePresence)
