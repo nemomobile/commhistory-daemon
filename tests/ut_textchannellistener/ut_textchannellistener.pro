@@ -32,6 +32,10 @@
 #-----------------------------------------------------------------------------
 !include(../tests.pri) : error( "Unable to include test.pri" )
 
+!include( ../stubs/stubs.pri ) : error("Unable to include stubs/stubs.pri")
+INCLUDEPATH = ../stubs/ \
+    $${INCLUDEPATH}
+
 #-----------------------------------------------------------------------------
 # test specific configuration
 #-----------------------------------------------------------------------------

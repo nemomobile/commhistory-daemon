@@ -32,11 +32,6 @@ COMMHISTORYDSRCDIR = ../../src
 DEPENDPATH  += $${INCLUDEPATH}
 PKGCONFIG += meegotouch commhistory
 
-
-!include( ./stubs/stubs.pri ) : error("Unable to include stubs/stubs.pri")
-INCLUDEPATH = ../stubs/ \
-    $${INCLUDEPATH}
-
 !include( ../common-installs-config.pri ) : \
     error( "Unable to include common-installs-config.pri!" )
 # override default path for tests
