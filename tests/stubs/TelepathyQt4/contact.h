@@ -72,6 +72,7 @@ Q_SIGNALS:
 public: // ut
     void ut_setId(const QString& id);
     void ut_setHandle(const ReferencedHandles& handles);
+    void ut_setHandle(uint handle);
     void ut_setPresence(const Presence& presence);
     void ut_emitPresenceChanged();
 

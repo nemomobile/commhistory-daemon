@@ -238,6 +238,7 @@ private:
     // For access to the "prime" constructor
     friend class PendingContacts;
     friend class PendingHandles;
+    friend class Contact;
 
     ReferencedHandles(uint handleType, const UIntList& handles);
 

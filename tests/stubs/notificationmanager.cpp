@@ -13,6 +13,15 @@ NotificationManager::NotificationManager(QObject *parent) :
     QObject(parent)
 {
     m_pContactManager = new QContactManager(QLatin1String("tracker"));
+    m_GroupModel = new CommHistory::GroupModel(this);
+    m_GroupModel->enableContactChanges(false);
+
+    if (!m_GroupModel->getGroups()) {
+        qCritical() << "Failed to request group "
+                    << m_GroupModel->lastError().text();
+        delete m_GroupModel;
+        m_GroupModel = 0;
+    }
 }
 
 NotificationManager* NotificationManager::instance()

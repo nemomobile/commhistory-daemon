@@ -47,6 +47,12 @@ void Contact::ut_setHandle(const ReferencedHandles& handles)
     mPriv->m_referencedHandles = handles;
 }
 
+void Contact::ut_setHandle(uint handle)
+{
+    mPriv->m_referencedHandles = Tp::ReferencedHandles(HandleTypeContact,
+                                                UIntList() << handle);
+}
+
 void Contact::ut_setPresence(const Presence& presence)
 {
     mPriv->m_presence = presence;

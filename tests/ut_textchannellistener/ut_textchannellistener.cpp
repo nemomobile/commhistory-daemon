@@ -34,6 +34,8 @@
 #include "TelepathyQt4/account.h"
 #include "TelepathyQt4/text-channel.h"
 #include "TelepathyQt4/message.h"
+#include "TelepathyQt4/connection.h"
+#include "TelepathyQt4/contact-manager.h"
 
 #include <CommHistory/SingleEventModel>
 
@@ -90,7 +92,6 @@ Ut_TextChannelListener::~Ut_TextChannelListener()
  */
 void Ut_TextChannelListener::initTestCase()
 {
-    //TODO: clean conversations and events
     qRegisterMetaType<Tp::PendingOperation*>("Tp::PendingOperation*");
 }
 
@@ -204,7 +205,13 @@ void Ut_TextChannelListener::testImReceiving()
     //setup account
     Tp::AccountPtr acc(new Tp::Account(IM_ACCOUNT_PATH));
 
-    //setup channel
+    // setup connection
+    Tp::ContactManager cm;
+    Tp::ConnectionPtr conn(new Tp::Connection());
+    conn->ut_setContactManager(&cm);
+    conn->ut_setIsReady(true);
+
+            //setup channel
     Tp::ChannelPtr ch(new Tp::TextChannel(IM_CHANNEL_PATH));
     ch->ut_setIsRequested(false);
     ch->ut_setTargetHandleType(Tp::HandleTypeContact);
@@ -212,7 +219,7 @@ void Ut_TextChannelListener::testImReceiving()
     QVariantMap immProp;
     immProp.insert(TELEPATHY_INTERFACE_CHANNEL ".TargetID", IM_USERNAME);
     ch->ut_setImmutableProperties(immProp);
-
+    ch->ut_setConnection(conn);
     Tp::MethodInvocationContextPtr<> ctx(new Tp::MethodInvocationContext<>()); // TODO: used to check that finished() was called on it
 
     TextChannelListener tcl(acc, ch, ctx);
@@ -222,16 +229,24 @@ void Ut_TextChannelListener::testImReceiving()
     // send received message
     Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
 
-    QDateTime timestamp = QDateTime::currentDateTime();
-    addMsgHeader(msg, 0, "received", timestamp.toTime_t());
+    uint timestamp = QDateTime::currentDateTime().toTime_t();
+    addMsgHeader(msg, 0, "received", timestamp);
     addMsgHeader(msg, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNormal);
     QString token = QUuid::createUuid().toString();
     addMsgHeader(msg, 0, "message-token", token);
 
     addMsgHeader(msg, 1,"content-type", "text/plain");
     addMsgHeader(msg, 1,"content", message);
+    // set sender contact
+    Tp::ContactPtr sender(new Tp::Contact());
+    sender->ut_setHandle(22);
+    sender->ut_setId(IM_USERNAME);
+    msg.ut_setSender(sender);
 
     Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(msg);
+
+    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
+    QVERIFY(waitSignal(eventCommitted, 5000));
 
     // catch group
     CommHistory::Group g = fetchGroup(IM_ACCOUNT_PATH, IM_USERNAME, true);
@@ -246,12 +261,12 @@ void Ut_TextChannelListener::testImReceiving()
     QCOMPARE(e.id(), g.lastEventId());
     QCOMPARE(e.direction(), CommHistory::Event::Inbound);
     QCOMPARE(e.freeText(), message);
-    QCOMPARE(e.startTime(), timestamp);
-    QCOMPARE(e.endTime(), timestamp);
+    QCOMPARE(e.startTime().toTime_t(), timestamp);
+    QCOMPARE(e.endTime().toTime_t(), timestamp);
     QCOMPARE(e.messageToken(), token);
 
     QCOMPARE(nm->postedNotifications.size(), 1);
-    QCOMPARE(nm->postedNotifications.first().event.id(), e.id());
+    QCOMPARE(nm->postedNotifications.first().event.freeText(), message);
     QCOMPARE(nm->postedNotifications.first().channelTargetId, IM_USERNAME);
     QCOMPARE(nm->postedNotifications.first().chatType, CommHistory::Group::ChatTypeP2P);
 }
