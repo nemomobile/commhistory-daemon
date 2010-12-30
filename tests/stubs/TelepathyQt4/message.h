@@ -21,10 +21,6 @@
 #ifndef _TelepathyQt4_message_h_HEADER_GUARD_
 #define _TelepathyQt4_message_h_HEADER_GUARD_
 
-#ifndef IN_TELEPATHY_QT4_HEADER
-#error IN_TELEPATHY_QT4_HEADER
-#endif
-
 #include <QSharedDataPointer>
 
 #include "Contact"
@@ -75,6 +71,8 @@ public:
     int size() const;
     MessagePart part(uint index) const;
     MessagePartList parts() const;
+
+    MessagePart& ut_part(uint index);
 
 private:
     friend class TextChannel;

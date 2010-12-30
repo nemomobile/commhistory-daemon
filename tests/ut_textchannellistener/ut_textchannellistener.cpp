@@ -28,10 +28,12 @@
 #include <QTest>
 #include <QTime>
 #include <QSignalSpy>
+#include <QUuid>
 
 #include "TelepathyQt4/types.h"
 #include "TelepathyQt4/account.h"
-#include "TelepathyQt4/channel.h"
+#include "TelepathyQt4/text-channel.h"
+#include "TelepathyQt4/message.h"
 
 #include <CommHistory/SingleEventModel>
 
@@ -47,6 +49,7 @@
 #define SMS_NUMBER QLatin1String("+358987654321")
 #define IM_CHANNEL_PATH QLatin1String("/org/freedesktop/Telepathy/Account/gabble/jabber/dut_40localhost0")
 #define SMS_CHANNEL_PATH QLatin1String("/org/freedesktop/Telepathy/Connection/ring/tel/ring/text0")
+#define IM_TARGET_HANDLE 1
 
 using namespace RTComLogger;
 
@@ -59,6 +62,18 @@ namespace {
             QCoreApplication::processEvents();
 
         return !spy.isEmpty();
+    }
+
+    template<typename T>
+    void addMsgHeader(Tp::Message &msg, int index, const char *key, T value) {
+        msg.ut_part(index).insert(QLatin1String(key),
+                                  QDBusVariant(value));
+    }
+
+    template<const char*>
+    void addMsgHeader(Tp::Message &msg, int index, const char *key, const char* value) {
+        msg.ut_part(index).insert(QLatin1String(key),
+                                  QDBusVariant(QLatin1String(value)));
     }
 }
 
@@ -185,16 +200,36 @@ void Ut_TextChannelListener::testImReceiving()
     QVERIFY(nm);
     nm->postedNotifications.clear();
 
-
+    //setup account
     Tp::Account acc(IM_ACCOUNT_PATH);
-    Tp::Channel ch(IM_CHANNEL_PATH);
+
+    //setup channel
+    Tp::TextChannel ch(IM_CHANNEL_PATH);
     ch.ut_setIsRequested(false);
-    //ch.immutableProperties(); // add targetID or persitent
-    //ch. add pending received message;
-    Tp::MethodInvocationContext<> ctx; // used to check that finished() was called on it
+    ch.ut_setTargetHandleType(Tp::HandleTypeContact);
+    ch.ut_setTargetHandle(IM_TARGET_HANDLE);
+    QVariantMap immProp;
+    immProp.insert(TELEPATHY_INTERFACE_CHANNEL ".TargetID", IM_USERNAME);
+    ch.ut_setImmutableProperties(immProp);
+
+    Tp::MethodInvocationContext<> ctx; // TODO: used to check that finished() was called on it
     TextChannelListener tcl(Tp::AccountPtr(&acc),
                             Tp::ChannelPtr(&ch),
                             Tp::MethodInvocationContextPtr<>(&ctx));
+
+    // send received message
+    Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
+
+    QDateTime timestamp = QDateTime::currentDateTime();
+    addMsgHeader(msg, 0, "received", timestamp.toTime_t());
+    addMsgHeader(msg, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNormal);
+    QString token = QUuid::createUuid().toString();
+    addMsgHeader(msg, 0, "message-token", token);
+
+    addMsgHeader(msg, 1,"content-type", "text/plain");
+    addMsgHeader(msg, 1,"content", message);
+
+    ch.ut_receiveMessage(msg);
 
     // catch group
     CommHistory::Group g = fetchGroup(IM_ACCOUNT_PATH, IM_USERNAME, true);
@@ -209,6 +244,9 @@ void Ut_TextChannelListener::testImReceiving()
     QCOMPARE(e.id(), g.lastEventId());
     QCOMPARE(e.direction(), CommHistory::Event::Inbound);
     QCOMPARE(e.freeText(), message);
+    QCOMPARE(e.startTime(), timestamp);
+    QCOMPARE(e.endTime(), timestamp);
+    QCOMPARE(e.messageToken(), token);
 
     QCOMPARE(nm->postedNotifications.size(), 1);
     QCOMPARE(nm->postedNotifications.first().event.id(), e.id());

@@ -37,6 +37,7 @@ void TextChannel::ut_setMessageQueue(const QList<ReceivedMessage>& receivedMessa
 
 void TextChannel::ut_receiveMessage(const Tp::ReceivedMessage &message)
 {
+    mPriv->m_messageQueue.append(message);
     emit messageReceived(message);
 }
 

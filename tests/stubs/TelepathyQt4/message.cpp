@@ -311,6 +311,11 @@ MessagePartList Message::parts() const
     return mPriv->parts;
 }
 
+MessagePart& Message::ut_part(uint index)
+{
+    return mPriv->parts[index];
+}
+
 /**
  * \class ReceivedMessage
  * \ingroup clientchannel
