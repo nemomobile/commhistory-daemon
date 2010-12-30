@@ -66,6 +66,14 @@ namespace {
         return !spy.isEmpty();
     }
 
+    void waitInvocationContext(Tp::MethodInvocationContextPtr<> &ctx, int msec)
+    {
+        QTime timer;
+        timer.start();
+        while (timer.elapsed() < msec && !ctx->isFinished())
+            QCoreApplication::processEvents();
+    }
+
     template<typename T>
     void addMsgHeader(Tp::Message &msg, int index, const char *key, T value) {
         msg.ut_part(index).insert(QLatin1String(key),
@@ -167,17 +175,37 @@ void Ut_TextChannelListener::testImSending()
     QVERIFY(nm);
     nm->postedNotifications.clear();
 
-    Tp::Account acc(IM_ACCOUNT_PATH);
-    Tp::Channel ch(IM_CHANNEL_PATH);
-    ch.ut_setIsRequested(true);
-    //ch.immutableProperties(); // add targetID or persitent
-    //ch. add pending sent message;
-    Tp::MethodInvocationContext<> ctx; // used to check that finished() was called on it
-    TextChannelListener tcl(Tp::AccountPtr(&acc),
-                            Tp::ChannelPtr(&ch),
-                            Tp::MethodInvocationContextPtr<>(&ctx));
+    Tp::AccountPtr acc(new Tp::Account(IM_ACCOUNT_PATH));
+    // setup connection
+    Tp::ConnectionPtr conn(new Tp::Connection());
+    conn->ut_setIsReady(true);
 
-    //tcl wait for conversation event added signal and than commited signal
+    //setup channel
+    Tp::ChannelPtr ch(new Tp::TextChannel(IM_CHANNEL_PATH));
+    ch->ut_setIsRequested(true);
+    ch->ut_setTargetHandleType(Tp::HandleTypeContact);
+    ch->ut_setTargetHandle(IM_TARGET_HANDLE);
+    QVariantMap immProp;
+    immProp.insert(TELEPATHY_INTERFACE_CHANNEL ".TargetID", IM_USERNAME);
+    ch->ut_setImmutableProperties(immProp);
+    ch->ut_setConnection(conn);
+
+    Tp::MethodInvocationContextPtr<> ctx(new Tp::MethodInvocationContext<>());
+
+    TextChannelListener tcl(acc, ch, ctx);
+    waitInvocationContext(ctx, 5000);
+
+    QVERIFY(ctx->isFinished());
+    QVERIFY(!ctx->isError());
+
+    // send sent message
+    uint timestamp = QDateTime::currentDateTime().toTime_t();
+    Tp::Message msg(timestamp, (uint)Tp::ChannelTextMessageTypeNormal, message);
+    QString token = QUuid::createUuid().toString();
+    Tp::TextChannelPtr::dynamicCast(ch)->ut_sendMessage(msg, Tp::MessageSendingFlagReportDelivery, token);
+
+    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
+    QVERIFY(waitSignal(eventCommitted, 5000));
 
     CommHistory::Group g = fetchGroup(IM_ACCOUNT_PATH, IM_USERNAME, true);
 
@@ -190,6 +218,9 @@ void Ut_TextChannelListener::testImSending()
     CommHistory::Event e = fetchEvent(g.lastEventId());
     QCOMPARE(e.direction(), CommHistory::Event::Outbound);
     QCOMPARE(e.freeText(), message);
+    QCOMPARE(e.startTime().toTime_t(), timestamp);
+    QCOMPARE(e.endTime().toTime_t(), timestamp);
+    QCOMPARE(e.messageToken(), token);
 
     QCOMPARE(nm->postedNotifications.size(), 0);
 }
@@ -206,12 +237,10 @@ void Ut_TextChannelListener::testImReceiving()
     Tp::AccountPtr acc(new Tp::Account(IM_ACCOUNT_PATH));
 
     // setup connection
-    Tp::ContactManager cm;
     Tp::ConnectionPtr conn(new Tp::Connection());
-    conn->ut_setContactManager(&cm);
     conn->ut_setIsReady(true);
 
-            //setup channel
+    //setup channel
     Tp::ChannelPtr ch(new Tp::TextChannel(IM_CHANNEL_PATH));
     ch->ut_setIsRequested(false);
     ch->ut_setTargetHandleType(Tp::HandleTypeContact);
@@ -220,11 +249,11 @@ void Ut_TextChannelListener::testImReceiving()
     immProp.insert(TELEPATHY_INTERFACE_CHANNEL ".TargetID", IM_USERNAME);
     ch->ut_setImmutableProperties(immProp);
     ch->ut_setConnection(conn);
-    Tp::MethodInvocationContextPtr<> ctx(new Tp::MethodInvocationContext<>()); // TODO: used to check that finished() was called on it
+
+    Tp::MethodInvocationContextPtr<> ctx(new Tp::MethodInvocationContext<>());
 
     TextChannelListener tcl(acc, ch, ctx);
-    QSignalSpy readySpy(ch->ut_pendingReady(), SIGNAL(finished(Tp::PendingOperation*)));
-    QVERIFY(waitSignal(readySpy, 5000));
+    waitInvocationContext(ctx, 5000);
 
     QVERIFY(ctx->isFinished());
     QVERIFY(!ctx->isError());
@@ -251,7 +280,6 @@ void Ut_TextChannelListener::testImReceiving()
     QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
     QVERIFY(waitSignal(eventCommitted, 5000));
 
-    // catch group
     CommHistory::Group g = fetchGroup(IM_ACCOUNT_PATH, IM_USERNAME, true);
 
     QVERIFY(g.isValid());

@@ -1,4 +1,5 @@
 #include "connection.h"
+#include "contact-manager.h"
 
 namespace Tp
 {
@@ -16,10 +17,12 @@ Connection::Connection(const QString &objectPath, QObject *parent) :
         StatefulDBusProxy(objectPath, parent),
         mPriv(new Private)
 {
+    mPriv->m_manager = new ContactManager();
 }
 
 Connection::~Connection()
 {
+    delete mPriv->m_manager;
     delete mPriv;
 }
 
@@ -36,11 +39,6 @@ bool Connection::hasInterface(const char * interface)
 ContactManager* Connection::contactManager() const
 {
     return mPriv->m_manager;
-}
-
-void Connection::ut_setContactManager(ContactManager* manager)
-{
-    mPriv->m_manager = manager;
 }
 
 void Connection::ut_setInterfaces(const QStringList& interfaces)

@@ -68,7 +68,6 @@ public:
     ContactManager *contactManager() const;
 
 public: // ut
-    void ut_setContactManager(ContactManager* manager);
     void ut_setInterfaces(const QStringList& interfaces);
 
 private:
