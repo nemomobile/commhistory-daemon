@@ -12,19 +12,19 @@ bool Tp::PendingOperation::isError()
 {
     return false;
 //    return true;
-};
+}
 
 QString Tp::PendingOperation::errorName() const
 {
 //    return QString();
     return "#### FakeError";
-};
+}
 
 QString Tp::PendingOperation::errorMessage() const
 {
 //    return QString();
     return "#### FakeError-Message";
-};
+}
 
 void Tp::PendingOperation::fakeAsyncFinish()
 {

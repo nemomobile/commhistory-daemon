@@ -19,10 +19,9 @@ namespace Tp
 
       void finished( Tp::PendingOperation* pOp );
 
-    private slots:
-
+    public slots:
         void fakeAsyncFinish();
     };
-};
+}
 
 #endif

@@ -30,7 +30,6 @@
 namespace Tp
 {
 
-class DBusProxy;
 class PendingReady;
 
 class ReadyObject
@@ -38,26 +37,26 @@ class ReadyObject
     Q_DISABLE_COPY(ReadyObject)
 
 public:
-    ReadyObject(){}
+    ReadyObject();
     virtual ~ReadyObject(){}
 
-    virtual bool isReady(const Features &features = Features()) const
+    bool isReady(const Features &features = Features()) const
     {
         Q_UNUSED(features)
         return m_isReady;
     }
 
-    virtual PendingReady *becomeReady(const Features &requestedFeatures = Features())
-    {
-        Q_UNUSED(requestedFeatures)
-        return new PendingReady();
-    }
+    PendingReady *becomeReady(const Features &requestedFeatures = Features());
 
 public: // ut
     void ut_setIsReady(bool isReady) {m_isReady = isReady;}
+    void ut_setPendingDelay( const quint32 delay );
+    PendingReady* ut_pendingReady();
 
 private:
     bool m_isReady;
+    quint32 m_pendingDelay;
+    PendingReady *m_pPendingReady;
 };
 
 } // Tp

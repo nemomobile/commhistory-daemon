@@ -91,6 +91,7 @@ Ut_TextChannelListener::~Ut_TextChannelListener()
 void Ut_TextChannelListener::initTestCase()
 {
     //TODO: clean conversations and events
+    qRegisterMetaType<Tp::PendingOperation*>("Tp::PendingOperation*");
 }
 
 /*!
@@ -201,21 +202,22 @@ void Ut_TextChannelListener::testImReceiving()
     nm->postedNotifications.clear();
 
     //setup account
-    Tp::Account acc(IM_ACCOUNT_PATH);
+    Tp::AccountPtr acc(new Tp::Account(IM_ACCOUNT_PATH));
 
     //setup channel
-    Tp::TextChannel ch(IM_CHANNEL_PATH);
-    ch.ut_setIsRequested(false);
-    ch.ut_setTargetHandleType(Tp::HandleTypeContact);
-    ch.ut_setTargetHandle(IM_TARGET_HANDLE);
+    Tp::ChannelPtr ch(new Tp::TextChannel(IM_CHANNEL_PATH));
+    ch->ut_setIsRequested(false);
+    ch->ut_setTargetHandleType(Tp::HandleTypeContact);
+    ch->ut_setTargetHandle(IM_TARGET_HANDLE);
     QVariantMap immProp;
     immProp.insert(TELEPATHY_INTERFACE_CHANNEL ".TargetID", IM_USERNAME);
-    ch.ut_setImmutableProperties(immProp);
+    ch->ut_setImmutableProperties(immProp);
 
-    Tp::MethodInvocationContext<> ctx; // TODO: used to check that finished() was called on it
-    TextChannelListener tcl(Tp::AccountPtr(&acc),
-                            Tp::ChannelPtr(&ch),
-                            Tp::MethodInvocationContextPtr<>(&ctx));
+    Tp::MethodInvocationContextPtr<> ctx(new Tp::MethodInvocationContext<>()); // TODO: used to check that finished() was called on it
+
+    TextChannelListener tcl(acc, ch, ctx);
+    QSignalSpy readySpy(ch->ut_pendingReady(), SIGNAL(finished(Tp::PendingOperation*)));
+    QVERIFY(waitSignal(readySpy, 5000));
 
     // send received message
     Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
@@ -229,7 +231,7 @@ void Ut_TextChannelListener::testImReceiving()
     addMsgHeader(msg, 1,"content-type", "text/plain");
     addMsgHeader(msg, 1,"content", message);
 
-    ch.ut_receiveMessage(msg);
+    Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(msg);
 
     // catch group
     CommHistory::Group g = fetchGroup(IM_ACCOUNT_PATH, IM_USERNAME, true);
