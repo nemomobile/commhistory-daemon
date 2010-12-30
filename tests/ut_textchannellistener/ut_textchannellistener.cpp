@@ -226,6 +226,9 @@ void Ut_TextChannelListener::testImReceiving()
     QSignalSpy readySpy(ch->ut_pendingReady(), SIGNAL(finished(Tp::PendingOperation*)));
     QVERIFY(waitSignal(readySpy, 5000));
 
+    QVERIFY(ctx->isFinished());
+    QVERIFY(!ctx->isError());
+
     // send received message
     Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
 
