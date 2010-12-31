@@ -46,10 +46,10 @@ private Q_SLOTS:
 
 // Test functions
 private Q_SLOTS:
-    void testImSending();
-    void testImReceiving();
-    void testSmsSending();
-    void testSmsReceiving();
+    void imSending();
+    void receiving_data();
+    void receiving();
+    void smsSending();
 
 private:
     CommHistory::Group fetchGroup(const QString &localUid, const QString &remoteUid, bool wait);
