@@ -333,8 +333,18 @@ void Ut_TextChannelListener::receiving()
     QCOMPARE(nm->postedNotifications.first().chatType, CommHistory::Group::ChatTypeP2P);
 }
 
+void Ut_TextChannelListener::smsSending_data()
+{
+    QTest::addColumn<bool>("finalStatus");
+
+    QTest::newRow("Delivered") << true;
+    QTest::newRow("Failed") << true;
+}
+
 void Ut_TextChannelListener::smsSending()
 {
+    QFETCH(bool, finalStatus);
+
     QString message = QString(SENT_MESSAGE) + QString(" : ") + QTime::currentTime().toString(Qt::ISODate);
 
     NotificationManager *nm = NotificationManager::instance();
@@ -381,6 +391,8 @@ void Ut_TextChannelListener::smsSending()
     QCOMPARE(g.remoteUids().first(), SMS_NUMBER);
     QCOMPARE(g.lastMessageText(), message);
     QCOMPARE(g.lastEventType(), CommHistory::Event::SMSEvent);
+    QVERIFY(g.lastEventStatus() == CommHistory::Event::SendingStatus
+            || g.lastEventStatus() == CommHistory::Event::UnknownStatus);
 
     CommHistory::Event e = fetchEvent(g.lastEventId());
     QCOMPARE(e.direction(), CommHistory::Event::Outbound);
@@ -388,9 +400,65 @@ void Ut_TextChannelListener::smsSending()
     QCOMPARE(e.startTime().toTime_t(), timestamp);
     QCOMPARE(e.endTime().toTime_t(), timestamp);
     QCOMPARE(e.messageToken(), token);
-    QCOMPARE(e.status(), CommHistory::Event::SendingStatus);
+    QVERIFY(e.status() == CommHistory::Event::SendingStatus
+            || e.status() == CommHistory::Event::UnknownStatus);
 
     QCOMPARE(nm->postedNotifications.size(), 0);
+
+    // test delivery report handling
+    // accepted
+    Tp::ReceivedMessage accepted(Tp::MessagePartList() << Tp::MessagePart());
+
+    uint timestampAccepted = QDateTime::currentDateTime().toTime_t();
+    addMsgHeader(accepted, 0, "received", timestampAccepted);
+    addMsgHeader(accepted, 0, "message-sent", timestampAccepted);
+    addMsgHeader(accepted, 0, "message-type", (uint)Tp::ChannelTextMessageTypeDeliveryReport);
+    addMsgHeader(accepted, 0, "delivery-token", token);
+    addMsgHeader(accepted, 0, "delivery-status", (uint)Tp::DeliveryStatusAccepted);
+
+    Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(accepted);
+
+    eventCommitted.clear();
+    QVERIFY(waitSignal(eventCommitted, 5000));
+
+    g = fetchGroup(SMS_ACCOUNT_PATH, SMS_NUMBER, true);
+
+    QVERIFY(g.isValid());
+    QCOMPARE(g.lastMessageText(), message);
+    QCOMPARE(g.lastEventType(), CommHistory::Event::SMSEvent);
+    QCOMPARE(g.lastEventStatus(), CommHistory::Event::SentStatus);
+
+    // delivered
+    Tp::ReceivedMessage deivered(Tp::MessagePartList() << Tp::MessagePart());
+
+    uint timestampDelivered = QDateTime::currentDateTime().toTime_t();
+    addMsgHeader(deivered, 0, "received", timestampDelivered);
+    addMsgHeader(deivered, 0, "message-sent", timestampDelivered);
+    addMsgHeader(deivered, 0, "message-type", (uint)Tp::ChannelTextMessageTypeDeliveryReport);
+    addMsgHeader(deivered, 0, "delivery-token", token);
+
+    if (finalStatus)
+        addMsgHeader(deivered, 0, "delivery-status", (uint)Tp::DeliveryStatusDelivered);
+    else
+        addMsgHeader(deivered, 0, "delivery-status", (uint)Tp::DeliveryStatusPermanentlyFailed);
+
+    Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(deivered);
+
+    eventCommitted.clear();
+    QVERIFY(waitSignal(eventCommitted, 5000));
+
+    g = fetchGroup(SMS_ACCOUNT_PATH, SMS_NUMBER, true);
+
+    QVERIFY(g.isValid());
+    QCOMPARE(g.lastMessageText(), message);
+    QCOMPARE(g.lastEventType(), CommHistory::Event::SMSEvent);
+    if (finalStatus)
+        QCOMPARE(g.lastEventStatus(), CommHistory::Event::DeliveredStatus);
+    else
+        QCOMPARE(g.lastEventStatus(), CommHistory::Event::FailedStatus);
+
+    e = fetchEvent(g.lastEventId());
+    QCOMPARE(e.endTime().toTime_t(), timestampDelivered);
 }
 
 QTEST_MAIN(Ut_TextChannelListener)

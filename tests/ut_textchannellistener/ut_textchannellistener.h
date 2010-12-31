@@ -49,6 +49,7 @@ private Q_SLOTS:
     void imSending();
     void receiving_data();
     void receiving();
+    void smsSending_data();
     void smsSending();
 
 private:
