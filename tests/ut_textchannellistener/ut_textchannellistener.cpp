@@ -415,6 +415,8 @@ void Ut_TextChannelListener::smsSending()
     addMsgHeader(accepted, 0, "message-type", (uint)Tp::ChannelTextMessageTypeDeliveryReport);
     addMsgHeader(accepted, 0, "delivery-token", token);
     addMsgHeader(accepted, 0, "delivery-status", (uint)Tp::DeliveryStatusAccepted);
+    QString acceptedToken = QUuid::createUuid().toString();
+    addMsgHeader(accepted, 0, "message-token", acceptedToken);
 
     Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(accepted);
 
@@ -429,20 +431,23 @@ void Ut_TextChannelListener::smsSending()
     QCOMPARE(g.lastEventStatus(), CommHistory::Event::SentStatus);
 
     // delivered
-    Tp::ReceivedMessage deivered(Tp::MessagePartList() << Tp::MessagePart());
+    Tp::ReceivedMessage delivered(Tp::MessagePartList() << Tp::MessagePart());
 
     uint timestampDelivered = QDateTime::currentDateTime().toTime_t();
-    addMsgHeader(deivered, 0, "received", timestampDelivered);
-    addMsgHeader(deivered, 0, "message-sent", timestampDelivered);
-    addMsgHeader(deivered, 0, "message-type", (uint)Tp::ChannelTextMessageTypeDeliveryReport);
-    addMsgHeader(deivered, 0, "delivery-token", token);
+    addMsgHeader(delivered, 0, "received", timestampDelivered);
+    addMsgHeader(delivered, 0, "message-sent", timestampDelivered);
+    addMsgHeader(delivered, 0, "message-type", (uint)Tp::ChannelTextMessageTypeDeliveryReport);
+    addMsgHeader(delivered, 0, "delivery-token", token);
+    QString deliveredToken = QUuid::createUuid().toString();
+    addMsgHeader(delivered, 0, "message-token", deliveredToken);
+
 
     if (finalStatus)
-        addMsgHeader(deivered, 0, "delivery-status", (uint)Tp::DeliveryStatusDelivered);
+        addMsgHeader(delivered, 0, "delivery-status", (uint)Tp::DeliveryStatusDelivered);
     else
-        addMsgHeader(deivered, 0, "delivery-status", (uint)Tp::DeliveryStatusPermanentlyFailed);
+        addMsgHeader(delivered, 0, "delivery-status", (uint)Tp::DeliveryStatusPermanentlyFailed);
 
-    Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(deivered);
+    Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(delivered);
 
     eventCommitted.clear();
     QVERIFY(waitSignal(eventCommitted, 5000));
