@@ -38,20 +38,6 @@ cat > ${TARGET_FILE} << EOF
     <suite name="${TEST_PKG_NAME}">
 EOF
 
-# Adding steps to run the rtcom pre-setup script and the rtcom test environment setup script
-cat >> ${TARGET_FILE} << EOF
-<set description="Commhistory daemon set env" name="setup-hw">
-     <pre_steps>
-           <step>sh /usr/bin/rtc-pre-test-setup.sh -hw</step>
-           <step>sh /usr/bin/rtc-test-env.sh -hw</step>
-     </pre_steps>
-     <case description="setup-hw-env" name="setup-hw-env">
-           <step expected_result="0">echo "pre-setup completed on device" </step>
-     </case>
-     <environments><scratchbox>false</scratchbox><hardware>true</hardware></environments>
-</set>
-EOF
-
 echo "Copying test_set.xml files from the following test folders $TEST_FOLDERS for target $TARGET_FILE"
 echo $TEST_FOLDERS
 

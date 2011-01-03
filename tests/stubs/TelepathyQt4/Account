@@ -1,0 +1,7 @@
+#ifndef _TelepathyQt4_Client_Account_HEADER_GUARD_
+#define _TelepathyQt4_Client_Account_HEADER_GUARD_
+
+#include "account.h"
+
+#endif
+// vim:set ft=cpp:

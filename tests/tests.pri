@@ -30,7 +30,7 @@ MOBILITY += contacts versit
 CONFIG += mobility
 COMMHISTORYDSRCDIR = ../../src
 DEPENDPATH  += $${INCLUDEPATH}
-PKGCONFIG += meegotouch TelepathyQt4 commhistory
+PKGCONFIG += meegotouch commhistory
 
 !include( ../common-installs-config.pri ) : \
     error( "Unable to include common-installs-config.pri!" )

@@ -27,30 +27,67 @@
 #include <QDebug>
 #include <QTest>
 #include <QTime>
-#include <QProcess>
+#include <QSignalSpy>
+#include <QUuid>
 
-#include <QDBusConnection>
-#include <QDBusMessage>
+#include "TelepathyQt4/types.h"
+#include "TelepathyQt4/account.h"
+#include "TelepathyQt4/text-channel.h"
+#include "TelepathyQt4/message.h"
+#include "TelepathyQt4/connection.h"
+#include "TelepathyQt4/contact-manager.h"
 
-#include <TelepathyQt4/Types>
+#include <CommHistory/SingleEventModel>
+
+#include "textchannellistener.h"
+#include "notificationmanager.h"
 
 // constants
-#define SERVER_DOMAIN "localhost"
-#define TD_USERNAME "td"
-#define DUT_USERNAME "dut"
-#define DUT "dut@localhost"
-#define TD "td@localhost"
-#define SENT_MESSAGE "Hello, how is life mon?"
-#define RECEIVED_MESSAGE "Good, good"
-#define DUT_ACCOUNT_PATH "/org/freedesktop/Telepathy/Account/gabble/jabber/dut_40localhost0"
-#define PYTHON "/usr/bin/python"
-#define SENDMESSAGE "/usr/share/commhistory-daemon-tests/sendmessage.py"
-
-#define UNREAD_VOICEMAIL 5
+#define IM_USERNAME QLatin1String("dut@localhost")
+#define SENT_MESSAGE QLatin1String("Hello, how is life mon?")
+#define RECEIVED_MESSAGE QLatin1String("Good, good")
+#define IM_ACCOUNT_PATH QLatin1String("/org/freedesktop/Telepathy/Account/gabble/jabber/dut_40localhost0")
+#define SMS_ACCOUNT_PATH QLatin1String("/org/freedesktop/Telepathy/Account/ring/tel/ring")
+#define SMS_NUMBER QLatin1String("+358987654321")
+#define IM_CHANNEL_PATH QLatin1String("/org/freedesktop/Telepathy/Account/gabble/jabber/dut_40localhost0")
+#define SMS_CHANNEL_PATH QLatin1String("/org/freedesktop/Telepathy/Connection/ring/tel/ring/text0")
+#define TARGET_HANDLE 1
 
 using namespace RTComLogger;
 
-Ut_TextChannelListener::Ut_TextChannelListener() : conversationUid(-1)
+namespace {
+    bool waitSignal(QSignalSpy &spy, int msec)
+    {
+        QTime timer;
+        timer.start();
+        while (timer.elapsed() < msec && spy.isEmpty())
+            QCoreApplication::processEvents();
+
+        return !spy.isEmpty();
+    }
+
+    void waitInvocationContext(Tp::MethodInvocationContextPtr<> &ctx, int msec)
+    {
+        QTime timer;
+        timer.start();
+        while (timer.elapsed() < msec && !ctx->isFinished())
+            QCoreApplication::processEvents();
+    }
+
+    template<typename T>
+    void addMsgHeader(Tp::Message &msg, int index, const char *key, T value) {
+        msg.ut_part(index).insert(QLatin1String(key),
+                                  QDBusVariant(value));
+    }
+
+    template<const char*>
+    void addMsgHeader(Tp::Message &msg, int index, const char *key, const char* value) {
+        msg.ut_part(index).insert(QLatin1String(key),
+                                  QDBusVariant(QLatin1String(value)));
+    }
+}
+
+Ut_TextChannelListener::Ut_TextChannelListener()
 {
 }
 
@@ -58,64 +95,12 @@ Ut_TextChannelListener::~Ut_TextChannelListener()
 {
 }
 
-int Ut_TextChannelListener::startEventLoop()
-{
-    if(eventLoop.isRunning()) {
-        return 1;
-    } else {
-        return eventLoop.exec();
-    }
-}
-
-void Ut_TextChannelListener::stopEventLoop(int returnCode)
-{
-    if(eventLoop.isRunning())
-        eventLoop.exit(returnCode);
-}
-
 /*!
  * This function will be called before the first testfunction is executed.
  */
 void Ut_TextChannelListener::initTestCase()
 {
-    model = new CommHistory::ConversationModel();
-    groupModel = new CommHistory::GroupModel();
-
-    model->setQueryMode(CommHistory::EventModel::SyncQuery);
-    groupModel->setQueryMode(CommHistory::EventModel::SyncQuery);
-
-    if (!groupModel->getGroups(DUT_ACCOUNT_PATH, TD)) {
-        connect(groupModel, SIGNAL(rowsInserted(const QModelIndex &, int, int)),
-                this, SLOT(slotOnGroupInserted(const QModelIndex &, int, int)));
-    } else {
-        conversationUid = groupModel->group(groupModel->index(0, 0)).id();
-        model->getEvents(conversationUid);
-    }
-}
-
-void Ut_TextChannelListener::slotOnGroupInserted(const QModelIndex &index, int start, int end)
-{
-    Q_UNUSED(index);
-    Q_UNUSED(end);
-
-    CommHistory::Group group = groupModel->group(groupModel->index(start, 0));
-    if (group.localUid() == DUT_ACCOUNT_PATH &&
-        group.remoteUids().first() == TD) {
-        conversationUid = group.id();
-        model->getEvents(conversationUid);
-        disconnect(groupModel, SIGNAL(rowsInserted(const QModelIndex &, int, int)),
-                   this, SLOT(slotOnGroupInserted(const QModelIndex &, int, int)));
-        stopEventLoop(0);
-    } else {
-        stopEventLoop(1);
-    }
-}
-
-
-void Ut_TextChannelListener::slotRowsInserted(const QModelIndex &, int, int)
-{
-    qDebug() << "slotRowsInserted";
-    stopEventLoop(0);
+    qRegisterMetaType<Tp::PendingOperation*>("Tp::PendingOperation*");
 }
 
 /*!
@@ -123,8 +108,6 @@ void Ut_TextChannelListener::slotRowsInserted(const QModelIndex &, int, int)
  */
 void Ut_TextChannelListener::cleanupTestCase()
 {
-    delete model;
-    delete groupModel;
 }
 
 /*!
@@ -141,81 +124,341 @@ void Ut_TextChannelListener::cleanup()
 {
 }
 
-void Ut_TextChannelListener::sendMessage(const QString& message)
+CommHistory::Group Ut_TextChannelListener::fetchGroup(const QString &localUid,
+                                                      const QString &remoteUid,
+                                                      bool wait)
 {
-    QDBusConnection dbus_conn = QDBusConnection::sessionBus();
-    QDBusMessage request = QDBusMessage::createMethodCall("com.nokia.Messaging",
-                                                          "/",
-                                                          "com.nokia.MessagingIf",
-                                                          "sendMessage");
-    request << DUT_ACCOUNT_PATH
-            << TD
-            << message;
-    QDBusMessage reply = dbus_conn.call(request);
-    QVERIFY(reply.type() == QDBusMessage::ReplyMessage);
-}
+    CommHistory::GroupModel model;
 
-void Ut_TextChannelListener::receiveMessage(const QString& message)
-{
-    // send using python script
-    QString program = QString(PYTHON).append(" ").append(SENDMESSAGE).append(" ");
-    program += QString(SERVER_DOMAIN).append(" ") +
-               QString(TD_USERNAME).append(" ") +
-               QString(DUT_USERNAME).append(" ") +
-               QString("\"").append(message).append("\"");
-    qDebug() << program;
+    QSignalSpy modelReady(&model, SIGNAL(modelReady()));
+    model.getGroups(localUid, remoteUid);
 
-    QVERIFY(QProcess::startDetached(program));
-}
+    if (!waitSignal(modelReady, 5000))
+        goto end;
 
-bool Ut_TextChannelListener::hasMessage(const QString& message)
-{
-    const int count = model->rowCount();
-    for(int i = 0; i < count; i++) {
-        QModelIndex index = model->index(i,0);
-        if( index.isValid() ) {
-            CommHistory::Event event = model->event(index);
-            if( event.freeText() == message ) {
-                return true;
-            }
-        }
+    if (!model.rowCount() && wait) {
+        QSignalSpy rowInsert(&model, SIGNAL(rowsInserted(const QModelIndex &, int, int)));
+        if (!waitSignal(rowInsert, 5000))
+            goto end;
     }
-    return false;
+
+    if (model.rowCount() == 1)
+        return model.group(model.index(0, 0));
+
+end:
+    qWarning() << Q_FUNC_INFO << "Failed to fetch group" << localUid << remoteUid;
+    return CommHistory::Group();
 }
 
-void Ut_TextChannelListener::verifyMessage(const QString& message)
+CommHistory::Event Ut_TextChannelListener::fetchEvent(int eventId)
 {
-    // no messages were sent between td and dut
-    if(conversationUid == (-1)) {
-        // wait for group to be added
-        QVERIFY(startEventLoop() == 0);
-        // check that that message is the same that was sent
-        QVERIFY(hasMessage(message));
-    } else {
-        // connect to rows added
-        connect(model, SIGNAL(rowsInserted(const QModelIndex &, int, int)),
-                this, SLOT(slotRowsInserted(const QModelIndex &, int, int)));
-        // wait
-        QVERIFY(startEventLoop() == 0);
-        // check that added row is same message
-        QVERIFY(hasMessage(message));
-        disconnect(model, SIGNAL(rowsInserted(const QModelIndex &, int, int)),
-        this, SLOT(slotRowsInserted(const QModelIndex &, int, int)));
-    }
+    CommHistory::SingleEventModel model;
+    QSignalSpy modelReady(&model, SIGNAL(modelReady()));
+
+    model.getEventByUri(CommHistory::Event::idToUrl(eventId));
+    if(!waitSignal(modelReady, 5000))
+        goto end;
+
+    if(model.rowCount())
+        return model.event(model.index(0, 0));
+
+end:
+    qWarning() << Q_FUNC_INFO << "Failed to fetch event" << eventId;
+    return CommHistory::Event();
 }
 
-void Ut_TextChannelListener::testImSending()
+void Ut_TextChannelListener::imSending()
 {
     QString message = QString(SENT_MESSAGE) + QString(" : ") + QTime::currentTime().toString(Qt::ISODate);
-    sendMessage(message);
-    verifyMessage(message);
+
+    NotificationManager *nm = NotificationManager::instance();
+    QVERIFY(nm);
+    nm->postedNotifications.clear();
+
+    Tp::AccountPtr acc(new Tp::Account(IM_ACCOUNT_PATH));
+    // setup connection
+    Tp::ConnectionPtr conn(new Tp::Connection());
+    conn->ut_setIsReady(true);
+
+    //setup channel
+    Tp::ChannelPtr ch(new Tp::TextChannel(IM_CHANNEL_PATH));
+    ch->ut_setIsRequested(true);
+    ch->ut_setTargetHandleType(Tp::HandleTypeContact);
+    ch->ut_setTargetHandle(TARGET_HANDLE);
+    QVariantMap immProp;
+    immProp.insert(TELEPATHY_INTERFACE_CHANNEL ".TargetID", IM_USERNAME);
+    ch->ut_setImmutableProperties(immProp);
+    ch->ut_setConnection(conn);
+
+    Tp::MethodInvocationContextPtr<> ctx(new Tp::MethodInvocationContext<>());
+
+    TextChannelListener tcl(acc, ch, ctx);
+    waitInvocationContext(ctx, 5000);
+
+    QVERIFY(ctx->isFinished());
+    QVERIFY(!ctx->isError());
+
+    // send sent message
+    uint timestamp = QDateTime::currentDateTime().toTime_t();
+    Tp::Message msg(timestamp, (uint)Tp::ChannelTextMessageTypeNormal, message);
+    QString token = QUuid::createUuid().toString();
+    Tp::TextChannelPtr::dynamicCast(ch)->ut_sendMessage(msg, Tp::MessageSendingFlagReportDelivery, token);
+
+    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
+    QVERIFY(waitSignal(eventCommitted, 5000));
+
+    CommHistory::Group g = fetchGroup(IM_ACCOUNT_PATH, IM_USERNAME, true);
+
+    QVERIFY(g.isValid());
+    QCOMPARE(g.localUid(), IM_ACCOUNT_PATH);
+    QCOMPARE(g.remoteUids().first(), IM_USERNAME);
+    QCOMPARE(g.lastMessageText(), message);
+    QCOMPARE(g.lastEventType(), CommHistory::Event::IMEvent);
+
+    CommHistory::Event e = fetchEvent(g.lastEventId());
+    QCOMPARE(e.direction(), CommHistory::Event::Outbound);
+    QCOMPARE(e.freeText(), message);
+    QCOMPARE(e.startTime().toTime_t(), timestamp);
+    QCOMPARE(e.endTime().toTime_t(), timestamp);
+    QCOMPARE(e.messageToken(), token);
+
+    QCOMPARE(nm->postedNotifications.size(), 0);
 }
 
-void Ut_TextChannelListener::testImReceiving()
+void Ut_TextChannelListener::receiving_data()
 {
-    QString message = QString(RECEIVED_MESSAGE) + QString(" : ") + QTime::currentTime().toString(Qt::ISODate);
-    receiveMessage(message);
-    verifyMessage(message);
+    QTest::addColumn<QString>("accountPath");
+    QTest::addColumn<QString>("username");
+    QTest::addColumn<QString>("messageBase");
+    QTest::addColumn<QString>("channelPath");
+    QTest::addColumn<bool>("cellular");
+
+    QTest::newRow("IM") << QString(IM_ACCOUNT_PATH)
+            << QString(IM_USERNAME)
+            << QString(RECEIVED_MESSAGE)
+            << QString(IM_CHANNEL_PATH)
+            << false;
+    QTest::newRow("SMS") << QString(SMS_ACCOUNT_PATH)
+            << QString(SMS_NUMBER)
+            << QString(RECEIVED_MESSAGE)
+            << QString(SMS_CHANNEL_PATH)
+            << true;
+}
+
+void Ut_TextChannelListener::receiving()
+{
+    QFETCH(QString, accountPath);
+    QFETCH(QString, username);
+    QFETCH(QString, messageBase);
+    QFETCH(QString, channelPath);
+    QFETCH(bool, cellular);
+
+    QString message = messageBase + QString(" : ") + QTime::currentTime().toString(Qt::ISODate);
+
+    NotificationManager *nm = NotificationManager::instance();
+    QVERIFY(nm);
+    nm->postedNotifications.clear();
+
+    //setup account
+    Tp::AccountPtr acc(new Tp::Account(accountPath));
+    if (cellular)
+        acc->ut_setProtocolName("tel");
+
+    // setup connection
+    Tp::ConnectionPtr conn(new Tp::Connection());
+    conn->ut_setIsReady(true);
+
+    //setup channel
+    Tp::ChannelPtr ch(new Tp::TextChannel(channelPath));
+    ch->ut_setIsRequested(false);
+    ch->ut_setTargetHandleType(Tp::HandleTypeContact);
+    ch->ut_setTargetHandle(TARGET_HANDLE);
+    QVariantMap immProp;
+    immProp.insert(TELEPATHY_INTERFACE_CHANNEL ".TargetID", username);
+    ch->ut_setImmutableProperties(immProp);
+    ch->ut_setConnection(conn);
+
+    Tp::MethodInvocationContextPtr<> ctx(new Tp::MethodInvocationContext<>());
+
+    TextChannelListener tcl(acc, ch, ctx);
+    waitInvocationContext(ctx, 5000);
+
+    QVERIFY(ctx->isFinished());
+    QVERIFY(!ctx->isError());
+
+    // send received message
+    Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
+
+    uint timestamp = QDateTime::currentDateTime().toTime_t();
+    addMsgHeader(msg, 0, "received", timestamp);
+    addMsgHeader(msg, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNormal);
+    QString token = QUuid::createUuid().toString();
+    addMsgHeader(msg, 0, "message-token", token);
+
+    addMsgHeader(msg, 1,"content-type", "text/plain");
+    addMsgHeader(msg, 1,"content", message);
+    // set sender contact
+    Tp::ContactPtr sender(new Tp::Contact());
+    sender->ut_setHandle(22);
+    sender->ut_setId(username);
+    msg.ut_setSender(sender);
+
+    Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(msg);
+
+    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
+    QVERIFY(waitSignal(eventCommitted, 5000));
+
+    CommHistory::Group g = fetchGroup(accountPath, username, true);
+
+    QVERIFY(g.isValid());
+    QCOMPARE(g.localUid(), accountPath);
+    QCOMPARE(g.remoteUids().first(), username);
+    QCOMPARE(g.lastMessageText(), message);
+    if (cellular)
+        QCOMPARE(g.lastEventType(), CommHistory::Event::SMSEvent);
+    else
+        QCOMPARE(g.lastEventType(), CommHistory::Event::IMEvent);
+
+    CommHistory::Event e = fetchEvent(g.lastEventId());
+    QCOMPARE(e.id(), g.lastEventId());
+    QCOMPARE(e.direction(), CommHistory::Event::Inbound);
+    QCOMPARE(e.freeText(), message);
+    QCOMPARE(e.startTime().toTime_t(), timestamp);
+    QCOMPARE(e.endTime().toTime_t(), timestamp);
+    QCOMPARE(e.messageToken(), token);
+
+    QCOMPARE(nm->postedNotifications.size(), 1);
+    QCOMPARE(nm->postedNotifications.first().event.freeText(), message);
+    QCOMPARE(nm->postedNotifications.first().channelTargetId, username);
+    QCOMPARE(nm->postedNotifications.first().chatType, CommHistory::Group::ChatTypeP2P);
+}
+
+void Ut_TextChannelListener::smsSending_data()
+{
+    QTest::addColumn<bool>("finalStatus");
+
+    QTest::newRow("Delivered") << true;
+    QTest::newRow("Failed") << true;
+}
+
+void Ut_TextChannelListener::smsSending()
+{
+    QFETCH(bool, finalStatus);
+
+    QString message = QString(SENT_MESSAGE) + QString(" : ") + QTime::currentTime().toString(Qt::ISODate);
+
+    NotificationManager *nm = NotificationManager::instance();
+    QVERIFY(nm);
+    nm->postedNotifications.clear();
+
+    Tp::AccountPtr acc(new Tp::Account(SMS_ACCOUNT_PATH));
+    acc->ut_setProtocolName("tel");
+    // setup connection
+    Tp::ConnectionPtr conn(new Tp::Connection());
+    conn->ut_setIsReady(true);
+
+    //setup channel
+    Tp::ChannelPtr ch(new Tp::TextChannel(SMS_CHANNEL_PATH));
+    ch->ut_setIsRequested(true);
+    ch->ut_setTargetHandleType(Tp::HandleTypeContact);
+    ch->ut_setTargetHandle(TARGET_HANDLE);
+    QVariantMap immProp;
+    immProp.insert(TELEPATHY_INTERFACE_CHANNEL ".TargetID", SMS_NUMBER);
+    ch->ut_setImmutableProperties(immProp);
+    ch->ut_setConnection(conn);
+
+    Tp::MethodInvocationContextPtr<> ctx(new Tp::MethodInvocationContext<>());
+
+    TextChannelListener tcl(acc, ch, ctx);
+    waitInvocationContext(ctx, 5000);
+
+    QVERIFY(ctx->isFinished());
+    QVERIFY(!ctx->isError());
+
+    // send sent message
+    uint timestamp = QDateTime::currentDateTime().toTime_t();
+    Tp::Message msg(timestamp, (uint)Tp::ChannelTextMessageTypeNormal, message);
+    QString token = QUuid::createUuid().toString();
+    Tp::TextChannelPtr::dynamicCast(ch)->ut_sendMessage(msg, Tp::MessageSendingFlagReportDelivery, token);
+
+    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
+    QVERIFY(waitSignal(eventCommitted, 5000));
+
+    CommHistory::Group g = fetchGroup(SMS_ACCOUNT_PATH, SMS_NUMBER, true);
+
+    QVERIFY(g.isValid());
+    QCOMPARE(g.localUid(), SMS_ACCOUNT_PATH);
+    QCOMPARE(g.remoteUids().first(), SMS_NUMBER);
+    QCOMPARE(g.lastMessageText(), message);
+    QCOMPARE(g.lastEventType(), CommHistory::Event::SMSEvent);
+    QVERIFY(g.lastEventStatus() == CommHistory::Event::SendingStatus
+            || g.lastEventStatus() == CommHistory::Event::UnknownStatus);
+
+    CommHistory::Event e = fetchEvent(g.lastEventId());
+    QCOMPARE(e.direction(), CommHistory::Event::Outbound);
+    QCOMPARE(e.freeText(), message);
+    QCOMPARE(e.startTime().toTime_t(), timestamp);
+    QCOMPARE(e.endTime().toTime_t(), timestamp);
+    QCOMPARE(e.messageToken(), token);
+    QVERIFY(e.status() == CommHistory::Event::SendingStatus
+            || e.status() == CommHistory::Event::UnknownStatus);
+
+    QCOMPARE(nm->postedNotifications.size(), 0);
+
+    // test delivery report handling
+    // accepted
+    Tp::ReceivedMessage accepted(Tp::MessagePartList() << Tp::MessagePart());
+
+    uint timestampAccepted = QDateTime::currentDateTime().toTime_t();
+    addMsgHeader(accepted, 0, "received", timestampAccepted);
+    addMsgHeader(accepted, 0, "message-sent", timestampAccepted);
+    addMsgHeader(accepted, 0, "message-type", (uint)Tp::ChannelTextMessageTypeDeliveryReport);
+    addMsgHeader(accepted, 0, "delivery-token", token);
+    addMsgHeader(accepted, 0, "delivery-status", (uint)Tp::DeliveryStatusAccepted);
+
+    Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(accepted);
+
+    eventCommitted.clear();
+    QVERIFY(waitSignal(eventCommitted, 5000));
+
+    g = fetchGroup(SMS_ACCOUNT_PATH, SMS_NUMBER, true);
+
+    QVERIFY(g.isValid());
+    QCOMPARE(g.lastMessageText(), message);
+    QCOMPARE(g.lastEventType(), CommHistory::Event::SMSEvent);
+    QCOMPARE(g.lastEventStatus(), CommHistory::Event::SentStatus);
+
+    // delivered
+    Tp::ReceivedMessage deivered(Tp::MessagePartList() << Tp::MessagePart());
+
+    uint timestampDelivered = QDateTime::currentDateTime().toTime_t();
+    addMsgHeader(deivered, 0, "received", timestampDelivered);
+    addMsgHeader(deivered, 0, "message-sent", timestampDelivered);
+    addMsgHeader(deivered, 0, "message-type", (uint)Tp::ChannelTextMessageTypeDeliveryReport);
+    addMsgHeader(deivered, 0, "delivery-token", token);
+
+    if (finalStatus)
+        addMsgHeader(deivered, 0, "delivery-status", (uint)Tp::DeliveryStatusDelivered);
+    else
+        addMsgHeader(deivered, 0, "delivery-status", (uint)Tp::DeliveryStatusPermanentlyFailed);
+
+    Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(deivered);
+
+    eventCommitted.clear();
+    QVERIFY(waitSignal(eventCommitted, 5000));
+
+    g = fetchGroup(SMS_ACCOUNT_PATH, SMS_NUMBER, true);
+
+    QVERIFY(g.isValid());
+    QCOMPARE(g.lastMessageText(), message);
+    QCOMPARE(g.lastEventType(), CommHistory::Event::SMSEvent);
+    if (finalStatus)
+        QCOMPARE(g.lastEventStatus(), CommHistory::Event::DeliveredStatus);
+    else
+        QCOMPARE(g.lastEventStatus(), CommHistory::Event::FailedStatus);
+
+    e = fetchEvent(g.lastEventId());
+    QCOMPARE(e.endTime().toTime_t(), timestampDelivered);
 }
 
 QTEST_MAIN(Ut_TextChannelListener)

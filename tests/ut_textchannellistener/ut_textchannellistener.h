@@ -28,7 +28,6 @@
 #include <QEventLoop>
 
 #include <CommHistory/GroupModel>
-#include <CommHistory/ConversationModel>
 
 namespace RTComLogger {
 
@@ -47,26 +46,15 @@ private Q_SLOTS:
 
 // Test functions
 private Q_SLOTS:
-    void testImSending();
-    void testImReceiving();
-
-protected Q_SLOTS:
-    void slotOnGroupInserted(const QModelIndex &index, int start, int end);
-    void slotRowsInserted(const QModelIndex &, int, int);
-
-private:
-    int startEventLoop();
-    void stopEventLoop(int returnCode);
-    void sendMessage(const QString& message);
-    void receiveMessage(const QString& message);
-    bool hasMessage(const QString& message);
-    void verifyMessage(const QString& message);
+    void imSending();
+    void receiving_data();
+    void receiving();
+    void smsSending_data();
+    void smsSending();
 
 private:
-    CommHistory::ConversationModel* model;
-    CommHistory::GroupModel* groupModel;
-    int conversationUid;
-    QEventLoop eventLoop;
+    CommHistory::Group fetchGroup(const QString &localUid, const QString &remoteUid, bool wait);
+    CommHistory::Event fetchEvent(int eventId);
 };
 
 }

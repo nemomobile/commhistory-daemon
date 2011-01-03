@@ -1,0 +1,8 @@
+#ifndef _TelepathyQt4_Properties_HEADER_GUARD_
+#define _TelepathyQt4_Properties_HEADER_GUARD_
+
+
+#include "cli-properties.h"
+
+#endif
+// vim:set ft=cpp:

@@ -32,6 +32,10 @@
 #-----------------------------------------------------------------------------
 !include(../tests.pri) : error( "Unable to include test.pri" )
 
+!include( ../stubs/stubs.pri ) : error("Unable to include stubs/stubs.pri")
+INCLUDEPATH = ../stubs/ \
+    $${INCLUDEPATH}
+
 #-----------------------------------------------------------------------------
 # test specific configuration
 #-----------------------------------------------------------------------------
@@ -42,6 +46,12 @@ CONFIG += link_pkgconfig \
 LIBS += -lQtContacts -lQtVersit
 PKGCONFIG += contextsubscriber-1.0 \
              meegotouch
+
+TEST_SOURCES += $$COMMHISTORYDSRCDIR/textchannellistener.cpp \
+                $$COMMHISTORYDSRCDIR/channellistener.cpp
+
+TEST_HEADERS += $$COMMHISTORYDSRCDIR/textchannellistener.h \
+                $$COMMHISTORYDSRCDIR/channellistener.h
 
 HEADERS     += ut_textchannellistener.h \
             $$TEST_HEADERS
