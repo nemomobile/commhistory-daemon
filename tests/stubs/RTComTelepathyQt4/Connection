@@ -5,7 +5,7 @@
 #define IN_RTCOM_TELEPATHY_QT4_HEADER
 #endif
 
-//#include <RTComTelepathyQt4/connection.h>
+#include <RTComTelepathyQt4/cli-connection.h>
 
 #undef IN_RTCOM_TELEPATHY_QT4_HEADER
 

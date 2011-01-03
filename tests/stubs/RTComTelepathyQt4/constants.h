@@ -40,17 +40,6 @@
  * Names of the D-Bus errors in the specification.
  */
 
-namespace RTComTp
-{
-
-    namespace Client {
-        class ConnectionInterfaceStoredMessagesInterface {
-            public:
-            #define STORED_MESSAGES "com.nokia.Telepathy.Connection.Interface.StoredMessages"
-            static const char * staticInterfaceName() {return STORED_MESSAGES;}
-            void ExpungeMessages(const QList<QString>&) {}
-        };
-    }
 /**
  * \ingroup flagtypeconsts
  *
@@ -190,8 +179,6 @@ enum ChannelContactSearchState
  * 1 higher than the highest valid value of ChannelContactSearchState.
  */
 const int NUM_CHANNEL_CONTACT_SEARCH_STATES = (4+1);
-
-}
 
 /**
  * \ingroup ifacestrconsts

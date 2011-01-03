@@ -27,7 +27,8 @@
 #include <QObject>
 #include <QEventLoop>
 
-#include <CommHistory/GroupModel>
+#include <CommHistory/Event>
+#include <CommHistory/Group>
 
 namespace RTComLogger {
 

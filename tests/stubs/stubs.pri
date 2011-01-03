@@ -22,6 +22,7 @@ HEADERS += ./stubs/TelepathyQt4/text-channel.h
 HEADERS += ./stubs/TelepathyQt4/contact-manager.h
 HEADERS += ./stubs/TelepathyQt4/pending-contacts.h
 HEADERS += ./stubs/TelepathyQt4/cli-properties.h
+HEADERS += ./stubs/RTComTelepathyQt4/cli-connection.h
 HEADERS += ./stubs/notificationmanager.h
 
 SOURCES += ./stubs/TelepathyQt4/pending-operation.cpp

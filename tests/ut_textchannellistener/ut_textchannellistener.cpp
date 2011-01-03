@@ -37,6 +37,9 @@
 #include "TelepathyQt4/connection.h"
 #include "TelepathyQt4/contact-manager.h"
 
+#include <RTComTelepathyQt4/Connection> // stored messages if
+
+#include <CommHistory/GroupModel>
 #include <CommHistory/SingleEventModel>
 
 #include "textchannellistener.h"
@@ -267,6 +270,8 @@ void Ut_TextChannelListener::receiving()
     // setup connection
     Tp::ConnectionPtr conn(new Tp::Connection());
     conn->ut_setIsReady(true);
+    if (cellular)
+        conn->ut_setInterfaces(QStringList() << RTComTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName());
 
     //setup channel
     Tp::ChannelPtr ch(new Tp::TextChannel(channelPath));
@@ -331,6 +336,14 @@ void Ut_TextChannelListener::receiving()
     QCOMPARE(nm->postedNotifications.first().event.freeText(), message);
     QCOMPARE(nm->postedNotifications.first().channelTargetId, username);
     QCOMPARE(nm->postedNotifications.first().chatType, CommHistory::Group::ChatTypeP2P);
+
+    if (cellular) {
+        RTComTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
+                conn->interface<RTComTp::Client::ConnectionInterfaceStoredMessagesInterface>();
+        QVERIFY(storedMessages);
+        QStringList sm = storedMessages->ut_getExpungedMessages();
+        QVERIFY(sm.contains(token));
+    }
 }
 
 void Ut_TextChannelListener::smsSending_data()
@@ -356,6 +369,7 @@ void Ut_TextChannelListener::smsSending()
     // setup connection
     Tp::ConnectionPtr conn(new Tp::Connection());
     conn->ut_setIsReady(true);
+    conn->ut_setInterfaces(QStringList() << RTComTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName());
 
     //setup channel
     Tp::ChannelPtr ch(new Tp::TextChannel(SMS_CHANNEL_PATH));
@@ -464,6 +478,14 @@ void Ut_TextChannelListener::smsSending()
 
     e = fetchEvent(g.lastEventId());
     QCOMPARE(e.endTime().toTime_t(), timestampDelivered);
+
+    RTComTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
+            conn->interface<RTComTp::Client::ConnectionInterfaceStoredMessagesInterface>();
+    QVERIFY(storedMessages);
+    QStringList sm = storedMessages->ut_getExpungedMessages();
+    QVERIFY(sm.contains(acceptedToken));
+    QVERIFY(sm.contains(deliveredToken));
+    QVERIFY(!sm.contains(token));
 }
 
 QTEST_MAIN(Ut_TextChannelListener)

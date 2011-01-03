@@ -51,9 +51,14 @@ public:
     Connection(const QString &objectPath = QString(), QObject *parent = 0);
 
     template <typename Interface>
-    inline Interface *interface() const
+    inline Interface *interface()
     {
-        return new Interface;
+        if (mIfs.contains(Interface::staticInterfaceName()))
+            return static_cast<Interface*>(mIfs.value(Interface::staticInterfaceName()));
+
+        Interface *newIf = new Interface;
+        mIfs.insert(Interface::staticInterfaceName(), newIf);
+        return newIf;
     }
 
     static const Feature FeatureCore;
@@ -74,6 +79,7 @@ private:
     struct Private;
     friend struct Private;
     Private *mPriv;
+    QHash<QString, QObject*> mIfs;
 };
 
 } // Tp
