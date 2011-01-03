@@ -378,6 +378,19 @@ namespace Tp
 
     typedef QList<PropertySpec> PropertySpecList;
 
+    struct ServicePoint
+    {
+        uint servicePointType;
+        QString service;
+    };
+    bool operator==(const ServicePoint& v1, const ServicePoint& v2);
+
+    inline bool operator!=(const ServicePoint& v1, const ServicePoint& v2)
+    {
+        return !operator==(v1, v2);
+    }
+    QDBusArgument& operator<<(QDBusArgument& arg, const ServicePoint& val);
+    const QDBusArgument& operator>>(const QDBusArgument& arg, ServicePoint& val);
 
     class DBusProxy;
 
@@ -387,6 +400,10 @@ namespace Tp
     class Connection;
     class Contact;
     class TextChannel;
+    class StreamedMediaChannel;
+    class MediaContent;
+    class MediaStream;
+
 
     typedef SharedPtr<Account> AccountPtr;
     typedef SharedPtr<Connection> ConnectionPtr;
@@ -394,7 +411,9 @@ namespace Tp
     typedef SharedPtr<AccountManager> AccountManagerPtr;
     typedef QSharedPointer<Contact> ContactPtr;
     typedef SharedPtr<TextChannel> TextChannelPtr;
-
+    typedef SharedPtr<StreamedMediaChannel> StreamedMediaChannelPtr;
+    typedef SharedPtr<MediaContent> MediaContentPtr;
+    typedef SharedPtr<MediaStream> MediaStreamPtr;
 };
 
 Q_DECLARE_METATYPE(Tp::SimplePresence)
@@ -403,5 +422,6 @@ Q_DECLARE_METATYPE(Tp::PropertySpecList)
 Q_DECLARE_METATYPE(Tp::PropertyValue)
 Q_DECLARE_METATYPE(Tp::PropertyValueList)
 Q_DECLARE_METATYPE(Tp::UIntList)
+Q_DECLARE_METATYPE(Tp::ServicePoint)
 
 #endif

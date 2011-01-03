@@ -31,5 +31,8 @@ const QDBusArgument& operator>>(const QDBusArgument& arg, PropertyValue&){return
 QDBusArgument& operator<<(QDBusArgument& arg, const PropertySpec&){return arg;}
 const QDBusArgument& operator>>(const QDBusArgument& arg, PropertySpec&){return arg;}
 
+QDBusArgument& operator<<(QDBusArgument& arg, const ServicePoint&){return arg;}
+const QDBusArgument& operator>>(const QDBusArgument& arg, ServicePoint&){return arg;}
+
 }
 //Q_DECLARE_METATYPE(Tp::SimplePresence)

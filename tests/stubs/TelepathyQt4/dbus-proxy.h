@@ -49,7 +49,16 @@ Q_SIGNALS:
             const QString &errorName, const QString &errorMessage);
 
 public: // ut
-    void ut_setIsValid(bool valid){m_isValid=valid;}
+    void ut_setIsValid(bool valid)
+    {
+        m_isValid=valid;
+    }
+
+    void ut_invalidate(const QString &errorName, const QString &errorMessage)
+    {
+        ut_setIsValid(false);
+        emit invalidated(this, errorName, errorMessage);
+    }
 
 private:
     QString m_objectPath;

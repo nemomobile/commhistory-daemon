@@ -22,6 +22,7 @@ HEADERS += ./stubs/TelepathyQt4/text-channel.h
 HEADERS += ./stubs/TelepathyQt4/contact-manager.h
 HEADERS += ./stubs/TelepathyQt4/pending-contacts.h
 HEADERS += ./stubs/TelepathyQt4/cli-properties.h
+HEADERS += ./stubs/TelepathyQt4/streamed-media-channel.h
 HEADERS += ./stubs/RTComTelepathyQt4/cli-connection.h
 HEADERS += ./stubs/notificationmanager.h
 
@@ -40,4 +41,5 @@ SOURCES += ./stubs/TelepathyQt4/referenced-handles.cpp
 SOURCES += ./stubs/TelepathyQt4/contact-manager.cpp
 SOURCES += ./stubs/TelepathyQt4/pending-contacts.cpp
 SOURCES += ./stubs/TelepathyQt4/cli-properties.cpp
+SOURCES += ./stubs/TelepathyQt4/streamed-media-channel.cpp
 SOURCES += ./stubs/notificationmanager.cpp

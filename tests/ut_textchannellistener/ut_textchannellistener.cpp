@@ -37,7 +37,7 @@
 #include "TelepathyQt4/connection.h"
 #include "TelepathyQt4/contact-manager.h"
 
-#include <RTComTelepathyQt4/Connection> // stored messages if
+#include "RTComTelepathyQt4/cli-connection.h" // stored messages if
 
 #include <CommHistory/GroupModel>
 #include <CommHistory/SingleEventModel>

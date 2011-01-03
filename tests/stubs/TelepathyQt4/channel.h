@@ -44,7 +44,41 @@ class PendingReady;
 
 namespace Client {
     class ChannelInterface : public Tp::AbstractInterface {
+    public:
+        static inline const char *staticInterfaceName()
+        {
+            return "org.freedesktop.Telepathy.Channel";
+        }
     };
+
+    class ChannelInterfaceServicePointInterface : public Tp::AbstractInterface
+    {
+        Q_OBJECT
+
+    public:
+        static inline const char *staticInterfaceName()
+        {
+            return "org.freedesktop.Telepathy.Channel.Interface.ServicePoint";
+        }
+
+        ChannelInterfaceServicePointInterface() {};
+
+    public:
+
+    //    inline Tp::PendingVariant *requestPropertyCurrentServicePoint() const
+    //    {
+    //        return internalRequestProperty(QLatin1String("CurrentServicePoint"));
+    //    }
+
+    //    Tp::PendingVariantMap *requestAllProperties() const
+    //    {
+    //        return internalRequestAllProperties();
+    //    }
+
+    Q_SIGNALS:
+        void ServicePointChanged(const Tp::ServicePoint& servicePoint);
+    };
+
 }
 
 class Channel : public StatefulDBusProxy,
@@ -58,13 +92,23 @@ public:
 
     Channel(const QString &objectPath = QString(), QObject *parent = 0);
 
+    QStringList interfaces() const;
+
     template <typename Interface>
-    inline Interface *interface() const
+    inline Interface *interface()
     {
-        return new Interface;
+        if (mIfs.contains(Interface::staticInterfaceName()))
+            return static_cast<Interface*>(mIfs.value(Interface::staticInterfaceName()));
+
+        Interface *newIf = new Interface;
+        mIfs.insert(Interface::staticInterfaceName(), newIf);
+        return newIf;
     }
 
-    QStringList interfaces() const;
+    template <typename Interface>
+    inline Interface *optionalInterface() {
+        return interface<Interface>();
+    }
 
     static const Feature FeatureCore;
 
@@ -90,7 +134,18 @@ public:
     class GroupMemberChangeDetails
     {
     public:
-        GroupMemberChangeDetails(){}
+        GroupMemberChangeDetails(){};
+        GroupMemberChangeDetails(const ContactPtr &actor, uint reason) :
+                m_actor(actor), m_reason(reason){}
+
+        ContactPtr actor() const {return m_actor;};
+        uint reason() const {return m_reason;};
+
+    private:
+        friend class Channel;
+
+        ContactPtr m_actor;
+        uint m_reason;
     };
 
     bool groupAreHandleOwnersAvailable() const;
@@ -122,11 +177,24 @@ public: // stub methods
     void ut_setImmutableProperties(const QVariantMap &immutableProperties);
     void ut_setConnection(const ConnectionPtr &connection);
     void ut_setIsRequested(bool requested);
+    void ut_emitGroupMembersChanged(const Tp::Contacts &groupMembersAdded,
+                                    const Tp::Contacts &groupLocalPendingMembersAdded,
+                                    const Tp::Contacts &groupRemotePendingMembersAdded,
+                                    const Tp::Contacts &groupMembersRemoved,
+                                    const Tp::Channel::GroupMemberChangeDetails &details)
+    {
+        emit groupMembersChanged(groupMembersAdded,
+                                 groupLocalPendingMembersAdded,
+                                 groupRemotePendingMembersAdded,
+                                 groupMembersRemoved,
+                                 details);
+    }
 
 private:
     struct Private;
     friend struct Private;
     QSharedDataPointer<Private> mPriv;
+    QHash<QString, QObject*> mIfs;
 };
 
 } // Tp
