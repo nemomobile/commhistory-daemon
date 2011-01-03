@@ -154,7 +154,7 @@ void StreamChannelListener::channelReady()
                 SLOT(slotStreamStateChanged(const Tp::MediaStreamPtr &, Tp::MediaStreamState)));
 
         Tp::Client::ChannelInterfaceServicePointInterface *servicePointIf =
-            mediaChannel->servicePointInterface();
+            mediaChannel->optionalInterface<Tp::Client::ChannelInterfaceServicePointInterface>();
 
         if (servicePointIf) {
             connect(servicePointIf, SIGNAL(ServicePointChanged(const Tp::ServicePoint &)),
