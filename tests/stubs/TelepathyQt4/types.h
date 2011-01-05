@@ -423,5 +423,7 @@ Q_DECLARE_METATYPE(Tp::PropertyValue)
 Q_DECLARE_METATYPE(Tp::PropertyValueList)
 Q_DECLARE_METATYPE(Tp::UIntList)
 Q_DECLARE_METATYPE(Tp::ServicePoint)
+Q_DECLARE_METATYPE(Tp::MessagePart)
+Q_DECLARE_METATYPE(Tp::MessagePartList)
 
 #endif

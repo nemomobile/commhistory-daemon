@@ -51,7 +51,8 @@ private Q_SLOTS:
 
     void normalCall_data();
     void normalCall();
-    // emergency();
+    void emergency_data();
+    void emergency();
 };
 
 }

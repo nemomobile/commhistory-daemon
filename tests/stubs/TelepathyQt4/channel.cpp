@@ -9,7 +9,6 @@ const Tp::Feature Tp::Channel::FeatureCore = Tp::Feature(Tp::Channel::staticMeta
 
 struct Channel::Private : public QSharedData
 {
-    QStringList m_interfaces;
     ConnectionPtr m_connection;
     QVariantMap m_immutableProperties;
     QString m_channelType;
@@ -31,7 +30,7 @@ Channel::Channel(const QString &objectPath, QObject *parent) : StatefulDBusProxy
 
 QStringList Channel::interfaces() const
 {
-    return mPriv->m_interfaces;
+    return m_interfaces;
 }
 
 Channel::~Channel()
@@ -90,7 +89,7 @@ ContactPtr Channel::groupSelfContact() const
 
 void Channel::ut_setInterfaces(const QStringList& interfaces)
 {
-    mPriv->m_interfaces = interfaces;
+    m_interfaces = interfaces;
 }
 
 void Channel::ut_setChannelType(const QString& channelType)

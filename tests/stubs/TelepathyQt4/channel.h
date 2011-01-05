@@ -97,6 +97,9 @@ public:
     template <typename Interface>
     inline Interface *interface()
     {
+        if (!m_interfaces.contains(Interface::staticInterfaceName()))
+            return 0;
+
         if (mIfs.contains(Interface::staticInterfaceName()))
             return static_cast<Interface*>(mIfs.value(Interface::staticInterfaceName()));
 
@@ -194,6 +197,7 @@ private:
     struct Private;
     friend struct Private;
     QSharedDataPointer<Private> mPriv;
+    QStringList m_interfaces;
     QHash<QString, QObject*> mIfs;
 };
 

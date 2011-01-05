@@ -317,6 +317,7 @@ void Ut_StreamChannelListener::normalCall()
     QCOMPARE(e.remoteUid(), NUMBER);
     QVERIFY(startTime.toTime_t() <= e.startTime().toTime_t());
     QVERIFY(QDateTime::currentDateTime().toTime_t() >= e.endTime().toTime_t());
+    QCOMPARE(e.isEmergencyCall(), false);
 
     if (accept)
         QVERIFY(e.endTime().toTime_t() > e.startTime().toTime_t());
@@ -333,6 +334,108 @@ void Ut_StreamChannelListener::normalCall()
         QVERIFY(!e.isMissedCall());
         QCOMPARE(nm->postedNotifications.size(), 0);
     }
+}
+
+void Ut_StreamChannelListener::emergency_data()
+{
+    QTest::addColumn<bool>("accept");
+
+    QTest::newRow("accepted") << true;
+    QTest::newRow("cancelled") << false;
+}
+
+void Ut_StreamChannelListener::emergency()
+{
+    QFETCH(bool, accept);
+
+    Tp::AccountPtr acc(new Tp::Account(ACCOUNT_PATH));
+    // setup connection
+    Tp::ConnectionPtr conn(new Tp::Connection());
+    conn->ut_setIsReady(true);
+
+    //setup channel
+    QDateTime startTime = QDateTime::currentDateTime();
+    QVariantMap immProp;
+    immProp.insert(TELEPATHY_INTERFACE_CHANNEL ".TargetID", "112");
+    immProp.insert(TELEPATHY_INTERFACE_CHANNEL ".Requested", true);
+    Tp::ServicePoint sp;
+    sp.service = "urn:service:sos";
+    sp.servicePointType = Tp::ServicePointTypeEmergency;
+    immProp.insert(TELEPATHY_INTERFACE_CHANNEL_INTERFACE_SERVICE_POINT ".InitialServicePoint",
+                   QVariant::fromValue(sp));
+    Tp::ChannelPtr ch(new Tp::StreamedMediaChannel(CHANNEL_PATH, immProp));
+    ch->ut_setIsRequested(true);
+    ch->ut_setTargetHandleType(Tp::HandleTypeContact);
+    ch->ut_setTargetHandle(42);
+    ch->ut_setConnection(conn);
+    //ch->ut_setInterfaces(QStringList() << Tp::Client::ChannelInterfaceServicePointInterface::staticInterfaceName());
+
+    Tp::MethodInvocationContextPtr<> ctx(new Tp::MethodInvocationContext<>());
+
+    StreamChannelListener scl(acc, ch, ctx);
+
+    waitInvocationContext(ctx, 5000);
+    QVERIFY(ctx->isFinished());
+    QVERIFY(!ctx->isError());
+
+    // add contact
+    Tp::ContactPtr self(new Tp::Contact());
+    self->ut_setHandle(1);
+    Tp::ContactPtr target(new Tp::Contact());
+    target->ut_setHandle(33);
+    target->ut_setId("112");
+
+    ch->ut_setGroupSelfContact(self);
+    ch->ut_setGroupContacts(Tp::Contacts() << target << self);
+
+    // add streams
+    Tp::StreamedMediaChannelPtr::dynamicCast(ch)->ut_addContent();
+    Tp::StreamedMediaChannelPtr::dynamicCast(ch)->ut_mediaContents().first()->ut_addStream();
+    Tp::StreamedMediaChannelPtr::dynamicCast(ch)->ut_mediaContents().first()->streams().first()->ut_setLocalPendingState(Tp::MediaStream::SendingStateSending);
+
+    // emit membersChanged
+    Tp::Channel::GroupMemberChangeDetails details(target,
+                                                  Tp::ChannelGroupChangeReasonNone);
+
+    if (accept)
+        ch->ut_emitGroupMembersChanged(Tp::Contacts() << target,
+                                       Tp::Contacts(),
+                                       Tp::Contacts(),
+                                       Tp::Contacts(),
+                                       details);
+
+    justWait(2000);
+
+    // end call
+    ch->ut_setGroupContacts(Tp::Contacts() << target);
+    ch->ut_emitGroupMembersChanged(Tp::Contacts(),
+                                   Tp::Contacts(),
+                                   Tp::Contacts(),
+                                   Tp::Contacts() << self,
+                                   details);
+
+    QSignalSpy closed(&scl, SIGNAL(channelClosed(ChannelListener*)));
+    ch->ut_invalidate(QString(), QString());
+    QVERIFY(waitSignal(closed, 5000));
+
+    CommHistory::CallModel model;
+
+    QSignalSpy modelReady(&model, SIGNAL(modelReady()));
+    model.getEvents();
+    QVERIFY(waitSignal(modelReady, 5000));
+    QVERIFY(model.rowCount() > 0);
+
+    CommHistory::Event e = model.event(model.index(0,0));
+    qDebug() << e.toString();
+    QCOMPARE(e.localUid(), ACCOUNT_PATH);
+    QCOMPARE(e.remoteUid(), QString("112"));
+    QVERIFY(startTime.toTime_t() <= e.startTime().toTime_t());
+    QVERIFY(QDateTime::currentDateTime().toTime_t() >= e.endTime().toTime_t());
+
+    if (accept)
+        QVERIFY(e.endTime().toTime_t() > e.startTime().toTime_t());
+    QCOMPARE(e.direction(), CommHistory::Event::Outbound);
+    QCOMPARE(e.isEmergencyCall(), true);
 }
 
 QTEST_MAIN(Ut_StreamChannelListener)
