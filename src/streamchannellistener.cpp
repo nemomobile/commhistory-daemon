@@ -34,7 +34,7 @@
 #include <TelepathyQt4/StreamedMediaChannel>
 
 #define CURRENT_SERVICE_POINT_PROPERTY_NAME ("CurrentServicePoint")
-#define INITIAL_SERVICE_POINT_PROPERTY QLatin1String(TELEPATHY_INTERFACE_CHANNEL_INTERFACE_SERVICE_POINT "InitialServicePoint")
+#define INITIAL_SERVICE_POINT_PROPERTY QLatin1String(TELEPATHY_INTERFACE_CHANNEL_INTERFACE_SERVICE_POINT ".InitialServicePoint")
 
 #define SAVING_INTERVAL 60000 // 1 minute
 
@@ -153,25 +153,26 @@ void StreamChannelListener::channelReady()
                 this,
                 SLOT(slotStreamStateChanged(const Tp::MediaStreamPtr &, Tp::MediaStreamState)));
 
-        Tp::Client::ChannelInterfaceServicePointInterface *servicePointIf =
-            mediaChannel->optionalInterface<Tp::Client::ChannelInterfaceServicePointInterface>();
-
-        if (servicePointIf) {
-            connect(servicePointIf, SIGNAL(ServicePointChanged(const Tp::ServicePoint &)),
-                    this, SLOT(slotServicePointChanged(const Tp::ServicePoint &)));
-
-            const Tp::ServicePoint sp = servicePointIf->property(
-                CURRENT_SERVICE_POINT_PROPERTY_NAME).value<Tp::ServicePoint>();
+        QVariant spProp = mediaChannel->immutableProperties().
+            value(INITIAL_SERVICE_POINT_PROPERTY);
+        if (spProp.isValid()) {
+            const Tp::ServicePoint sp = qdbus_cast<Tp::ServicePoint>(spProp);
             if (sp.servicePointType == Tp::ServicePointTypeEmergency) {
                 qDebug() << Q_FUNC_INFO << "*** EMERGENCY CALL, service =" << sp.service;
                 m_isEmergencyCall = true;
             }
-        } else {
-            QVariant spProp = mediaChannel->immutableProperties().
-                value(INITIAL_SERVICE_POINT_PROPERTY);
-            if (spProp.isValid()) {
-                const Tp::ServicePoint sp = qdbus_cast<Tp::ServicePoint>
-                    (spProp.value<QDBusArgument>());
+        }
+
+        if (!m_isEmergencyCall) {
+            Tp::Client::ChannelInterfaceServicePointInterface *servicePointIf =
+                    mediaChannel->optionalInterface<Tp::Client::ChannelInterfaceServicePointInterface>();
+            qDebug() << "SERVICE POINT IF" << servicePointIf;
+            if (servicePointIf) {
+                connect(servicePointIf, SIGNAL(ServicePointChanged(const Tp::ServicePoint &)),
+                        this, SLOT(slotServicePointChanged(const Tp::ServicePoint &)));
+
+                const Tp::ServicePoint sp = servicePointIf->property(
+                        CURRENT_SERVICE_POINT_PROPERTY_NAME).value<Tp::ServicePoint>();
                 if (sp.servicePointType == Tp::ServicePointTypeEmergency) {
                     qDebug() << Q_FUNC_INFO << "*** EMERGENCY CALL, service =" << sp.service;
                     m_isEmergencyCall = true;

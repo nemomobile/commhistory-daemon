@@ -720,7 +720,7 @@ bool TextChannelListener::recoverDeliveryEcho(const Tp::Message &message,
     QVariant echoVar = message.header().value(DELIVERY_ECHO).variant();
 
     if (echoVar.isValid()) {
-        Tp::MessagePartList parts = qdbus_cast<Tp::MessagePartList>(echoVar.value<QDBusArgument>());
+        Tp::MessagePartList parts = qdbus_cast<Tp::MessagePartList>(echoVar);
         if (parts.size() > 1) { // first one is header
             QString contentType = parts[1].value(PART_CONTENT_TYPE).variant().toString();
             QString content = parts[1].value(PART_CONTENT).variant().toString();
