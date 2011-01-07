@@ -69,7 +69,8 @@ HEADERS += logger.h \
            connectionutils.h \
            contactauthorizationlistener.h \
            contactauthorizer.h \
-           mwilistener.h
+           mwilistener.h \
+           constants.h
 
 SOURCES += main.cpp \
            logger.cpp \

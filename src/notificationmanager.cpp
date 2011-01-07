@@ -547,7 +547,7 @@ bool NotificationManager::canShowNotification()
     return !m_NotificationTimer.isActive();
 }
 
-QString NotificationManager::eventType(int type) const
+QString NotificationManager::eventType(int type)
 {
     QString event;
     for(int i = 0; i < _eventTypesCount; i++) {

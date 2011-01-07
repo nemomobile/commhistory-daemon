@@ -22,22 +22,51 @@
 
 // INCLUDES
 #include "ut_notificationmanager.h"
+#include "locstrings.h"
+#include "constants.h"
 
 // Qt includes
 #include <QDebug>
 #include <QTest>
 #include <QDateTime>
 #include <MNotification>
+#include <MNotificationGroup>
 
-#define CONTACT_1_REMOTE_ID "td@localhost"
-#define CONTACT_2_REMOTE_ID "td2@localhost"
+#define CONTACT_1_REMOTE_ID QLatin1String("td@localhost")
+#define CONTACT_2_REMOTE_ID QLatin1String("td2@localhost")
 #define CONTACT_1_ID 1
 #define CONTACT_2_ID 2
 #define CONTACT_ID_NONE -1
-#define DUT_ACCOUNT_PATH "/org/freedesktop/Telepathy/Account/gabble/jabber/dut_40localhost0"
-#define MESSAGE_TEXT "Testing notifications!"
+#define DUT_ACCOUNT_PATH QLatin1String("/org/freedesktop/Telepathy/Account/gabble/jabber/dut_40localhost0")
+#define MESSAGE_TEXT QLatin1String("Testing notifications!")
 
 using namespace RTComLogger;
+
+namespace {
+    void justWait(int msec)
+    {
+        QTime timer;
+        timer.start();
+        while (timer.elapsed() < msec)
+            QCoreApplication::processEvents();
+    }
+}
+
+MNotificationGroup* Ut_NotificationManager::getGroup(int eventType, int msec)
+{
+    QTime timer;
+    timer.start();
+    while (timer.elapsed() <= msec) {
+        QList<MNotificationGroup *> mgtGroups = MNotificationGroup::notificationGroups();
+        foreach(MNotificationGroup *mgtGroup, mgtGroups)
+            if (mgtGroup->eventType() == NotificationManager::eventType(eventType))
+                return mgtGroup;
+
+        QCoreApplication::processEvents();
+    }
+
+    return 0;
+}
 
 Ut_NotificationManager::Ut_NotificationManager() : eventId(1)
 {
@@ -258,6 +287,155 @@ void Ut_NotificationManager::testSaveAndLoadNotificationState()
     nm->m_Notifications.clear();
     nm->loadState();
     QVERIFY(nm->m_Notifications.count() == 0);
+}
+
+void Ut_NotificationManager::testImNotification()
+{
+    CommHistory::Event event = createImEvent(CONTACT_1_REMOTE_ID, CONTACT_1_ID);
+    // One notification from contact 1
+    NotificationManager* nm = NotificationManager::instance();
+    nm->m_NotificationTimer.stop();
+    nm->removeNotificationGroup(event.type());
+
+    QVERIFY(getGroup(event.type(), 10) == 0);
+
+    nm->showNotification(NULL, event, CONTACT_1_REMOTE_ID);
+
+    MNotificationGroup *mgtGroup = getGroup(event.type(), 5000);
+    QVERIFY(mgtGroup);
+    QVERIFY(mgtGroup->isPublished());
+    QCOMPARE(mgtGroup->summary(), CONTACT_1_REMOTE_ID);
+    QCOMPARE(mgtGroup->body(), MESSAGE_TEXT);
+
+    NotificationGroup group = nm->notificationGroup(event.type());
+
+    QVERIFY(nm->countContacts(group) == 1);
+    QVERIFY(nm->countNotifications(group) == 1);
+
+    justWait(NOTIFICATION_THRESHOLD + 500);
+
+    // Multiple notifications from contact 1
+    CommHistory::Event event1 = createImEvent(CONTACT_1_REMOTE_ID, CONTACT_1_ID);
+    nm->showNotification(NULL, event1, CONTACT_1_REMOTE_ID);
+
+    mgtGroup = getGroup(event.type(), 5000);
+    QVERIFY(mgtGroup);
+    QVERIFY(mgtGroup->isPublished());
+    QCOMPARE(mgtGroup->summary(), CONTACT_1_REMOTE_ID);
+    QCOMPARE(mgtGroup->body(), txt_qtn_msg_notification_new_message(2));
+
+    QVERIFY(nm->countContacts(group) == 1);
+    QVERIFY(nm->countNotifications(group) == 2);
+
+    justWait(NOTIFICATION_THRESHOLD + 500);
+
+    CommHistory::Event event2 = createImEvent(CONTACT_2_REMOTE_ID, CONTACT_2_ID);
+    nm->showNotification(NULL, event2, CONTACT_2_REMOTE_ID);
+
+    justWait(2000); //wait for contact resolving
+
+    mgtGroup = getGroup(event.type(), 5000);
+    QVERIFY(mgtGroup);
+    QVERIFY(mgtGroup->isPublished());
+    QVERIFY(mgtGroup->summary().isEmpty());
+    QCOMPARE(mgtGroup->body(), txt_qtn_msg_notification_new_message(3));
+}
+
+void Ut_NotificationManager::testVoicemail()
+{
+    // One notification from contact 1
+    NotificationManager* nm = NotificationManager::instance();
+    nm->m_NotificationTimer.stop();
+    nm->removeNotificationGroup(CommHistory::Event::VoicemailEvent);
+
+    QVERIFY(getGroup(CommHistory::Event::VoicemailEvent, 10) == 0);
+
+    nm->slotMWICountChanged(1);
+
+    MNotificationGroup *mgtGroup = getGroup(CommHistory::Event::VoicemailEvent, 5000);
+    QVERIFY(mgtGroup);
+    QVERIFY(mgtGroup->isPublished());
+    QVERIFY(mgtGroup->summary().isEmpty());
+    QCOMPARE(mgtGroup->body(), txt_qtn_call_voicemail_notification(1));
+
+    justWait(NOTIFICATION_THRESHOLD + 500);
+
+    nm->slotMWICountChanged(2);
+
+    mgtGroup = getGroup(CommHistory::Event::VoicemailEvent, 5000);
+    QVERIFY(mgtGroup);
+    QVERIFY(mgtGroup->isPublished());
+    QVERIFY(mgtGroup->summary().isEmpty());
+    QCOMPARE(mgtGroup->body(), txt_qtn_call_voicemail_notification(2));
+
+    justWait(NOTIFICATION_THRESHOLD + 500);
+
+    nm->slotMWICountChanged(-1); // unknown number
+
+    mgtGroup = getGroup(CommHistory::Event::VoicemailEvent, 5000);
+    QVERIFY(mgtGroup);
+    QVERIFY(mgtGroup->isPublished());
+    QVERIFY(mgtGroup->summary().isEmpty());
+    QCOMPARE(mgtGroup->body(), txt_qtn_call_voicemail_notification(1));
+
+    justWait(NOTIFICATION_THRESHOLD + 500);
+
+    nm->slotMWICountChanged(0);
+
+    mgtGroup = getGroup(CommHistory::Event::VoicemailEvent, 1);
+    QVERIFY(mgtGroup == 0);
+}
+
+void Ut_NotificationManager::testMissedCallNotification()
+{
+    CommHistory::Event event = createMissedCallEvent(CONTACT_1_REMOTE_ID, CONTACT_1_ID);
+    // One notification from contact 1
+    NotificationManager* nm = NotificationManager::instance();
+    nm->m_NotificationTimer.stop();
+    nm->removeNotificationGroup(event.type());
+
+    QVERIFY(getGroup(event.type(), 10) == 0);
+
+    nm->showNotification(NULL, event, CONTACT_1_REMOTE_ID);
+
+    MNotificationGroup *mgtGroup = getGroup(event.type(), 5000);
+    QVERIFY(mgtGroup);
+    QVERIFY(mgtGroup->isPublished());
+    QCOMPARE(mgtGroup->summary(), CONTACT_1_REMOTE_ID);
+    QCOMPARE(mgtGroup->body(), txt_qtn_call_missed(1));
+
+    NotificationGroup group = nm->notificationGroup(event.type());
+
+    QVERIFY(nm->countContacts(group) == 1);
+    QVERIFY(nm->countNotifications(group) == 1);
+
+    justWait(NOTIFICATION_THRESHOLD + 500);
+
+    // Multiple notifications from contact 1
+    CommHistory::Event event1 = createMissedCallEvent(CONTACT_1_REMOTE_ID, CONTACT_1_ID);
+    nm->showNotification(NULL, event1, CONTACT_1_REMOTE_ID);
+
+    mgtGroup = getGroup(event.type(), 5000);
+    QVERIFY(mgtGroup);
+    QVERIFY(mgtGroup->isPublished());
+    QCOMPARE(mgtGroup->summary(), CONTACT_1_REMOTE_ID);
+    QCOMPARE(mgtGroup->body(), txt_qtn_call_missed(2));
+
+    QVERIFY(nm->countContacts(group) == 1);
+    QVERIFY(nm->countNotifications(group) == 2);
+
+    justWait(NOTIFICATION_THRESHOLD + 500);
+
+    CommHistory::Event event2 = createMissedCallEvent(CONTACT_2_REMOTE_ID, CONTACT_2_ID);
+    nm->showNotification(NULL, event2, CONTACT_2_REMOTE_ID);
+
+    justWait(2000); //wait for contact resolving
+
+    mgtGroup = getGroup(event.type(), 5000);
+    QVERIFY(mgtGroup);
+    QVERIFY(mgtGroup->isPublished());
+    QVERIFY(mgtGroup->summary().isEmpty());
+    QCOMPARE(mgtGroup->body(), txt_qtn_call_missed(3));
 }
 
 QTEST_MAIN(Ut_NotificationManager)

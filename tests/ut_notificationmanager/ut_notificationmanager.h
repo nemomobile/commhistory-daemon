@@ -59,11 +59,17 @@ private Q_SLOTS:
 
     void testRemoveNotificationGrouop();
 
+    // showNotification tests
+    void testImNotification();
+    void testVoicemail();
+    void testMissedCallNotification();
+
 private:
     void updateNotification(CommHistory::Event& event);
     CommHistory::Event createImEvent(const QString& remoteUid, int contactId);
     PersonalNotification createPersonalNotification(const CommHistory::Event &event);
     CommHistory::Event createMissedCallEvent(const QString& remoteUid, int contactId);
+    static MNotificationGroup* getGroup(int eventType, int msec);
 
 private:
     int eventId;

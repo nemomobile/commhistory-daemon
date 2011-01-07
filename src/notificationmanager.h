@@ -156,7 +156,7 @@ private:
     QString notificationText(const CommHistory::Event& event);
     QString notificationGroupText(const NotificationGroup& group,
                                   const PersonalNotification& notification);
-    QString eventType(int type) const;
+    static QString eventType(int type);
     void updateNotificationGroup(const NotificationGroup& group);
 
     /* actions */

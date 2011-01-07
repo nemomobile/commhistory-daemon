@@ -66,15 +66,6 @@ namespace {
         while (timer.elapsed() < msec)
             QCoreApplication::processEvents();
     }
-
-
-    void waitInvocationContext(Tp::MethodInvocationContextPtr<> &ctx, int msec)
-    {
-        QTime timer;
-        timer.start();
-        while (timer.elapsed() < msec && !ctx->isFinished())
-            QCoreApplication::processEvents();
-    }
 }
 
 Ut_StreamChannelListener::Ut_StreamChannelListener()
