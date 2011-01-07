@@ -50,7 +50,6 @@ StreamChannelListener::StreamChannelListener(const Tp::AccountPtr &account,
       m_callStartTime(0),
       m_EventAdded(false),
       m_LoggingTimerId(0),
-      m_isEmergencyCall(false),
       m_eventCommitted(false),
       m_pProxy(0)
 {
@@ -76,6 +75,15 @@ StreamChannelListener::StreamChannelListener(const Tp::AccountPtr &account,
             m_Direction = CommHistory::Event::Outbound;
     }
     m_Event.setDirection(m_Direction);
+
+    QVariant spProp = m_Channel->immutableProperties().value(INITIAL_SERVICE_POINT_PROPERTY);
+    if (spProp.isValid()) {
+        const Tp::ServicePoint sp = qdbus_cast<Tp::ServicePoint>(spProp);
+        if (sp.servicePointType == Tp::ServicePointTypeEmergency) {
+            qDebug() << Q_FUNC_INFO << "*** EMERGENCY CALL, service =" << sp.service;
+            m_Event.setIsEmergencyCall(true);
+        }
+    }
 
     // postpone adding event for incoming event to speed up call handling
     if (m_Direction == CommHistory::Event::Outbound && !addEvent())
@@ -153,20 +161,10 @@ void StreamChannelListener::channelReady()
                 this,
                 SLOT(slotStreamStateChanged(const Tp::MediaStreamPtr &, Tp::MediaStreamState)));
 
-        QVariant spProp = mediaChannel->immutableProperties().
-            value(INITIAL_SERVICE_POINT_PROPERTY);
-        if (spProp.isValid()) {
-            const Tp::ServicePoint sp = qdbus_cast<Tp::ServicePoint>(spProp);
-            if (sp.servicePointType == Tp::ServicePointTypeEmergency) {
-                qDebug() << Q_FUNC_INFO << "*** EMERGENCY CALL, service =" << sp.service;
-                m_isEmergencyCall = true;
-            }
-        }
-
-        if (!m_isEmergencyCall) {
+        if (!m_Event.isEmergencyCall()) {
             Tp::Client::ChannelInterfaceServicePointInterface *servicePointIf =
                     mediaChannel->optionalInterface<Tp::Client::ChannelInterfaceServicePointInterface>();
-            qDebug() << "SERVICE POINT IF" << servicePointIf;
+
             if (servicePointIf) {
                 connect(servicePointIf, SIGNAL(ServicePointChanged(const Tp::ServicePoint &)),
                         this, SLOT(slotServicePointChanged(const Tp::ServicePoint &)));
@@ -175,14 +173,10 @@ void StreamChannelListener::channelReady()
                         CURRENT_SERVICE_POINT_PROPERTY_NAME).value<Tp::ServicePoint>();
                 if (sp.servicePointType == Tp::ServicePointTypeEmergency) {
                     qDebug() << Q_FUNC_INFO << "*** EMERGENCY CALL, service =" << sp.service;
-                    m_isEmergencyCall = true;
+                    m_Event.setIsEmergencyCall(true);
                 }
             }
         }
-
-        if (m_isEmergencyCall)
-            m_Event.setIsEmergencyCall(true);
-
     } else {
         qCritical() << Q_FUNC_INFO << "Wrong channel - Null";
     }
@@ -285,9 +279,6 @@ void StreamChannelListener::invalidated(Tp::DBusProxy *proxy,
         m_Event.setIsMissedCall(true);
     }
 
-    if (m_isEmergencyCall)
-        m_Event.setIsEmergencyCall(true);
-
     if (addEvent() && m_Event.isMissedCall()) {
         NotificationManager* nManager = NotificationManager::instance();
         nManager->showNotification(this, m_Event);
@@ -342,7 +333,7 @@ void StreamChannelListener::slotServicePointChanged(const Tp::ServicePoint &serv
 
     if (servicePoint.servicePointType == Tp::ServicePointTypeEmergency) {
         qDebug() << Q_FUNC_INFO << "*** EMERGENCY CALL, service =" << servicePoint.service;
-        m_isEmergencyCall = true;
+        m_Event.setIsEmergencyCall(true);
     }
 }
 

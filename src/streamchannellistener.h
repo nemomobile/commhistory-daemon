@@ -82,7 +82,6 @@ private:
     CommHistory::Event m_Event;
     bool m_EventAdded;
     int m_LoggingTimerId;
-    bool m_isEmergencyCall;
 
     bool m_eventCommitted;
     Tp::DBusProxy *m_pProxy;
