@@ -116,15 +116,15 @@ void Ut_StreamChannelListener::cleanup()
 
 void Ut_StreamChannelListener::invalidated_data()
 {
-    QTest::addColumn<bool>("waitCtx");
+    QTest::addColumn<bool>("waitReady");
     //TODO: invalidate in call
-    QTest::newRow("waitListenerReady") << true;
-    QTest::newRow("invalidateBeforeListenerReady") << false;
+    QTest::newRow("waitReady") << true;
+    QTest::newRow("invalidateBeforeReady") << false;
 }
 
 void Ut_StreamChannelListener::invalidated()
 {
-    QFETCH(bool, waitCtx);
+    QFETCH(bool, waitReady);
 
     NotificationManager *nm = NotificationManager::instance();
     QVERIFY(nm);
@@ -149,14 +149,11 @@ void Ut_StreamChannelListener::invalidated()
 
     StreamChannelListener scl(acc, ch, ctx);
 
-    if (waitCtx) {
-        waitInvocationContext(ctx, 5000);
+    QVERIFY(ctx->isFinished());
+    QVERIFY(!ctx->isError());
 
-        QVERIFY(ctx->isFinished());
-        QVERIFY(!ctx->isError());
-    } else {
-        QVERIFY(!ctx->isFinished());
-    }
+    if (waitReady)
+        QCoreApplication::processEvents();
 
     QSignalSpy closed(&scl, SIGNAL(channelClosed(ChannelListener*)));
     ch->ut_invalidate(TELEPATHY_ERROR_CANCELLED, QString());
@@ -231,9 +228,10 @@ void Ut_StreamChannelListener::normalCall()
 
     StreamChannelListener scl(acc, ch, ctx);
 
-    waitInvocationContext(ctx, 5000);
     QVERIFY(ctx->isFinished());
     QVERIFY(!ctx->isError());
+
+    QCoreApplication::processEvents(); //allow channel to become ready
 
     // add contact
     Tp::ContactPtr self(new Tp::Contact());
@@ -374,9 +372,10 @@ void Ut_StreamChannelListener::emergency()
 
     StreamChannelListener scl(acc, ch, ctx);
 
-    waitInvocationContext(ctx, 5000);
     QVERIFY(ctx->isFinished());
     QVERIFY(!ctx->isError());
+
+    QCoreApplication::processEvents(); //allow channel to become ready
 
     // add contact
     Tp::ContactPtr self(new Tp::Contact());

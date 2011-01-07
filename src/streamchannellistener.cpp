@@ -55,6 +55,8 @@ StreamChannelListener::StreamChannelListener(const Tp::AccountPtr &account,
 {
     qDebug() << __PRETTY_FUNCTION__;
 
+    invocationContextFinished();
+
     makeChannelReady(Tp::StreamedMediaChannel::FeatureStreams);
 
     connect(&(eventModel()), SIGNAL(eventsCommitted(QList<CommHistory::Event>, bool)),
@@ -180,8 +182,6 @@ void StreamChannelListener::channelReady()
     } else {
         qCritical() << Q_FUNC_INFO << "Wrong channel - Null";
     }
-
-    invocationContextFinished();
 }
 
 void StreamChannelListener::slotGroupMembersChanged(
