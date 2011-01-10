@@ -28,20 +28,13 @@
 namespace Tp
 {
 
-// TODO: (API/ABI break) split StreamedMediaChannel in CallChannel and StreamedMediaChannel
+typedef QList<StreamedMediaStreamPtr> StreamedMediaStreams;
 
-//class StreamedMediaChannel;
-
-typedef QList<MediaContentPtr> MediaContents;
-typedef QList<MediaStreamPtr> MediaStreams;
-
-// FIXME: (API/ABI break) Rename MediaStream to StreamedMediaStream
-class MediaStream : public QObject,
-                    private ReadyObject,
-                    public RefCounted
+class StreamedMediaStream : public Object,
+                    private ReadyObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY(MediaStream)
+    Q_DISABLE_COPY(StreamedMediaStream)
 
 public:
     enum SendingState {
@@ -52,8 +45,6 @@ public:
 
     //~MediaStream(){}
 
-    MediaContentPtr content() const {return m_MediaContent;}
-
 //    StreamedMediaChannelPtr channel() const;
 
 //    uint id() const;
@@ -63,7 +54,7 @@ public:
 //    ContactPtr contact() const;
 
     //MediaStreamState state() const;
-    //MediaStreamType type() const;
+    MediaStreamType type() const{return streamType;};
 
     SendingState localSendingState() const {return localState;}
 //    SendingState remoteSendingState() const;
@@ -78,50 +69,16 @@ public:
 //    MediaStreamDirection direction() const;
 //    MediaStreamPendingSend pendingSend() const;
 
-    MediaStream(const MediaContentPtr &content): m_MediaContent(content){}
+    StreamedMediaStream(const StreamedMediaChannelPtr &channel): m_Channel(channel){}
 
 
     void ut_setLocalPendingState(SendingState state){localState = state;}
+    void ut_setType(MediaStreamType type){streamType = type;}
 
 private:
-    MediaContentPtr m_MediaContent;
+    StreamedMediaChannelPtr m_Channel;
     SendingState localState;
-};
-
-// FIXME: (API/ABI break) Remove MediaContent
-class MediaContent : public QObject,
-                    private ReadyObject,
-                    public RefCounted
-{
-    Q_OBJECT
-    Q_DISABLE_COPY(MediaContent)
-
-public:
-      //      ~MediaContent(){}
-
-//    StreamedMediaChannelPtr channel() const;
-
-//    QString name() const;
-    MediaStreamType type() const {return Tp::MediaStreamTypeAudio;}
-//    ContactPtr creator() const;
-
-    MediaStreams streams() const {return m_streams;}
-
-// test methods
-    void ut_addStream()
-    {
-        m_streams.append(MediaStreamPtr(new MediaStream(MediaContentPtr(this))));
-    }
-
-private:
-    friend class StreamedMediaChannel;
-
-    MediaContent()
-    {
-    }
-
-    MediaStreams m_streams;
-
+    MediaStreamType streamType;
 };
 
 class StreamedMediaChannel : public Channel
@@ -141,16 +98,15 @@ public:
     StreamedMediaChannel(const QString &objectPath, const QVariantMap &immutableProperties);
 
     virtual ~StreamedMediaChannel();
-    MediaContents contentsForType(MediaStreamType type) const;
 
-    //MediaStreams streams() const;
-    //MediaStreams streamsForType(MediaStreamType type) const;
+    StreamedMediaStreams streams() const;
+    StreamedMediaStreams streamsForType(MediaStreamType type) const;
 
-    MediaContents& ut_mediaContents();
-    void ut_addContent();
+    void ut_addStream();
+    StreamedMediaStreams ut_streams();
 
 Q_SIGNALS:
-    void streamStateChanged(const Tp::MediaStreamPtr &stream,
+    void streamStateChanged(const Tp::StreamedMediaStreamPtr &stream,
             Tp::MediaStreamState state);
 
 private:

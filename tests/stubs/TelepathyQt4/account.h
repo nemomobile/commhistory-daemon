@@ -14,31 +14,32 @@
 namespace Tp
 {
 
-class Account : public StatelessDBusProxy,
-                public ReadyObject,
-                public RefCounted
+class Account;
+
+class Account : public StatelessDBusProxy
 {
 
     Q_OBJECT
     Q_DISABLE_COPY(Account)
 
 public:
-
-    Account(const QString &objectPath);
+    Account(ConnectionPtr &conn, const QString &objectPath);
+    ~Account();
 
     static const Feature FeatureCore;
 
     QString protocol() const;
     QString protocolName() const;
+    ConnectionPtr connection() const;
 
 public: // stubs
     void ut_setProtocolName( const QString& newUID );
     void ut_setProtocol( const QString& newProtocol );
 
 private:
-
-    QString m_protocol;
-    QString m_protocolName;
+    struct Private;
+    friend struct Private;
+    Private *mPriv;
 };
 
 } // Tp

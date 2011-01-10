@@ -20,35 +20,47 @@
 #
 ###############################################################################
 
-!include( ../common-vars.pri ):error( "Unable to install common-vars.pri" )
+#-----------------------------------------------------------------------------
+# Project file for test ut_textchannellistener
+#-----------------------------------------------------------------------------
 
-TEMPLATE = subdirs
-SUBDIRS = ut_notificationmanager \
-          ut_textchannellistener \
-          ut_streamchannellistener \
-          ut_messagereviver
-CONFIG += ordered
-
-# make sure the destination path exists
-!system( mkdir -p $${OUT_PWD}/bin ) : \
-    error( "Unable to create bin dir for tests." )
+!include( ../../common-project-config.pri ) : error( "Unable to include common-project-config.pri!" )
+!include( ../../common-vars.pri ) : error( "Unable to include common-project-config.pri!" )
 
 #-----------------------------------------------------------------------------
-# generate test xml
+# common test configuration
 #-----------------------------------------------------------------------------
-!system( ./do_tests_xml.sh $${OUT_PWD}/bin \
-                    $${PROJECT_NAME}-tests \
-                     \"$${SUBDIRS}\" ) : \
-     error("Error running do_tests_xml.sh")
-QMAKE_CLEAN += $${OUT_PWD}/bin/tests.xml
+!include(../tests.pri) : error( "Unable to include test.pri" )
+
+!include( ../stubs/stubs.pri ) : error("Unable to include stubs/stubs.pri")
+INCLUDEPATH = ../stubs/ \
+    $${INCLUDEPATH}
 
 #-----------------------------------------------------------------------------
-# installation setup
+# test specific configuration
 #-----------------------------------------------------------------------------
-!include( ../common-installs-config.pri ) : \
-         error( "Unable to include common-installs-config.pri!" )
-autotests.files = $${OUT_PWD}/bin/*
-autotests.path  = $${INSTALL_PREFIX}/share/$${PROJECT_NAME}-tests
-tools.files = $${PWD}/tools/*
-tools.path  = $${INSTALL_PREFIX}/share/$${PROJECT_NAME}-tests
-INSTALLS += autotests tools
+
+TARGET = ut_messagereviver
+CONFIG += link_pkgconfig \
+          mobility
+LIBS += -lQtContacts -lQtVersit
+PKGCONFIG += contextsubscriber-1.0 \
+             meegotouch
+
+TEST_SOURCES += $$COMMHISTORYDSRCDIR/messagereviver.cpp \
+                connectionutils.cpp
+
+TEST_HEADERS += $$COMMHISTORYDSRCDIR/messagereviver.h \
+                $$COMMHISTORYDSRCDIR/connectionutils.h
+
+HEADERS     += ut_messagereviver.h \
+            $$TEST_HEADERS
+
+SOURCES     += ut_messagereviver.cpp \
+            $$TEST_SOURCES
+
+DESTDIR = ../bin
+QT += dbus
+
+# End of File
+

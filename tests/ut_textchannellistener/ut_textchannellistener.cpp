@@ -178,10 +178,11 @@ void Ut_TextChannelListener::imSending()
     QVERIFY(nm);
     nm->postedNotifications.clear();
 
-    Tp::AccountPtr acc(new Tp::Account(IM_ACCOUNT_PATH));
     // setup connection
     Tp::ConnectionPtr conn(new Tp::Connection());
     conn->ut_setIsReady(true);
+
+    Tp::AccountPtr acc(new Tp::Account(conn, IM_ACCOUNT_PATH));
 
     //setup channel
     Tp::ChannelPtr ch(new Tp::TextChannel(IM_CHANNEL_PATH));
@@ -262,16 +263,16 @@ void Ut_TextChannelListener::receiving()
     QVERIFY(nm);
     nm->postedNotifications.clear();
 
-    //setup account
-    Tp::AccountPtr acc(new Tp::Account(accountPath));
-    if (cellular)
-        acc->ut_setProtocolName("tel");
-
     // setup connection
     Tp::ConnectionPtr conn(new Tp::Connection());
     conn->ut_setIsReady(true);
     if (cellular)
         conn->ut_setInterfaces(QStringList() << RTComTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName());
+
+    //setup account
+    Tp::AccountPtr acc(new Tp::Account(conn, accountPath));
+    if (cellular)
+        acc->ut_setProtocolName("tel");
 
     //setup channel
     Tp::ChannelPtr ch(new Tp::TextChannel(channelPath));
@@ -364,12 +365,13 @@ void Ut_TextChannelListener::smsSending()
     QVERIFY(nm);
     nm->postedNotifications.clear();
 
-    Tp::AccountPtr acc(new Tp::Account(SMS_ACCOUNT_PATH));
-    acc->ut_setProtocolName("tel");
     // setup connection
     Tp::ConnectionPtr conn(new Tp::Connection());
     conn->ut_setIsReady(true);
     conn->ut_setInterfaces(QStringList() << RTComTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName());
+
+    Tp::AccountPtr acc(new Tp::Account(conn, SMS_ACCOUNT_PATH));
+    acc->ut_setProtocolName("tel");
 
     //setup channel
     Tp::ChannelPtr ch(new Tp::TextChannel(SMS_CHANNEL_PATH));

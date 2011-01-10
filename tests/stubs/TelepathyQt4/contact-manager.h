@@ -37,7 +37,7 @@
 namespace Tp
 {
 
-class ContactManager : public QObject
+class ContactManager : public Object
 {
     Q_OBJECT
     Q_DISABLE_COPY(ContactManager)
@@ -46,13 +46,13 @@ public:
     ContactManager();
     ~ContactManager();
 
-    QSet<Contact::Feature> supportedFeatures() const;
+    Features supportedFeatures() const;
 
     PendingContacts *contactsForHandles(const UIntList &handles,
-            const QSet<Contact::Feature> &features = QSet<Contact::Feature>());
+            const Features &features = Features());
 
     PendingContacts *upgradeContacts(const QList<ContactPtr> &contacts,
-            const QSet<Contact::Feature> &features);
+            const Features &features);
 
 Q_SIGNALS:
     void groupMembersChanged(const QString &group,
@@ -61,14 +61,14 @@ Q_SIGNALS:
             const Tp::Channel::GroupMemberChangeDetails &details);
 
 public: // ut
-    void ut_setSupportedFeatures(const QSet<Contact::Feature>& features);
+    void ut_setSupportedFeatures(const Features& features);
     void ut_emitGroupMembersChanged(const QString &group,
                                     const Tp::Contacts &groupMembersAdded,
                                     const Tp::Contacts &groupMembersRemoved,
                                     const Tp::Channel::GroupMemberChangeDetails &details);
 
 private:
-    QSet<Contact::Feature> m_supportedFeatures;
+    Features m_supportedFeatures;
 };
 
 } // Tp

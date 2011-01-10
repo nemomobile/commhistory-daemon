@@ -42,7 +42,7 @@ public:
     static const Feature FeatureMessageQueue;
     static const Feature FeatureMessageSentSignal;
 
-    TextChannel(const QString &objectPath = QString(), QObject *parent = 0);
+    TextChannel(const QString &objectPath = QString());
 
     virtual ~TextChannel();
 

@@ -10,19 +10,18 @@ const Tp::Feature Tp::Connection::FeatureSimplePresence = Tp::Feature(Tp::Connec
 struct Connection::Private
 {
     QStringList m_interfaces;
-    ContactManager* m_manager;
+    ContactManagerPtr m_manager;
 };
 
-Connection::Connection(const QString &objectPath, QObject *parent) :
-        StatefulDBusProxy(objectPath, parent),
+Connection::Connection(const QString &objectPath) :
+        StatefulDBusProxy(objectPath),
         mPriv(new Private)
 {
-    mPriv->m_manager = new ContactManager();
+    mPriv->m_manager = ContactManagerPtr(new ContactManager());
 }
 
 Connection::~Connection()
 {
-    delete mPriv->m_manager;
     delete mPriv;
 }
 
@@ -36,7 +35,7 @@ bool Connection::hasInterface(const char * interface)
     return mPriv->m_interfaces.contains(QString(interface));
 }
 
-ContactManager* Connection::contactManager() const
+ContactManagerPtr Connection::contactManager() const
 {
     return mPriv->m_manager;
 }

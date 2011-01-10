@@ -22,7 +22,7 @@
 #ifndef _TelepathyQt4_dbus_proxy_h_HEADER_GUARD_
 #define _TelepathyQt4_dbus_proxy_h_HEADER_GUARD_
 
-#include <QObject>
+#include "ready-object.h"
 
 class QDBusConnection;
 class QDBusError;
@@ -30,16 +30,15 @@ class QDBusError;
 namespace Tp
 {
 
-class DBusProxy : public QObject
+class DBusProxy : public Object, public ReadyObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(DBusProxy)
 
 public:
-    DBusProxy(const QString &objectPath = QString(), QObject *parent = 0) : QObject(parent),
+    DBusProxy(const QString &objectPath = QString()) : ReadyObject(),
     m_objectPath(objectPath){}
-
-    virtual ~DBusProxy(){}
+    virtual ~DBusProxy();
 
     QString objectPath() const {return m_objectPath;}
     bool isValid() const {return m_isValid;}
@@ -71,10 +70,8 @@ class StatelessDBusProxy : public DBusProxy
     Q_DISABLE_COPY(StatelessDBusProxy)
 
 public:
-    StatelessDBusProxy(const QString &objectPath = QString(), QObject *parent = 0)
-        : DBusProxy(objectPath,parent){}
-
-    virtual ~StatelessDBusProxy(){}
+    StatelessDBusProxy(const QString &objectPath = QString())
+        : DBusProxy(objectPath){}
 };
 
 class StatefulDBusProxy : public DBusProxy
@@ -83,10 +80,8 @@ class StatefulDBusProxy : public DBusProxy
     Q_DISABLE_COPY(StatefulDBusProxy)
 
 public:
-    StatefulDBusProxy(const QString &objectPath = QString(), QObject *parent = 0)
-    : DBusProxy(objectPath,parent){}
-
-    virtual ~StatefulDBusProxy(){}
+    StatefulDBusProxy(const QString &objectPath = QString())
+    : DBusProxy(objectPath){}
 };
 
 } // Tp

@@ -121,10 +121,11 @@ void Ut_StreamChannelListener::invalidated()
     QVERIFY(nm);
     nm->postedNotifications.clear();
 
-    Tp::AccountPtr acc(new Tp::Account(ACCOUNT_PATH));
     // setup connection
     Tp::ConnectionPtr conn(new Tp::Connection());
     conn->ut_setIsReady(true);
+
+    Tp::AccountPtr acc(new Tp::Account(conn, ACCOUNT_PATH));
 
     //setup channel
     QDateTime startTime = QDateTime::currentDateTime();
@@ -199,10 +200,11 @@ void Ut_StreamChannelListener::normalCall()
     QVERIFY(nm);
     nm->postedNotifications.clear();
 
-    Tp::AccountPtr acc(new Tp::Account(ACCOUNT_PATH));
     // setup connection
     Tp::ConnectionPtr conn(new Tp::Connection());
     conn->ut_setIsReady(true);
+
+    Tp::AccountPtr acc(new Tp::Account(conn, ACCOUNT_PATH));
 
     //setup channel
     QDateTime startTime = QDateTime::currentDateTime();
@@ -235,9 +237,8 @@ void Ut_StreamChannelListener::normalCall()
     ch->ut_setGroupContacts(Tp::Contacts() << target << self);
 
     // add streams
-    Tp::StreamedMediaChannelPtr::dynamicCast(ch)->ut_addContent();
-    Tp::StreamedMediaChannelPtr::dynamicCast(ch)->ut_mediaContents().first()->ut_addStream();
-    Tp::StreamedMediaChannelPtr::dynamicCast(ch)->ut_mediaContents().first()->streams().first()->ut_setLocalPendingState(Tp::MediaStream::SendingStateSending);
+    Tp::StreamedMediaChannelPtr::dynamicCast(ch)->ut_addStream();
+    Tp::StreamedMediaChannelPtr::dynamicCast(ch)->ut_streams().first()->ut_setLocalPendingState(Tp::StreamedMediaStream::SendingStateSending);
 
     // emit membersChanged
     if (accept) {
@@ -337,10 +338,11 @@ void Ut_StreamChannelListener::emergency()
 {
     QFETCH(bool, accept);
 
-    Tp::AccountPtr acc(new Tp::Account(ACCOUNT_PATH));
     // setup connection
     Tp::ConnectionPtr conn(new Tp::Connection());
     conn->ut_setIsReady(true);
+
+    Tp::AccountPtr acc(new Tp::Account(conn, ACCOUNT_PATH));
 
     //setup channel
     QDateTime startTime = QDateTime::currentDateTime();
@@ -379,9 +381,8 @@ void Ut_StreamChannelListener::emergency()
     ch->ut_setGroupContacts(Tp::Contacts() << target << self);
 
     // add streams
-    Tp::StreamedMediaChannelPtr::dynamicCast(ch)->ut_addContent();
-    Tp::StreamedMediaChannelPtr::dynamicCast(ch)->ut_mediaContents().first()->ut_addStream();
-    Tp::StreamedMediaChannelPtr::dynamicCast(ch)->ut_mediaContents().first()->streams().first()->ut_setLocalPendingState(Tp::MediaStream::SendingStateSending);
+    Tp::StreamedMediaChannelPtr::dynamicCast(ch)->ut_addStream();
+    Tp::StreamedMediaChannelPtr::dynamicCast(ch)->ut_streams().first()->ut_setLocalPendingState(Tp::StreamedMediaStream::SendingStateSending);
 
     // emit membersChanged
     Tp::Channel::GroupMemberChangeDetails details(target,

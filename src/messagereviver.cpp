@@ -31,7 +31,6 @@
 
 using namespace RTComLogger;
 using namespace CommHistory;
-using namespace Tp;
 
 #define STORED_MESSAGES_CHECK_INTERVAL 30000 //msec
 
@@ -55,8 +54,7 @@ void MessageReviver::onConnectionReady(const Tp::ConnectionPtr& connection)
 
 void MessageReviver::fetchMessages(const Tp::ConnectionPtr &connection)
 {
-    Client::DBus::PropertiesInterface *props =
-        connection->interface<Client::DBus::PropertiesInterface>();
+    Tp::Client::DBus::PropertiesInterface *props = connection->optionalInterface<Tp::Client::DBus::PropertiesInterface>();
 
     QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher
         (props->Get(RTComTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName(),
@@ -80,7 +78,15 @@ void MessageReviver::onGetStoredMessages(QDBusPendingCallWatcher *call)
         return;
     }
 
-    QSet<QString> currentTokens = reply.value().variant().toStringList().toSet();
+    updateTokens(reply.value().variant().toStringList(), connection);
+
+    call->deleteLater();
+}
+
+void MessageReviver::updateTokens(const QStringList &tokens,
+                                  Tp::ConnectionPtr &connection)
+{
+    QSet<QString> currentTokens = tokens.toSet();
     QSet<QString> initialTokens = m_MessageTokens.take(connection->objectPath());
     bool modified = false;
 
@@ -90,7 +96,7 @@ void MessageReviver::onGetStoredMessages(QDBusPendingCallWatcher *call)
     }
 
     if (initialTokens.isEmpty()) { // it's empty
-                                   // only if m_MessageTokens didn't have it
+        // only if m_MessageTokens didn't have it
         initialTokens = currentTokens;
         modified = true;
     } else {
@@ -115,8 +121,6 @@ void MessageReviver::onGetStoredMessages(QDBusPendingCallWatcher *call)
         // get tp-glib connection to finally expunge/deliver messages
         handleMessages(connection);
     }
-
-    call->deleteLater();
 }
 
 void MessageReviver::timerEvent(QTimerEvent *event)

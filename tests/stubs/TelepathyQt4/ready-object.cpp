@@ -1,4 +1,5 @@
 #include "ready-object.h"
+#include "DBusProxy"
 
 #include <QTimer>
 
@@ -6,6 +7,10 @@ Tp::ReadyObject::ReadyObject():
         m_isReady(false),
         m_pendingDelay(0),
         m_pPendingReady(0)
+{
+}
+
+Tp::ReadyObject::~ReadyObject()
 {
 }
 

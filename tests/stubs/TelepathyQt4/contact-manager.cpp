@@ -12,23 +12,23 @@ ContactManager::~ContactManager()
 {
 }
 
-QSet<Contact::Feature> ContactManager::supportedFeatures() const
+Features ContactManager::supportedFeatures() const
 {
     return m_supportedFeatures;
 }
 
 PendingContacts* ContactManager::contactsForHandles(const UIntList&,
-        const QSet<Contact::Feature>&)
+        const Features&)
 {
     return new PendingContacts();
 }
 
 PendingContacts* ContactManager::upgradeContacts(const QList<ContactPtr>&,
-        const QSet<Contact::Feature>&)
+        const Features&)
 {
     return new PendingContacts();
 }
-void ContactManager::ut_setSupportedFeatures(const QSet<Contact::Feature>& features)
+void ContactManager::ut_setSupportedFeatures(const Features& features)
 {
     m_supportedFeatures = features;
 }

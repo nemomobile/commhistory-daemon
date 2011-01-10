@@ -11,8 +11,8 @@ struct TextChannel::Private
     QList<ReceivedMessage> m_messageQueue;
 };
 
-TextChannel::TextChannel(const QString &objectPath, QObject *parent) :
-        Channel(objectPath, parent),
+TextChannel::TextChannel(const QString &objectPath) :
+        Channel(objectPath),
         mPriv(new Private)
 
 {

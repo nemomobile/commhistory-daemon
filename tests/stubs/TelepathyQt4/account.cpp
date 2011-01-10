@@ -1,37 +1,59 @@
 
 #include "account.h"
 
+#include "Connection"
+
 #include <QDebug>
 #include <QTimer>
 #include <QString>
 
-const Tp::Feature Tp::Account::FeatureCore = Tp::Feature(Tp::Account::staticMetaObject.className(), 0, true);
-
-Tp::Account::Account(const QString &objectPath)
-    :Tp::StatelessDBusProxy(objectPath)
-        ,Tp::ReadyObject()
-        ,m_protocol(QString(""))
-        ,m_protocolName(QString(""))
+namespace Tp
 {
 
+const Feature  Account::FeatureCore =  Feature(Account::staticMetaObject.className(), 0, true);
+
+struct Account::Private
+{
+    QString m_protocol;
+    QString m_protocolName;
+    ConnectionPtr m_conn;
+};
+
+Account::Account(ConnectionPtr &conn, const QString &objectPath)
+    : StatelessDBusProxy(objectPath),
+    mPriv(new Private)
+{
+    mPriv->m_conn = conn;
 }
 
-QString Tp::Account::protocol() const
+Account::~Account()
 {
-    return m_protocol;
+    delete mPriv;
 }
 
-QString Tp::Account::protocolName() const
+QString Account::protocol() const
 {
-    return m_protocolName;
+    return mPriv->m_protocol;
 }
 
-void Tp::Account::ut_setProtocol( const QString& newProtocol )
+QString Account::protocolName() const
 {
-   m_protocol = newProtocol;
+    return mPriv->m_protocolName;
 }
 
-void Tp::Account::ut_setProtocolName(const QString& protocolName)
+void Account::ut_setProtocol( const QString& newProtocol )
 {
-    m_protocolName = protocolName;
+   mPriv->m_protocol = newProtocol;
+}
+
+void Account::ut_setProtocolName(const QString& protocolName)
+{
+    mPriv->m_protocolName = protocolName;
+}
+
+ConnectionPtr Account::connection() const
+{
+    return mPriv->m_conn;
+}
+
 }

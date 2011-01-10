@@ -28,6 +28,7 @@
 #include "Types"
 #include "ReferencedHandles"
 #include "Constants"
+#include "AbstractInterface"
 
 #include <QSet>
 #include <QString>
@@ -38,9 +39,34 @@ namespace Tp
 
 class ContactManager;
 
-class  Connection : public StatefulDBusProxy,
-                   public ReadyObject,
-                   public RefCounted
+namespace Client
+{
+namespace DBus
+{
+    class PropertiesInterface : public Tp::AbstractInterface
+    {
+        Q_OBJECT
+
+    public:
+        static inline const char *staticInterfaceName()
+        {
+            return "org.freedesktop.DBus.Properties";
+        }
+
+        PropertiesInterface(){}
+
+    public Q_SLOTS:
+        inline QDBusPendingReply<QDBusVariant> Get(const QString& interfaceName, const QString& propertyName)
+        {
+            QList<QVariant> argumentList;
+            argumentList << QVariant::fromValue(interfaceName) << QVariant::fromValue(propertyName);
+            return asyncCallWithArgumentList(QLatin1String("Get"), argumentList);
+        }
+    };
+}
+}
+
+class  Connection : public StatefulDBusProxy
 {
     Q_OBJECT
     Q_DISABLE_COPY(Connection)
@@ -48,7 +74,7 @@ class  Connection : public StatefulDBusProxy,
 
 public:
 
-    Connection(const QString &objectPath = QString(), QObject *parent = 0);
+    Connection(const QString &objectPath = QString());
 
     template <typename Interface>
     inline Interface *interface()
@@ -61,6 +87,11 @@ public:
         return newIf;
     }
 
+    template <typename Interface>
+    inline Interface *optionalInterface() {
+        return interface<Interface>();
+    }
+
     static const Feature FeatureCore;
     static const Feature FeatureSimplePresence;
 
@@ -70,7 +101,7 @@ public:
 
     bool hasInterface(const char *);
 
-    ContactManager *contactManager() const;
+    ContactManagerPtr contactManager() const;
 
 public: // ut
     void ut_setInterfaces(const QStringList& interfaces);

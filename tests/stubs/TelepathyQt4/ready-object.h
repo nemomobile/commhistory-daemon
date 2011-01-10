@@ -38,7 +38,7 @@ class ReadyObject
 
 public:
     ReadyObject();
-    virtual ~ReadyObject(){}
+    virtual ~ReadyObject();
 
     bool isReady(const Features &features = Features()) const
     {

@@ -41,16 +41,13 @@ class Contact : public QObject
     Q_DISABLE_COPY(Contact);
 
 public:
-    enum Feature {
-        FeatureAlias,
-        FeatureAvatarToken,
-        FeatureSimplePresence,
-        FeatureCapabilities,
-        FeatureLocation,
-        FeatureInfo,
-        FeatureAvatarData,
-        _Padding = 0xFFFFFFFF
-    };
+    static const Feature FeatureAlias;
+    static const Feature FeatureAvatarData;
+    static const Feature FeatureAvatarToken;
+    static const Feature FeatureCapabilities;
+    static const Feature FeatureInfo;
+    static const Feature FeatureLocation;
+    static const Feature FeatureSimplePresence;
 
     enum PresenceState {
          PresenceStateNo,

@@ -22,8 +22,7 @@ struct Channel::Private : public QSharedData
 };
 
 
-Channel::Channel(const QString &objectPath, QObject *parent) : StatefulDBusProxy(objectPath,
-                                                                                 parent),
+Channel::Channel(const QString &objectPath) : StatefulDBusProxy(objectPath),
                                                                mPriv(new Private)
 {
 }

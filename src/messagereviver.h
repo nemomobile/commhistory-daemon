@@ -52,6 +52,7 @@ private Q_SLOTS:
     void onConnectionReady(const Tp::ConnectionPtr& connection);
     void onGetStoredMessages(QDBusPendingCallWatcher *call);
 private:
+    void updateTokens(const QStringList &tokens, Tp::ConnectionPtr &connection);
     void fetchMessages(const Tp::ConnectionPtr &connection);
     void timerEvent(QTimerEvent *event);
     void handleMessages(Tp::ConnectionPtr &connection);
@@ -62,6 +63,10 @@ protected:
     // keep connections while waiting timer time outs
     QHash<int, Tp::ConnectionPtr> m_TimerConnections;
     QHash<QString, QSet<QString> > m_MessageTokens;
+
+#ifdef UNIT_TEST
+    friend class Ut_MessageReviver;
+#endif
 };
 
 } // namespace RTComLogger

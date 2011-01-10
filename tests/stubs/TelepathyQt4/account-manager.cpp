@@ -3,34 +3,43 @@
 #include <QDebug>
 #include <QTimer>
 
-Tp::AccountManager::AccountManager()
-        :PendingReady()
+namespace Tp
 {
+
+AccountManager::AccountManager()
+        :StatelessDBusProxy()
+{
+    m_fakeAccountSet.ut_setAccountManager(AccountManagerPtr(this));
 }
 
-Tp::AccountManagerPtr  Tp::AccountManager::create()
+AccountManagerPtr  AccountManager::create()
 {
-    return Tp::AccountManagerPtr( new Tp::AccountManager() );
+    return AccountManagerPtr(new AccountManager());
 }
 
 
-void Tp::AccountManager::ut_addAccount( AccountPtr accPtr )
+void Tp::AccountManager::ut_addAccount(AccountPtr accPtr)
 {
-    m_fakeAccountList << accPtr;
+    m_fakeAccountSet.ut_accounts().append(accPtr);
 }
 
-void Tp::AccountManager::ut_deletAccount( AccountPtr accPtr )
+void AccountManager::ut_deletAccount(AccountPtr accPtr)
 {
-    int deleteIndex = -1;
-    for( int accounts = 0; accounts < m_fakeAccountList.size(); accounts++ ){
+    m_fakeAccountSet.ut_accounts().removeAll(accPtr);
+}
 
-        if ( m_fakeAccountList.at(accounts) == accPtr ){
-            deleteIndex = accounts;
-            break;
-        }
+AccountSetPtr AccountManager::validAccounts() const
+{
+    return AccountSetPtr(const_cast<AccountSet*>(&m_fakeAccountSet));
+}
+
+AccountPtr AccountManager::accountForPath(const QString &path) const
+{
+    foreach (AccountPtr acc, m_fakeAccountSet.accounts()) {
+        if (acc && acc->objectPath() == path)
+            return acc;
     }
+    return AccountPtr(0);
+}
 
-    if ( -1 < deleteIndex ){
-        m_fakeAccountList.removeAt( deleteIndex );
-    }
 }

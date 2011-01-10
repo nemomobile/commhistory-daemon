@@ -2,7 +2,7 @@
 #define _RTComTp_Connection_HEADER_GUARD_
 
 
-#include <TelepathyQt4/Connection>
+#include "TelepathyQt4/Connection"
 
 #include <QtGlobal>
 
@@ -12,8 +12,8 @@
 
 #include <QDBusPendingReply>
 
-#include <TelepathyQt4/AbstractInterface>
-#include <TelepathyQt4/DBusProxy>
+#include "TelepathyQt4/AbstractInterface"
+#include "TelepathyQt4/DBusProxy"
 #include <QDebug>
 
 // basically the same as GLib's G_GNUC_DEPRECATED
@@ -63,6 +63,11 @@ public:
         return m_ExpungedMessages;
     }
 
+    QStringList& ut_getDeliveredMessages()
+    {
+        return m_DeliveredMessages;
+    }
+
 public Q_SLOTS:
     /**
      * Begins a call to the D-Bus method "DeliverStoredMessages" on the remote object.
@@ -75,6 +80,8 @@ public Q_SLOTS:
      */
     inline QDBusPendingReply<> DeliverStoredMessages(const QStringList& storedMessageTokens)
     {
+        m_DeliveredMessages << storedMessageTokens;
+
         QList<QVariant> argumentList;
         argumentList << QVariant::fromValue(storedMessageTokens);
         return asyncCallWithArgumentList(QLatin1String("DeliverStoredMessages"), argumentList);
@@ -139,6 +146,7 @@ Q_SIGNALS:
 
 private:
     QStringList m_ExpungedMessages;
+    QStringList m_DeliveredMessages;
 
 };
 }

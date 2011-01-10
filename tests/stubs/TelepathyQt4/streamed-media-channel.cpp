@@ -7,33 +7,37 @@ const Tp::Feature Tp::StreamedMediaChannel::FeatureStreams = Tp::Feature(Tp::Str
 
 struct StreamedMediaChannel::Private
 {
-    MediaContents m_mediaContents;
+    StreamedMediaStreams m_streams;
 };
 
 StreamedMediaChannel::StreamedMediaChannel(const QString &objectPath, const QVariantMap &immutableProperties) :
-        Channel(objectPath, 0),
+        Channel(objectPath),
         mPriv(new Private)
 
 {
     ut_setImmutableProperties(immutableProperties);
 }
 
-MediaContents StreamedMediaChannel::contentsForType(MediaStreamType type) const
+StreamedMediaStreams StreamedMediaChannel::streamsForType(MediaStreamType type) const
 {
     Q_UNUSED(type)
-    return mPriv->m_mediaContents;
+    return mPriv->m_streams;
 }
 
-MediaContents& StreamedMediaChannel::ut_mediaContents()
+StreamedMediaStreams StreamedMediaChannel::streams() const
 {
-    return mPriv->m_mediaContents;
+    return mPriv->m_streams;
 }
 
-void StreamedMediaChannel::ut_addContent()
+void StreamedMediaChannel::ut_addStream()
 {
-    mPriv->m_mediaContents.append(MediaContentPtr(new MediaContent()));
+    mPriv->m_streams.append(StreamedMediaStreamPtr(new StreamedMediaStream(StreamedMediaChannelPtr(this))));
 }
 
+StreamedMediaStreams StreamedMediaChannel::ut_streams()
+{
+    return mPriv->m_streams;
+}
 
 StreamedMediaChannel::~StreamedMediaChannel()
 {

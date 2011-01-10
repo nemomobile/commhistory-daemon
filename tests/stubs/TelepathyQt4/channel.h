@@ -81,16 +81,14 @@ namespace Client {
 
 }
 
-class Channel : public StatefulDBusProxy,
-                public ReadyObject,
-                public RefCounted
+class Channel : public StatefulDBusProxy
 {
     Q_OBJECT
     Q_DISABLE_COPY(Channel)
 
 public:
 
-    Channel(const QString &objectPath = QString(), QObject *parent = 0);
+    Channel(const QString &objectPath = QString());
 
     QStringList interfaces() const;
 

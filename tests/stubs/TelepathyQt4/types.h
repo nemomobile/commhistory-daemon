@@ -114,6 +114,23 @@ namespace Tp
         WeakData *wd;
     };
 
+
+    class Object : public QObject, public RefCounted
+    {
+        Q_OBJECT
+        Q_DISABLE_COPY(Object)
+
+    Q_SIGNALS:
+        void propertyChanged(const QString &propertyName);
+
+    protected:
+        Object(){}
+
+        //void notify(const char *propertyName);
+
+    private:
+    };
+
     template <class T>
     class SharedPtr
     {
@@ -185,6 +202,12 @@ namespace Tp
         static inline SharedPtr<T> constCast(const SharedPtr<X> &src)
         {
             return SharedPtr<T>(const_cast<T*>(src.data()));
+        }
+
+        template <class X>
+        static inline SharedPtr<T> qObjectCast(const SharedPtr<X> &src)
+        {
+            return SharedPtr<T>(qobject_cast<T*>(src.data()));
         }
 
     private:
@@ -395,35 +418,40 @@ namespace Tp
     class DBusProxy;
 
     class Account;
+    class AccountSet;
     class AccountManager;
     class Channel;
     class Connection;
     class Contact;
+    class ContactManager;
     class TextChannel;
     class StreamedMediaChannel;
-    class MediaContent;
-    class MediaStream;
+    class StreamedMediaStream;
 
 
     typedef SharedPtr<Account> AccountPtr;
+    typedef SharedPtr<AccountSet> AccountSetPtr;
+    typedef SharedPtr<AccountManager> AccountManagerPtr;
     typedef SharedPtr<Connection> ConnectionPtr;
     typedef SharedPtr<Channel> ChannelPtr;
-    typedef SharedPtr<AccountManager> AccountManagerPtr;
     typedef QSharedPointer<Contact> ContactPtr;
+    typedef SharedPtr<ContactManager> ContactManagerPtr;
     typedef SharedPtr<TextChannel> TextChannelPtr;
     typedef SharedPtr<StreamedMediaChannel> StreamedMediaChannelPtr;
-    typedef SharedPtr<MediaContent> MediaContentPtr;
-    typedef SharedPtr<MediaStream> MediaStreamPtr;
+    typedef SharedPtr<StreamedMediaStream> StreamedMediaStreamPtr;
+    typedef SharedPtr<DBusProxy> DBusProxyPtr;
 };
 
-Q_DECLARE_METATYPE(Tp::SimplePresence)
-Q_DECLARE_METATYPE(Tp::PropertySpec)
-Q_DECLARE_METATYPE(Tp::PropertySpecList)
-Q_DECLARE_METATYPE(Tp::PropertyValue)
-Q_DECLARE_METATYPE(Tp::PropertyValueList)
-Q_DECLARE_METATYPE(Tp::UIntList)
-Q_DECLARE_METATYPE(Tp::ServicePoint)
-Q_DECLARE_METATYPE(Tp::MessagePart)
-Q_DECLARE_METATYPE(Tp::MessagePartList)
+Q_DECLARE_METATYPE(Tp::SimplePresence);
+Q_DECLARE_METATYPE(Tp::PropertySpec);
+Q_DECLARE_METATYPE(Tp::PropertySpecList);
+Q_DECLARE_METATYPE(Tp::PropertyValue);
+Q_DECLARE_METATYPE(Tp::PropertyValueList);
+Q_DECLARE_METATYPE(Tp::UIntList);
+Q_DECLARE_METATYPE(Tp::ServicePoint);
+Q_DECLARE_METATYPE(Tp::MessagePart);
+Q_DECLARE_METATYPE(Tp::MessagePartList);
+Q_DECLARE_METATYPE(Tp::Feature);
+Q_DECLARE_METATYPE(Tp::Features);
 
 #endif

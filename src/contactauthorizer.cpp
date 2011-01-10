@@ -237,7 +237,7 @@ void ContactAuthorizer::slotAvatarDataChanged(const Tp::AvatarData &data)
 {
     qDebug() << Q_FUNC_INFO;
 
-    if (m_pContactManager == NULL)
+    if (!m_pContactManager)
         return;
 
     Tp::Contact *contact = qobject_cast<Tp::Contact*>(sender());
@@ -254,7 +254,7 @@ void ContactAuthorizer::slotAvatarTokenChanged(const QString& avatarToken)
     qDebug() << Q_FUNC_INFO;
 
     /*
-    if (m_pContactManager == NULL)
+    if (!m_pContactManager)
         return;
 
     Tp::Contact *contact = qobject_cast<Tp::Contact*>(sender());
