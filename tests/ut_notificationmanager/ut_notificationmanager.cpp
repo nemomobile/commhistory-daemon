@@ -68,6 +68,14 @@ MNotificationGroup* Ut_NotificationManager::getGroup(int eventType, int msec)
     return 0;
 }
 
+void Ut_NotificationManager::removeGroup(int eventType)
+{
+    QList<MNotificationGroup *> mgtGroups = MNotificationGroup::notificationGroups();
+    foreach(MNotificationGroup *mgtGroup, mgtGroups)
+        if (mgtGroup->eventType() == NotificationManager::eventType(eventType))
+            mgtGroup->remove();
+}
+
 Ut_NotificationManager::Ut_NotificationManager() : eventId(1)
 {
 }
@@ -296,6 +304,7 @@ void Ut_NotificationManager::testImNotification()
     NotificationManager* nm = NotificationManager::instance();
     nm->m_NotificationTimer.stop();
     nm->removeNotificationGroup(event.type());
+    removeGroup(event.type());
 
     QVERIFY(getGroup(event.type(), 10) == 0);
 
@@ -347,6 +356,7 @@ void Ut_NotificationManager::testVoicemail()
     NotificationManager* nm = NotificationManager::instance();
     nm->m_NotificationTimer.stop();
     nm->removeNotificationGroup(CommHistory::Event::VoicemailEvent);
+    removeGroup(CommHistory::Event::VoicemailEvent);
 
     QVERIFY(getGroup(CommHistory::Event::VoicemailEvent, 10) == 0);
 
@@ -393,6 +403,7 @@ void Ut_NotificationManager::testMissedCallNotification()
     NotificationManager* nm = NotificationManager::instance();
     nm->m_NotificationTimer.stop();
     nm->removeNotificationGroup(event.type());
+    removeGroup(event.type());
 
     QVERIFY(getGroup(event.type(), 10) == 0);
 

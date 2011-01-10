@@ -70,6 +70,7 @@ private:
     PersonalNotification createPersonalNotification(const CommHistory::Event &event);
     CommHistory::Event createMissedCallEvent(const QString& remoteUid, int contactId);
     static MNotificationGroup* getGroup(int eventType, int msec);
+    static void removeGroup(int eventType);
 
 private:
     int eventId;
