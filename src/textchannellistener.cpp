@@ -113,8 +113,6 @@
 #define PROTOCOL_TEL QLatin1String("tel")
 #define PROTOCOL_MMS QLatin1String("mms")
 
-#define MAP_MMS_TO_RING(x) ((x) == MMS_ACCOUNT_PATH ? RING_ACCOUNT_PATH : (x))
-
 // tp properties
 #define CHANNEL_PROPERTY_NAME QLatin1String("name")
 #define CHANNEL_PROPERTY_SUBJECT QLatin1String("subject")

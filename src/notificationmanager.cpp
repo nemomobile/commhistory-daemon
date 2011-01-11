@@ -338,7 +338,7 @@ bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& even
             remoteIdMatch = (CommHistory::remoteAddressMatch(remoteMatch,
                                                              m_ObservedChannelRemoteId));
 
-            localIdMatch = event.localUid() == m_ObservedChannelLocalId;
+            localIdMatch = MAP_MMS_TO_RING(event.localUid()) == m_ObservedChannelLocalId;
 
             chatTypeMatch = chatType == m_ObservedChannelChatType;
         }
