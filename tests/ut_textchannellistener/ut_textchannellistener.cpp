@@ -490,4 +490,181 @@ void Ut_TextChannelListener::smsSending()
     QVERIFY(!sm.contains(token));
 }
 
+namespace {
+
+QString sendVoicemail(Tp::ChannelPtr ch,
+                   const QString &notificationType,
+                   const QString &voicemailType,
+                   bool includeHas,
+                   bool hasUnread,
+                   bool includeCount,
+                   int unreadCount) {
+    Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
+
+    addMsgHeader(msg, 0, "received", QDateTime::currentDateTime().toTime_t());
+    addMsgHeader(msg, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNotice);
+    QString token = QUuid::createUuid().toString();
+    addMsgHeader(msg, 0, "message-token", token);
+    addMsgHeader(msg, 0, "x-nokia-mailbox-notification", notificationType);
+    addMsgHeader(msg, 0, "x-nokia-voicemail-type", voicemailType);
+    if (includeHas)
+        addMsgHeader(msg, 0, "x-nokia-mailbox-has-unread", hasUnread);
+    if (includeCount)
+        addMsgHeader(msg, 0, "x-nokia-mailbox-unread-count", unreadCount);
+
+    addMsgHeader(msg, 1,"content-type", "text/plain");
+    addMsgHeader(msg, 1,"content", QString());
+    // set sender contact
+    Tp::ContactPtr sender(new Tp::Contact());
+    sender->ut_setHandle(22);
+    sender->ut_setId(SMS_NUMBER);
+    msg.ut_setSender(sender);
+
+    Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(msg);
+
+    return token;
+}
+
+}
+void Ut_TextChannelListener::voicemail()
+{
+    NotificationManager *nm = NotificationManager::instance();
+    QVERIFY(nm);
+    nm->postedNotifications.clear();
+
+    // setup connection
+    Tp::ConnectionPtr conn(new Tp::Connection());
+    conn->ut_setIsReady(true);
+    conn->ut_setInterfaces(QStringList() << RTComTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName());
+
+    //setup account
+    Tp::AccountPtr acc(new Tp::Account(conn, SMS_ACCOUNT_PATH));
+    acc->ut_setProtocolName("tel");
+
+    //setup channel
+    Tp::ChannelPtr ch(new Tp::TextChannel(SMS_CHANNEL_PATH));
+    ch->ut_setIsRequested(false);
+    ch->ut_setTargetHandleType(Tp::HandleTypeContact);
+    ch->ut_setTargetHandle(TARGET_HANDLE);
+    QVariantMap immProp;
+    immProp.insert(TELEPATHY_INTERFACE_CHANNEL ".TargetID", SMS_NUMBER);
+    ch->ut_setImmutableProperties(immProp);
+    ch->ut_setConnection(conn);
+
+    Tp::MethodInvocationContextPtr<> ctx(new Tp::MethodInvocationContext<>());
+
+    TextChannelListener tcl(acc, ch, ctx);
+    waitInvocationContext(ctx, 5000);
+
+    QVERIFY(ctx->isFinished());
+    QVERIFY(!ctx->isError());
+
+    // show voicemail
+    nm->voicemailNotifications = 0xDEAD;
+    QString token = sendVoicemail(ch, "voice", "tel",
+                                  true, true,
+                                  true, 2);
+
+    QCoreApplication::processEvents(); // let expunging run off the loop
+
+    QCOMPARE(nm->postedNotifications.size(), 0);
+    QCOMPARE(nm->voicemailNotifications, 2);
+
+    RTComTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
+            conn->interface<RTComTp::Client::ConnectionInterfaceStoredMessagesInterface>();
+    QVERIFY(storedMessages);
+    QVERIFY(storedMessages->ut_getExpungedMessages().contains(token));
+
+    // hide voicemail
+    nm->voicemailNotifications = 0xBEEF;
+    token = sendVoicemail(ch, "voice", "tel",
+                          true, false,
+                          true, 0);
+
+    QCoreApplication::processEvents(); // let expunging run off the loop
+
+    QCOMPARE(nm->postedNotifications.size(), 0);
+    QCOMPARE(nm->voicemailNotifications, 0);
+
+    QVERIFY(storedMessages->ut_getExpungedMessages().contains(token));
+
+    // hide voicemail
+    nm->voicemailNotifications = 0xFA11;
+    token = sendVoicemail(ch, "voice", "tel",
+                          true, false,
+                          false, 0);
+
+    QCoreApplication::processEvents(); // let expunging run off the loop
+
+    QCOMPARE(nm->postedNotifications.size(), 0);
+    QCOMPARE(nm->voicemailNotifications, 0);
+
+    QVERIFY(storedMessages->ut_getExpungedMessages().contains(token));
+
+    // hide voicemail
+    nm->voicemailNotifications = 0xBEEB;
+    token = sendVoicemail(ch, "voice", "tel",
+                          false, false,
+                          false, 0);
+
+    QCoreApplication::processEvents(); // let expunging run off the loop
+
+    QCOMPARE(nm->postedNotifications.size(), 0);
+    QCOMPARE(nm->voicemailNotifications, 0);
+
+    QVERIFY(storedMessages->ut_getExpungedMessages().contains(token));
+
+    // skype voicemail should be ignored
+    nm->voicemailNotifications = 0xACE;
+    token = sendVoicemail(ch, "voice", "skype",
+                          true, true,
+                          true, 1);
+
+    QCoreApplication::processEvents(); // let expunging run off the loop
+
+    QCOMPARE(nm->postedNotifications.size(), 0);
+    QCOMPARE(nm->voicemailNotifications, 0xACE);
+
+    QVERIFY(storedMessages->ut_getExpungedMessages().contains(token));
+
+    // non voice notifications should be ignored
+    token = sendVoicemail(ch, "text", "jumps",
+                          true, true,
+                          true, 1);
+
+    QCoreApplication::processEvents(); // let expunging run off the loop
+
+    QCOMPARE(nm->postedNotifications.size(), 0);
+    QCOMPARE(nm->voicemailNotifications, 0xACE);
+
+    QVERIFY(storedMessages->ut_getExpungedMessages().contains(token));
+
+    // show unknown number
+    nm->voicemailNotifications = 0xCAB;
+    token = sendVoicemail(ch, "voice", "tel",
+                          true, true,
+                          true, 0);
+
+    QCoreApplication::processEvents(); // let expunging run off the loop
+
+    QCOMPARE(nm->postedNotifications.size(), 0);
+    QCOMPARE(nm->voicemailNotifications, -1); // -1 == unknown number
+
+    QVERIFY(storedMessages->ut_getExpungedMessages().contains(token));
+
+    // show unknown number
+    nm->voicemailNotifications = 0xCAB;
+    token = sendVoicemail(ch, "voice", "tel",
+                          true, true,
+                          false, 0);
+
+    QCoreApplication::processEvents(); // let expunging run off the loop
+
+    QCOMPARE(nm->postedNotifications.size(), 0);
+    QCOMPARE(nm->voicemailNotifications, -1); // -1 == unknown number
+
+    QVERIFY(storedMessages->ut_getExpungedMessages().contains(token));
+
+}
+
 QTEST_MAIN(Ut_TextChannelListener)

@@ -52,6 +52,7 @@ private Q_SLOTS:
     void receiving();
     void smsSending_data();
     void smsSending();
+    void voicemail();
 
 private:
     CommHistory::Group fetchGroup(const QString &localUid, const QString &remoteUid, bool wait);
