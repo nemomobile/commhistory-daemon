@@ -56,6 +56,13 @@
 #define SMS_CHANNEL_PATH QLatin1String("/org/freedesktop/Telepathy/Connection/ring/tel/ring/text0")
 #define TARGET_HANDLE 1
 
+#define VCARD_CONTENT QLatin1String("BEGIN:VCARD\n" \
+                                    "VERSION:2.1\n" \
+                                    "N;CHARSET=ISO-8859-1;ENCODING=QUOTED-PRINTABLE:ABcd 123\n" \
+                                    "TEL;PREF:12345678\n" \
+                                    "END:VCARD")
+#define VCARD_NAME QLatin1String("ABcd 123")
+
 using namespace RTComLogger;
 
 namespace {
@@ -665,6 +672,95 @@ void Ut_TextChannelListener::voicemail()
 
     QVERIFY(storedMessages->ut_getExpungedMessages().contains(token));
 
+}
+
+void Ut_TextChannelListener::receiveVCard()
+{
+    NotificationManager *nm = NotificationManager::instance();
+    QVERIFY(nm);
+    nm->postedNotifications.clear();
+
+    // setup connection
+    Tp::ConnectionPtr conn(new Tp::Connection());
+    conn->ut_setIsReady(true);
+    conn->ut_setInterfaces(QStringList() << RTComTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName());
+
+    //setup account
+    Tp::AccountPtr acc(new Tp::Account(conn, SMS_ACCOUNT_PATH));
+    acc->ut_setProtocolName("tel");
+
+    //setup channel
+    Tp::ChannelPtr ch(new Tp::TextChannel(SMS_CHANNEL_PATH));
+    ch->ut_setIsRequested(false);
+    ch->ut_setTargetHandleType(Tp::HandleTypeContact);
+    ch->ut_setTargetHandle(TARGET_HANDLE);
+    QVariantMap immProp;
+    immProp.insert(TELEPATHY_INTERFACE_CHANNEL ".TargetID", SMS_NUMBER);
+    ch->ut_setImmutableProperties(immProp);
+    ch->ut_setConnection(conn);
+
+    Tp::MethodInvocationContextPtr<> ctx(new Tp::MethodInvocationContext<>());
+
+    TextChannelListener tcl(acc, ch, ctx);
+    waitInvocationContext(ctx, 5000);
+
+    QVERIFY(ctx->isFinished());
+    QVERIFY(!ctx->isError());
+
+    // send received message
+    Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
+
+    uint timestamp = QDateTime::currentDateTime().toTime_t();
+    addMsgHeader(msg, 0, "received", timestamp);
+    addMsgHeader(msg, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNormal);
+    QString token = QUuid::createUuid().toString();
+    addMsgHeader(msg, 0, "message-token", token);
+
+    addMsgHeader(msg, 1,"content-type", "text/x-vcard");
+    addMsgHeader(msg, 1,"content", VCARD_CONTENT);
+    // set sender contact
+    Tp::ContactPtr sender(new Tp::Contact());
+    sender->ut_setHandle(22);
+    sender->ut_setId(SMS_NUMBER);
+    msg.ut_setSender(sender);
+
+    Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(msg);
+
+    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
+    QVERIFY(waitSignal(eventCommitted, 5000));
+
+    CommHistory::Group g = fetchGroup(SMS_ACCOUNT_PATH, SMS_NUMBER, true);
+
+    QVERIFY(g.isValid());
+    QCOMPARE(g.localUid(), SMS_ACCOUNT_PATH);
+    QCOMPARE(g.remoteUids().first(), SMS_NUMBER);
+    QVERIFY(g.lastMessageText().isEmpty());
+    QVERIFY(!g.lastVCardFileName().isEmpty());
+    QCOMPARE(g.lastVCardLabel(), VCARD_NAME);
+    QCOMPARE(g.lastEventType(), CommHistory::Event::SMSEvent);
+
+    CommHistory::Event e = fetchEvent(g.lastEventId());
+    QCOMPARE(e.id(), g.lastEventId());
+    QCOMPARE(e.direction(), CommHistory::Event::Inbound);
+    QVERIFY(e.freeText().isEmpty());
+    QCOMPARE(e.startTime().toTime_t(), timestamp);
+    QCOMPARE(e.endTime().toTime_t(), timestamp);
+    QCOMPARE(e.messageToken(), token);
+    QCOMPARE(e.fromVCardLabel(), VCARD_NAME);
+    QVERIFY(!e.fromVCardFileName().isEmpty());
+
+    QCOMPARE(nm->postedNotifications.size(), 1);
+    QCOMPARE(nm->postedNotifications.first().channelTargetId, SMS_NUMBER);
+    QCOMPARE(nm->postedNotifications.first().chatType, CommHistory::Group::ChatTypeP2P);
+
+    QFile vcardFile(e.fromVCardFileName());
+    QVERIFY(vcardFile.exists());
+    QVERIFY(vcardFile.size() > 0);
+
+    RTComTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
+            conn->interface<RTComTp::Client::ConnectionInterfaceStoredMessagesInterface>();
+    QVERIFY(storedMessages);
+    QVERIFY(storedMessages->ut_getExpungedMessages().contains(token));
 }
 
 QTEST_MAIN(Ut_TextChannelListener)
