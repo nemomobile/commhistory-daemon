@@ -30,7 +30,6 @@
 #include <QSignalSpy>
 
 #include <CommHistory/EventModel>
-#include <CommHistory/GroupModel>
 
 #include "TelepathyQt4/types.h"
 #include "TelepathyQt4/account.h"
@@ -42,7 +41,7 @@
 
 // constants
 #define ACCOUNT_PATH QLatin1String("/org/freedesktop/Telepathy/Account/ring/tel/ring")
-#define NUMBER QLatin1String("+358987654321")
+#define NUMBER QLatin1String("+1111")
 
 using namespace RTComLogger;
 
@@ -71,6 +70,28 @@ Ut_MessageReviver::~Ut_MessageReviver()
  */
 void Ut_MessageReviver::initTestCase()
 {
+    groupModel.enableContactChanges(false);
+    CommHistory::Group group;
+    group.setLocalUid(ACCOUNT_PATH);
+    group.setRemoteUids(QStringList() << NUMBER);
+    groupModel.addGroup(group);
+
+    CommHistory::EventModel model;
+
+    QSignalSpy commit(&model,
+                      SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
+    CommHistory::Event event;
+    event.setType(CommHistory::Event::SMSEvent);
+    event.setDirection(CommHistory::Event::Inbound);
+    event.setStartTime(QDateTime::currentDateTime());
+    event.setEndTime(QDateTime::currentDateTime());
+    event.setLocalUid(ACCOUNT_PATH);
+    event.setGroupId(group.id());
+    event.setRemoteUid(NUMBER);
+    event.setFreeText("blah");
+    event.setMessageToken("mrtc1");
+    model.addEvent(event, false);
+    waitSignal(commit, 5000);
 }
 
 /*!
@@ -78,6 +99,7 @@ void Ut_MessageReviver::initTestCase()
  */
 void Ut_MessageReviver::cleanupTestCase()
 {
+    groupModel.deleteAll();
 }
 
 /*!
@@ -96,30 +118,6 @@ void Ut_MessageReviver::cleanup()
 
 void Ut_MessageReviver::revive()
 {
-    CommHistory::EventModel model;
-    CommHistory::GroupModel groupModel;
-    groupModel.enableContactChanges(false);
-
-    CommHistory::Group group;
-    group.setLocalUid(ACCOUNT_PATH);
-    group.setRemoteUids(QStringList() << NUMBER);
-    groupModel.addGroup(group);
-
-    QSignalSpy commit(&model,
-                      SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
-    CommHistory::Event event;
-    event.setType(CommHistory::Event::SMSEvent);
-    event.setDirection(CommHistory::Event::Inbound);
-    event.setStartTime(QDateTime::currentDateTime());
-    event.setEndTime(QDateTime::currentDateTime());
-    event.setLocalUid(ACCOUNT_PATH);
-    event.setGroupId(group.id());
-    event.setRemoteUid(NUMBER);
-    event.setFreeText("blah");
-    event.setMessageToken("mrtc1");
-    model.addEvent(event, false);
-    waitSignal(commit, 5000);
-
     ConnectionUtils utils;
     MessageReviver reviver(&utils);
 

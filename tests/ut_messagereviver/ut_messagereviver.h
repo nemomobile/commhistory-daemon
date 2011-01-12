@@ -27,6 +27,8 @@
 #include <QObject>
 #include <QEventLoop>
 
+#include <CommHistory/GroupModel>
+
 namespace RTComLogger {
 
 class Ut_MessageReviver : public QObject
@@ -45,6 +47,9 @@ private Q_SLOTS:
 // Test functions
 private Q_SLOTS:
     void revive();
+
+private:
+    CommHistory::GroupModel groupModel;
 };
 
 }
