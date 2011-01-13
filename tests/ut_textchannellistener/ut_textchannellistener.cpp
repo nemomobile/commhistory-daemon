@@ -76,6 +76,14 @@ namespace {
         return !spy.isEmpty();
     }
 
+    void justWait(int msec)
+    {
+        QTime timer;
+        timer.start();
+        while (timer.elapsed() < msec)
+            QCoreApplication::processEvents();
+    }
+
     void waitInvocationContext(Tp::MethodInvocationContextPtr<> &ctx, int msec)
     {
         QTime timer;
@@ -761,6 +769,129 @@ void Ut_TextChannelListener::receiveVCard()
             conn->interface<RTComTp::Client::ConnectionInterfaceStoredMessagesInterface>();
     QVERIFY(storedMessages);
     QVERIFY(storedMessages->ut_getExpungedMessages().contains(token));
+}
+
+void Ut_TextChannelListener::groups()
+{
+    {
+        CommHistory::GroupModel gm;
+        gm.getGroups(SMS_ACCOUNT_PATH, SMS_NUMBER);
+        QSignalSpy ready(&gm, SIGNAL(modelReady()));
+        QVERIFY(waitSignal(ready, 5000));
+        gm.deleteAll();
+        justWait(5000);
+    }
+
+    NotificationManager *nm = NotificationManager::instance();
+    QVERIFY(nm);
+    nm->postedNotifications.clear();
+
+    CommHistory::Group g = fetchGroup(SMS_ACCOUNT_PATH, SMS_NUMBER, true);
+    QVERIFY(!g.isValid());
+
+    // setup connection
+    Tp::ConnectionPtr conn(new Tp::Connection());
+    conn->ut_setIsReady(true);
+
+    //setup account
+    Tp::AccountPtr acc(new Tp::Account(conn, SMS_ACCOUNT_PATH));
+    acc->ut_setProtocolName("tel");
+
+    //setup channel
+    Tp::ChannelPtr ch(new Tp::TextChannel(SMS_CHANNEL_PATH));
+    ch->ut_setIsRequested(false);
+    ch->ut_setTargetHandleType(Tp::HandleTypeContact);
+    ch->ut_setTargetHandle(TARGET_HANDLE);
+    QVariantMap immProp;
+    immProp.insert(TELEPATHY_INTERFACE_CHANNEL ".TargetID", SMS_NUMBER);
+    ch->ut_setImmutableProperties(immProp);
+    ch->ut_setConnection(conn);
+
+    Tp::MethodInvocationContextPtr<> ctx(new Tp::MethodInvocationContext<>());
+
+    TextChannelListener tcl(acc, ch, ctx);
+    waitInvocationContext(ctx, 5000);
+
+    QVERIFY(ctx->isFinished());
+    QVERIFY(!ctx->isError());
+
+    QVERIFY(!tcl.m_Group.isValid());
+
+    {
+        // send received message
+        Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
+
+        uint timestamp = QDateTime::currentDateTime().toTime_t();
+        addMsgHeader(msg, 0, "received", timestamp);
+        addMsgHeader(msg, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNormal);
+
+        QString message = QString(RECEIVED_MESSAGE) + QString(" : ") + QTime::currentTime().toString(Qt::ISODate);
+        addMsgHeader(msg, 1,"content-type", "text/plain");
+        addMsgHeader(msg, 1,"content", message);
+        // set sender contact
+        Tp::ContactPtr sender(new Tp::Contact());
+        sender->ut_setHandle(22);
+        sender->ut_setId(SMS_NUMBER);
+        msg.ut_setSender(sender);
+
+        Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(msg);
+
+        QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
+        QVERIFY(waitSignal(eventCommitted, 5000));
+
+        QVERIFY(tcl.m_Group.isValid());
+        QCOMPARE(tcl.m_Group.localUid(), SMS_ACCOUNT_PATH);
+        QCOMPARE(tcl.m_Group.remoteUids().first(), SMS_NUMBER);
+        QCOMPARE(tcl.m_Group.lastMessageText(), message);
+        QCOMPARE(tcl.m_Group.lastEventType(), CommHistory::Event::SMSEvent);
+
+        QCOMPARE(nm->postedNotifications.size(), 1);
+        QCOMPARE(nm->postedNotifications.first().event.freeText(), message);
+    }
+
+    int firstGroup = tcl.m_Group.id();
+
+    // delete group
+    nm->m_GroupModel->deleteAll();
+
+    g = fetchGroup(SMS_ACCOUNT_PATH, SMS_NUMBER, true);
+
+    QVERIFY(!g.isValid());
+
+    QVERIFY(!tcl.m_Group.isValid());
+    {
+        // send received message
+        Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
+
+        uint timestamp = QDateTime::currentDateTime().toTime_t();
+        addMsgHeader(msg, 0, "received", timestamp);
+        addMsgHeader(msg, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNormal);
+
+        QString message = QString(RECEIVED_MESSAGE) + QString(" : ") + QTime::currentTime().toString(Qt::ISODate);
+        addMsgHeader(msg, 1,"content-type", "text/plain");
+        addMsgHeader(msg, 1,"content", message);
+        // set sender contact
+        Tp::ContactPtr sender(new Tp::Contact());
+        sender->ut_setHandle(22);
+        sender->ut_setId(SMS_NUMBER);
+        msg.ut_setSender(sender);
+
+        Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(msg);
+
+        QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
+        QVERIFY(waitSignal(eventCommitted, 5000));
+
+        QVERIFY(tcl.m_Group.isValid());
+        QCOMPARE(tcl.m_Group.localUid(), SMS_ACCOUNT_PATH);
+        QCOMPARE(tcl.m_Group.remoteUids().first(), SMS_NUMBER);
+        QCOMPARE(tcl.m_Group.lastMessageText(), message);
+        QCOMPARE(tcl.m_Group.lastEventType(), CommHistory::Event::SMSEvent);
+
+        QCOMPARE(nm->postedNotifications.size(), 2);
+        QCOMPARE(nm->postedNotifications.at(1).event.freeText(), message);
+    }
+
+    QVERIFY(firstGroup != tcl.m_Group.id());
 }
 
 QTEST_MAIN(Ut_TextChannelListener)
