@@ -47,13 +47,11 @@ PKGCONFIG += contextsubscriber-1.0 \
 TEST_SOURCES += $$COMMHISTORYDSRCDIR/notificationmanager.cpp \
                 $$COMMHISTORYDSRCDIR/notificationgroup.cpp \
                 $$COMMHISTORYDSRCDIR/personalnotification.cpp \
-                $$COMMHISTORYDSRCDIR/reportnotification.cpp \
                 $$COMMHISTORYDSRCDIR/serialisable.cpp \
                 $$COMMHISTORYDSRCDIR/mwilistener.cpp
 TEST_HEADERS += $$COMMHISTORYDSRCDIR/notificationmanager.h \
                 $$COMMHISTORYDSRCDIR/notificationgroup.h \
                 $$COMMHISTORYDSRCDIR/personalnotification.h \
-                $$COMMHISTORYDSRCDIR/reportnotification.h \
                 $$COMMHISTORYDSRCDIR/serialisable.h \
                 $$COMMHISTORYDSRCDIR/mwilistener.h
 

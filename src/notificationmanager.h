@@ -43,7 +43,6 @@ QTM_USE_NAMESPACE
 // our includes
 #include "notificationgroup.h"
 #include "personalnotification.h"
-#include "reportnotification.h"
 
 class ContextProperty;
 class MNotificationGroup;

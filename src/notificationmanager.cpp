@@ -63,7 +63,6 @@
 #include "notificationmanager.h"
 #include "locstrings.h"
 #include "constants.h"
-#include "reportnotification.h"
 #include "mwilistener.h"
 #include "channellistener.h"
 

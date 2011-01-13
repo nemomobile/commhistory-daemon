@@ -61,7 +61,6 @@ HEADERS += logger.h \
            serialisable.h \
            notificationgroup.h \
            personalnotification.h \
-           reportnotification.h \
            commhistoryifadaptor.h \
            commhistoryservice.h \
            locstrings.h \
@@ -82,7 +81,6 @@ SOURCES += main.cpp \
            serialisable.cpp \
            notificationgroup.cpp \
            personalnotification.cpp \
-           reportnotification.cpp \
            commhistoryifadaptor.cpp \
            commhistoryservice.cpp \
            messagereviver.cpp \
