@@ -46,7 +46,6 @@ QTM_USE_NAMESPACE
 
 class ContextProperty;
 class MNotificationGroup;
-class MNGFClient;
 
 namespace CommHistory {
     class GroupModel;
@@ -229,8 +228,6 @@ private:
     QTimer m_ContactsTimer;
 
     MWIListener *m_pMWIListener;
-
-    MNGFClient *m_pNgf;
 
 #ifdef UNIT_TEST
     friend class Ut_NotificationManager;
