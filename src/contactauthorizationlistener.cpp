@@ -77,13 +77,23 @@ void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& 
     Tp::AccountManagerPtr accountManager = m_pConnectionUtils->accountManager();
 
     if(accountManager && accountManager->isReady()) {
+#if 1
+        foreach (Tp::AccountPtr a, accountManager->validAccounts()->accounts()) {
+            if (a->connection() && a->connection()->objectPath() == connection->objectPath()) {
+                account = a;
+                break;
+            }
+        }
+#else   // TODO: enable this back when tp-qt4 declares metatype for Tp::ConnectionPtr
+        // and type Tp::Account::connection property
         QVariantMap filter;
-        filter.insert(QLatin1String("connectionObjectPath"), connection->objectPath());
+        filter.insert(QLatin1String("connection"), QVariant::fromValue(connection));
         Tp::AccountSetPtr accountSet =
                 accountManager->filterAccounts(filter);
         if(!accountSet->accounts().isEmpty()){
             account = accountSet->accounts().first();
         }
+#endif
     }
 
     if(account) {

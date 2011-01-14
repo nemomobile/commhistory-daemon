@@ -101,15 +101,15 @@ void ContactAuthorizer::listenToAuthorization(const Tp::ConnectionPtr& connectio
 
         connect(m_pContactManager.data(),
                 SIGNAL(presencePublicationRequested
-                       (Tp::Contacts, const Tp::Channel::GroupMemberChangeDetails)),
+                       (const Tp::Contacts &, const QString &)),
                 SLOT(slotPresencePublicationRequested
-                     (Tp::Contacts, const Tp::Channel::GroupMemberChangeDetails)),
+                     (const Tp::Contacts &, const QString &)),
                 Qt::UniqueConnection);
     }
 }
 
 void ContactAuthorizer::slotPresencePublicationRequested
-    (const Tp::Contacts &contacts, const Tp::Channel::GroupMemberChangeDetails &details)
+    (const Tp::Contacts &contacts, const QString &message)
 {
     qDebug() << Q_FUNC_INFO << "contact count: " << contacts.count();
 
@@ -118,10 +118,10 @@ void ContactAuthorizer::slotPresencePublicationRequested
            && m_pContactManager->supportedFeatures().contains(Tp::Contact::FeatureAvatarData)){
             qDebug() << Q_FUNC_INFO << "Adding auth. requests to pending queue";
             upgradeContacts(contacts);
-            queueAuthorization(contacts, m_authRequestWaitingForAvatar, details.message());
+            queueAuthorization(contacts, m_authRequestWaitingForAvatar, message);
         } else {
             qDebug() << Q_FUNC_INFO << "Adding auth. requests to main queue";
-            queueAuthorization(contacts, m_authRequests, details.message());
+            queueAuthorization(contacts, m_authRequests, message);
         }
     }
 

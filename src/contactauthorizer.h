@@ -91,7 +91,7 @@ private Q_SLOTS:
                                      const QString& transactionId,
                                      const QString& unused);
     void slotPresencePublicationRequested(const Tp::Contacts &contacts,
-                                          const Tp::Channel::GroupMemberChangeDetails &details);
+                                          const QString &message);
     void slotContactsUpgraded(Tp::PendingOperation *);
     void slotConnectionInvalidated(Tp::DBusProxy*,const QString&, const QString&);
     void slotConnectionFeaturesReady(Tp::PendingOperation* op);
