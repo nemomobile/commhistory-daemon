@@ -49,6 +49,4 @@ QMAKE_CLEAN += $${OUT_PWD}/bin/tests.xml
          error( "Unable to include common-installs-config.pri!" )
 autotests.files = $${OUT_PWD}/bin/*
 autotests.path  = $${INSTALL_PREFIX}/share/$${PROJECT_NAME}-tests
-tools.files = $${PWD}/tools/*
-tools.path  = $${INSTALL_PREFIX}/share/$${PROJECT_NAME}-tests
-INSTALLS += autotests tools
+INSTALLS += autotests
