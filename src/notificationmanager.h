@@ -164,8 +164,6 @@ private:
                                      const QString& remoteUid,
                                      CommHistory::Group::ChatType chatType);
     QString createActionVoicemail();
-    QString activateNotificationRemoteAction(int type,
-                                             const QString& action);
 
     /* persistent notification support */
     void createDataDir();
@@ -200,6 +198,10 @@ private:
                                               const char *resultSlot);
     void updateNotifcationContacts(const QList<QContactLocalId> &contactIds);
     bool hasMessageNotification() const;
+
+    void syncNotifications();
+    void clearPendingEvents(const NotificationGroup &group);
+    void removeNotPendingEvents(const NotificationGroup &group);
 
 private:
     static NotificationManager* m_pInstance;

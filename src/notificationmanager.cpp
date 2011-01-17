@@ -169,31 +169,7 @@ void NotificationManager::init()
     createDataDir();
     // Loads old state
     loadState();
-    // create mnotification restored groups
-
-    QList<MNotificationGroup *> mgtGroups = MNotificationGroup::notificationGroups();
-    foreach(NotificationGroup group, m_Notifications.uniqueKeys()) {
-        foreach(MNotificationGroup *mgtGroup, mgtGroups) {
-            if (mgtGroup->eventType() == eventType(group.type())) {
-                m_MgtGroups.insert(group.type(), mgtGroup);
-                mgtGroups.removeOne(mgtGroup);
-                break;
-            }
-        }
-        if (!m_MgtGroups.contains(group.type())) {
-            qWarning() << "Group incorrectly saved " << eventType(group.type());
-            addGroup(group.type());
-        }
-    }
-
-    if (mgtGroups.size() > 0) {
-        qWarning() << "Mismatch between meegoo groups and our groups:";
-        foreach(MNotificationGroup *mgtGroup, mgtGroups) {
-            qWarning() << mgtGroup->eventType();
-            mgtGroup->remove();
-            delete mgtGroup;
-        }
-    }
+    syncNotifications();
 
     m_ObservedConversation->subscribe();
     connect(m_ObservedConversation,
@@ -231,6 +207,33 @@ void NotificationManager::init()
             SLOT(slotMWICountChanged(int)));
 
     m_Initialised = true;
+}
+
+void NotificationManager::syncNotifications()
+{
+    QList<MNotificationGroup*> mgtGroups = MNotificationGroup::notificationGroups();
+    foreach (NotificationGroup group, m_Notifications.uniqueKeys()) {
+        // for a chd group find matched meego touch group
+        foreach(MNotificationGroup *mgtGroup, mgtGroups) {
+            if (mgtGroup->eventType() == eventType(group.type())) {
+                m_MgtGroups.insert(group.type(), mgtGroup);
+                mgtGroups.removeOne(mgtGroup);
+                break;
+            }
+        }
+
+        if (!m_MgtGroups.contains(group.type()))
+            addGroup(group.type());
+    }
+
+    if (mgtGroups.size() > 0) {
+        qWarning() << "Mismatch between meegoo groups and our groups:";
+        foreach(MNotificationGroup *mgtGroup, mgtGroups) {
+            qWarning() << mgtGroup->eventType();
+            mgtGroup->remove();
+            delete mgtGroup;
+        }
+    }
 }
 
 NotificationManager* NotificationManager::instance()
@@ -417,19 +420,12 @@ bool NotificationManager::removeNotificationGroup(int type)
 
 NotificationGroup NotificationManager::notificationGroup(int type)
 {
-    NotificationGroup notificationgroup(type);
-    if( !m_Notifications.contains( notificationgroup )) {
-        // create group
+    NotificationGroup group(type);
+
+    if (!m_Notifications.contains(group))
         addGroup(type);
-    } else {
-        foreach(NotificationGroup group, m_Notifications.keys()) {
-            if(group.type() == type) {
-                notificationgroup = group;
-                break;
-            }
-        }
-    }
-    return notificationgroup;
+
+    return group;
 }
 
 
@@ -438,7 +434,7 @@ void NotificationManager::addNotification(PersonalNotification notification)
     NotificationGroup notificationgroup = notificationGroup(notification.eventType());
 
     if(!notificationgroup.isValid()) {
-        qWarning() << "Wrong notification group";
+        qWarning() << Q_FUNC_INFO << "Wrong notification group";
         return;
     }
 
@@ -529,9 +525,39 @@ QString NotificationManager::eventType(int type)
     return event;
 }
 
+void NotificationManager::clearPendingEvents(const NotificationGroup &group)
+{
+    QList<PersonalNotification> notifications = m_Notifications.values(group);
+    m_Notifications.remove(group);
+    foreach (PersonalNotification p, notifications) {
+        p.setHasPendingEvents(false);
+        m_Notifications.insertMulti(group, p);
+    }
+}
+
+void NotificationManager::removeNotPendingEvents(const NotificationGroup &group)
+{
+    QList<PersonalNotification> notifications = m_Notifications.values(group);
+    m_Notifications.remove(group);
+    foreach (PersonalNotification p, notifications) {
+        if (p.hasPendingEvents()) {
+            m_Notifications.insertMulti(group, p);
+        }
+    }
+}
+
 void NotificationManager::showLatestNotification(const NotificationGroup &group,
                                                  PersonalNotification &notification)
 {
+    MNotificationGroup *mgroup = m_MgtGroups.value(group.type());
+    if (mgroup) {
+        // reset counters if the group has been cleared
+        if (mgroup->notificationCount() == 0)
+            removeNotPendingEvents(group);
+    } else {
+        qWarning() << Q_FUNC_INFO << "NULL group for " << group.type();
+    }
+
     // show personal notification
     int type = group.type(); // event type
     QString name;
@@ -543,7 +569,6 @@ void NotificationManager::showLatestNotification(const NotificationGroup &group,
     }
 
     QString activateAction = action(group, notification, false);
-    activateAction = activateNotificationRemoteAction(type, activateAction);
 
     QString event = eventType(type);
 
@@ -557,9 +582,7 @@ void NotificationManager::showLatestNotification(const NotificationGroup &group,
     mnote.publish();
 
     if (group.isValid()) {
-        notification.setHasPendingEvents(false);
-        m_Notifications.replace(group, notification);
-
+        clearPendingEvents(group);
         updateNotificationGroup(group);
     } else {
         m_Notifications.remove(group, notification);
@@ -583,8 +606,6 @@ void NotificationManager::updateNotificationGroup(const NotificationGroup &group
         QString message = notificationGroupText(group, notification);
         // get group action
         QString groupAction = action(group, notification, grouped);
-        groupAction = activateNotificationRemoteAction(group.type(),
-                                                       groupAction);
 
         // update group
         // if there are more than 1 contact, name is empty
@@ -592,10 +613,8 @@ void NotificationManager::updateNotificationGroup(const NotificationGroup &group
         if (!grouped && group.type() != CommHistory::Event::VoicemailEvent) {
             name = contactName(notification.account(),
                                notification.remoteUid());
-            qDebug() << Q_FUNC_INFO << "Setting name " << name << " for a single notification";
         } else if (grouped && group.type() != CommHistory::Event::VoicemailEvent) {
             name = contactNames(group).join(CONTACT_SEPARATOR_IN_NOTIFICATION_GROUP);
-            qDebug() << Q_FUNC_INFO << "Setting names " << name << " for a notification group";
         }
         updateGroup(group.type(), countNotifications(group), name, message, groupAction);
     } else {
@@ -625,23 +644,6 @@ QString NotificationManager::createActionConversation(const QString& accountPath
                          OBJECT_PATH,
                          MESSAGING_INTERFACE,
                          START_CONVERSATION_METHOD,
-                         args).toString();
-}
-
-QString NotificationManager::activateNotificationRemoteAction(int type,
-                                                              const QString& action)
-{
-    // tapping on notification will invoke D-Bus method com.nokia.CommHistoryIf.activateNotification
-    // CommHistoryService::activateNotification(uint groupId, const QString& remoteActionString)
-    // The subsequent action (e.g. show mui inbox or conversation view) is passed as string parameter
-    // to activateNotification(), which will convert the string back to MRemoteAction and trigger it
-    QList<QVariant> args;
-    args.append(QVariant(type));
-    args.append(QVariant(action));
-    return MRemoteAction(COMM_HISTORY_SERVICE_NAME,
-                         COMM_HISTORY_OBJECT_PATH,
-                         COMM_HISTORY_INTERFACE,
-                         ACTIVATE_NOTIFICATION_METHOD,
                          args).toString();
 }
 
@@ -1006,20 +1008,17 @@ void NotificationManager::updateGroup(int eventType,
                                       const QString& message,
                                       const QString& action)
 {
-    if (m_MgtGroups.contains(eventType)) {
-        MNotificationGroup *group = m_MgtGroups.value(eventType);
-        if (group) {
-            group->setSummary(contactName);
-            group->setBody(message);
-            group->setAction(MRemoteAction(action));
-            group->setCount(notificationCount);
-            group->publish();
-        } else
-            qWarning() << "NULL group for event type" << eventType;
-    } else
-        qWarning() << "No group for event type" << eventType;
+    MNotificationGroup *group = m_MgtGroups.value(eventType);
+    if (group) {
+        group->setSummary(contactName);
+        group->setBody(message);
+        group->setAction(MRemoteAction(action));
+        group->setCount(notificationCount);
+        group->publish();
+    } else {
+        qWarning() << Q_FUNC_INFO << "No group for event type" << eventType;
+    }
 }
-
 
 void NotificationManager::saveState()
 {
