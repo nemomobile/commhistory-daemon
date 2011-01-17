@@ -21,9 +21,7 @@
 ******************************************************************************/
 
 #include <QtDBus>
-#include <MRemoteAction>
 #include "commhistoryservice.h"
-#include "notificationmanager.h"
 #include "constants.h"
 
 CommHistoryService::CommHistoryService( QObject* parent )
@@ -48,21 +46,6 @@ CommHistoryService::~CommHistoryService()
 {
     QDBusConnection::sessionBus().unregisterObject(COMM_HISTORY_OBJECT_PATH);
     QDBusConnection::sessionBus().unregisterService(COMM_HISTORY_SERVICE_NAME);
-}
-
-void CommHistoryService::activateNotification(int groupId, const QString& remoteActionString)
-{
-    qDebug() << __PRETTY_FUNCTION__;
-
-    RTComLogger::NotificationManager* nm =
-                                   RTComLogger::NotificationManager::instance();
-
-    if (groupId == CommHistory::Event::VoicemailEvent ||
-        nm->removeNotificationGroup(groupId)) {
-        MRemoteAction remoteAction(remoteActionString);
-        remoteAction.trigger();
-    } else
-        qWarning() << "NotificationGroup" << groupId << "doesn't exist";
 }
 
 void CommHistoryService::activateAuthorization(const QString& contactId,
