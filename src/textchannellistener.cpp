@@ -972,6 +972,12 @@ void TextChannelListener::handleMessageFailed(const Tp::ReceivedMessage &message
 
         qDebug() << "contact presence status:" << m_TpContactPresenceStatus;
 
+        // dont show notes for perm. failed mms messages
+        if(event.type() == CommHistory::Event::MMSEvent &&
+           status == Tp::DeliveryStatusPermanentlyFailed) {
+            return;
+        }
+
         if (status == Tp::DeliveryStatusTemporarilyFailed ||
             status == Tp::DeliveryStatusPermanentlyFailed) {
 
