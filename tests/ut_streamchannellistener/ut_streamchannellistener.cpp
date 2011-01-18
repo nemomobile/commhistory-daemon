@@ -148,7 +148,7 @@ void Ut_StreamChannelListener::invalidated()
         QCoreApplication::processEvents();
 
     QSignalSpy closed(&scl, SIGNAL(channelClosed(ChannelListener*)));
-    ch->ut_invalidate(TELEPATHY_ERROR_CANCELLED, QString());
+    ch->ut_invalidate(TELEPATHY_ERROR_TERMINATED, QString());
 
     QVERIFY(waitSignal(closed, 5000));
 

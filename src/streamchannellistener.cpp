@@ -268,10 +268,13 @@ void StreamChannelListener::invalidated(Tp::DBusProxy *proxy,
     if (!m_CallEnded)
         m_Event.setEndTime(m_Event.startTime());
 
-    // we get this error, e.g. when connection manager crashes or killed
-    if ( (errorName ==  QLatin1String(TELEPATHY_ERROR_CANCELLED)) &&
-         (m_Direction == CommHistory::Event::Inbound)){
-        m_Event.setIsMissedCall(true);
+    // catch connection manager crashes and other weird events
+    // FIXME: this may not cover all cases(?). Error.Cancelled usually
+    // means "hung up by local user", but if the remote hangs up before
+    // we get MembersChanged, tpqt probably returns the same error.
+    if ( (m_Direction == CommHistory::Event::Inbound) && (!m_CallStarted)) {
+        if (!errorName.isEmpty() && errorName != TELEPATHY_ERROR_CANCELLED)
+            m_Event.setIsMissedCall(true);
     }
 
     if (addEvent() && m_Event.isMissedCall()) {
