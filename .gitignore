@@ -7,6 +7,7 @@ Makefile
 *.pro.user*
 .cproject
 .project
+*.pyc
 build-stamp
 builddir/
 configure-stamp
@@ -18,6 +19,7 @@ debian/commhistory-daemon.substvars
 debian/commhistory-daemon/
 debian/files
 debian/tmp/
+src/TpExtensions/.gen/
 tests/bin/
 translations/telephony/telephony.qm
 translations/messaging/messaging.qm

@@ -1,0 +1,11 @@
+#ifndef _CommHistoryTp_Constants_HEADER_GUARD_
+#define _CommHistoryTp_Constants_HEADER_GUARD_
+
+#include "TpExtensions/.gen/constants.h"
+
+// Don't add all the stuff for channel interfaces just for this define.
+#define COMM_HISTORY_TP_INTERFACE_CHANNEL_INTERFACE_SMS \
+    "com.nokia.Telepathy.Channel.Interface.SMS"
+
+#endif
+// vim:set ft=cpp:

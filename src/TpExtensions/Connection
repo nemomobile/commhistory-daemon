@@ -1,0 +1,7 @@
+#ifndef _CommHistoryTp_Connection_HEADER_GUARD_
+#define _CommHistoryTp_Connection_HEADER_GUARD_
+
+#include "connection.h"
+
+#endif
+// vim:set ft=cpp:
