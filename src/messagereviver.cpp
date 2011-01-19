@@ -23,7 +23,7 @@
 #include <CommHistory/EventModel>
 #include <CommHistory/TrackerIO>
 
-#include <RTComTelepathyQt4/Connection> // stored messages if
+#include <TpExtensions/Connection> // stored messages if
 
 #include "constants.h"
 #include "messagereviver.h"
@@ -47,7 +47,7 @@ void MessageReviver::onConnectionReady(const Tp::ConnectionPtr& connection)
 {
     if (!connection.isNull()
         && connection->isValid()
-        && connection->hasInterface(RTComTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName())) {
+        && connection->hasInterface(CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName())) {
         fetchMessages(connection);
     }
 }
@@ -57,7 +57,7 @@ void MessageReviver::fetchMessages(const Tp::ConnectionPtr &connection)
     Tp::Client::DBus::PropertiesInterface *props = connection->interface<Tp::Client::DBus::PropertiesInterface>();
 
     QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher
-        (props->Get(RTComTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName(),
+        (props->Get(CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName(),
                     QLatin1String("StoredMessages")),
          this);
 
@@ -152,8 +152,8 @@ void MessageReviver::handleMessages(Tp::ConnectionPtr &connection)
         }
     }
 
-    RTComTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
-            connection->interface<RTComTp::Client::ConnectionInterfaceStoredMessagesInterface>();
+    CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
+            connection->interface<CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface>();
 
     if (storedMessages) {
         if (!toBury.isEmpty())

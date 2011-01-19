@@ -48,8 +48,8 @@
 #include <TelepathyQt4/Presence>
 #include <TelepathyQt4/types.h>
 
-#include <RTComTelepathyQt4/Connection> // stored messages if
-#include <RTComTelepathyQt4/Constants> // Flash sms
+#include <TpExtensions/Connection> // stored messages if
+#include <TpExtensions/Constants> // Flash sms
 
 // Contacts
 #include <qmobilityglobal.h>
@@ -214,7 +214,7 @@ void TextChannelListener::channelListenerReady()
         // check if channel is meant to be used for class 0 sms messages
         QVariantMap properties = textChannel->immutableProperties();
 
-        QVariant property = properties.value(QLatin1String(RTCOM_TP_INTERFACE_CHANNEL_INTERFACE_SMS ".Flash"), QVariant());
+        QVariant property = properties.value(QLatin1String(COMM_HISTORY_TP_INTERFACE_CHANNEL_INTERFACE_SMS ".Flash"), QVariant());
         if(property.isValid() && property.value<bool>() == true) {
             qDebug() << __FUNCTION__ << "Channel contains class 0 property";
             m_isClassZeroSMS = true;
@@ -240,7 +240,7 @@ bool TextChannelListener::checkStoredMessagesIf()
         return result;
     }
 
-    if (m_Connection->hasInterface(RTComTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName())) {
+    if (m_Connection->hasInterface(CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName())) {
         connect(&eventModel(), SIGNAL(eventsCommitted(QList<CommHistory::Event>,bool)),
                 SLOT(slotEventsCommitted(QList<CommHistory::Event>,bool)),
                 Qt::UniqueConnection);
@@ -1385,8 +1385,8 @@ void TextChannelListener::slotExpungeMessages()
         || (m_Connection && !m_Connection->isReady()))
         return;
 
-    RTComTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
-            m_Connection->interface<RTComTp::Client::ConnectionInterfaceStoredMessagesInterface>();
+    CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
+            m_Connection->interface<CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface>();
 
     if (storedMessages) {
         qDebug() << Q_FUNC_INFO << m_expungeTokens;
