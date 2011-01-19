@@ -1,5 +1,5 @@
-#ifndef _RTComTp_Connection_HEADER_GUARD_
-#define _RTComTp_Connection_HEADER_GUARD_
+#ifndef _CommHistoryTp_Connection_HEADER_GUARD_
+#define _CommHistoryTp_Connection_HEADER_GUARD_
 
 
 #include "TelepathyQt4/Connection"
@@ -24,7 +24,7 @@
 #       define TELEPATHY_GNUC_DEPRECATED
 #   endif
 #endif
-namespace RTComTp
+namespace CommHistoryTp
 {
 namespace Client
 {
@@ -32,7 +32,6 @@ namespace Client
 
 /**
  * \class ConnectionInterfaceStoredMessagesInterface
- * \headerfile ../RTComTelepathyQt4/connection.h <../RTComTelepathyQt4/connection.h>
  *
  * Proxy class providing a 1:1 mapping of the D-Bus interface "com.nokia.Telepathy.Connection.Interface.StoredMessages."
  */
@@ -152,7 +151,7 @@ private:
 }
 }
 
-Q_DECLARE_METATYPE(RTComTp::Client::ConnectionInterfaceStoredMessagesInterface*)
+Q_DECLARE_METATYPE(CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface*)
 
 
 #endif

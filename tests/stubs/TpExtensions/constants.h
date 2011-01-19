@@ -1,4 +1,4 @@
-/* Generated from RTCom telepathy-qt4 extensions
+/* Generated from CommHistory telepathy-qt4 extensions
  */
 
 #include <QFlags>
@@ -185,131 +185,131 @@ const int NUM_CHANNEL_CONTACT_SEARCH_STATES = (4+1);
  *
  * The interface name "com.Nokia.Telepathy.Connection.Interface.Forwarding".
  */
-#define RTCOM_TP_INTERFACE_CONNECTION_INTERFACE_FORWARDING "com.Nokia.Telepathy.Connection.Interface.Forwarding"
+#define COMM_HISTORY_TP_INTERFACE_CONNECTION_INTERFACE_FORWARDING "com.Nokia.Telepathy.Connection.Interface.Forwarding"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "com.nokia.Telepathy.Connection.Interface.StoredMessages".
  */
-#define RTCOM_TP_INTERFACE_CONNECTION_INTERFACE_STORED_MESSAGES "com.nokia.Telepathy.Connection.Interface.StoredMessages"
+#define COMM_HISTORY_TP_INTERFACE_CONNECTION_INTERFACE_STORED_MESSAGES "com.nokia.Telepathy.Connection.Interface.StoredMessages"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "com.nokia.Telepathy.Connection.Interface.GSM".
  */
-#define RTCOM_TP_INTERFACE_CONNECTION_INTERFACE_GSM "com.nokia.Telepathy.Connection.Interface.GSM"
+#define COMM_HISTORY_TP_INTERFACE_CONNECTION_INTERFACE_GSM "com.nokia.Telepathy.Connection.Interface.GSM"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "com.nokia.Telepathy.Connection.Interface.Emergency".
  */
-#define RTCOM_TP_INTERFACE_CONNECTION_INTERFACE_EMERGENCY "com.nokia.Telepathy.Connection.Interface.Emergency"
+#define COMM_HISTORY_TP_INTERFACE_CONNECTION_INTERFACE_EMERGENCY "com.nokia.Telepathy.Connection.Interface.Emergency"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "org.freedesktop.Telepathy.Connection.Interface.Privacy.DRAFT".
  */
-#define RTCOM_TP_INTERFACE_CONNECTION_INTERFACE_PRIVACY "org.freedesktop.Telepathy.Connection.Interface.Privacy.DRAFT"
+#define COMM_HISTORY_TP_INTERFACE_CONNECTION_INTERFACE_PRIVACY "org.freedesktop.Telepathy.Connection.Interface.Privacy.DRAFT"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "org.freedesktop.Telepathy.Connection.Interface.ContactInfo.DRAFT".
  */
-#define RTCOM_TP_INTERFACE_CONNECTION_INTERFACE_CONTACT_INFO "org.freedesktop.Telepathy.Connection.Interface.ContactInfo.DRAFT"
+#define COMM_HISTORY_TP_INTERFACE_CONNECTION_INTERFACE_CONTACT_INFO "org.freedesktop.Telepathy.Connection.Interface.ContactInfo.DRAFT"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "com.nokia.Telepathy.Connection.Interface.Skype.CommunicationPolicy".
  */
-#define RTCOM_TP_INTERFACE_CONNECTION_INTERFACE_SKYPE_COMMUNICATIONPOLICY "com.nokia.Telepathy.Connection.Interface.Skype.CommunicationPolicy"
+#define COMM_HISTORY_TP_INTERFACE_CONNECTION_INTERFACE_SKYPE_COMMUNICATIONPOLICY "com.nokia.Telepathy.Connection.Interface.Skype.CommunicationPolicy"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "com.nokia.Telepathy.Connection.Interface.Skype.Balance".
  */
-#define RTCOM_TP_INTERFACE_CONNECTION_INTERFACE_SKYPE_BALANCE "com.nokia.Telepathy.Connection.Interface.Skype.Balance"
+#define COMM_HISTORY_TP_INTERFACE_CONNECTION_INTERFACE_SKYPE_BALANCE "com.nokia.Telepathy.Connection.Interface.Skype.Balance"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "org.freedesktop.Telepathy.Channel.Type.ContactSearch.DRAFT".
  */
-#define RTCOM_TP_INTERFACE_CHANNEL_TYPE_CONTACT_SEARCH "org.freedesktop.Telepathy.Channel.Type.ContactSearch.DRAFT"
+#define COMM_HISTORY_TP_INTERFACE_CHANNEL_TYPE_CONTACT_SEARCH "org.freedesktop.Telepathy.Channel.Type.ContactSearch.DRAFT"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "com.Nokia.Telepathy.Channel.Interface.DialStrings".
  */
-#define RTCOM_TP_INTERFACE_CHANNEL_INTERFACE_DIAL_STRINGS "com.Nokia.Telepathy.Channel.Interface.DialStrings"
+#define COMM_HISTORY_TP_INTERFACE_CHANNEL_INTERFACE_DIAL_STRINGS "com.Nokia.Telepathy.Channel.Interface.DialStrings"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "com.nokia.Telepathy.Channel.Interface.Mute".
  */
-#define RTCOM_TP_INTERFACE_CHANNEL_INTERFACE_MUTE "com.nokia.Telepathy.Channel.Interface.Mute"
+#define COMM_HISTORY_TP_INTERFACE_CHANNEL_INTERFACE_MUTE "com.nokia.Telepathy.Channel.Interface.Mute"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "com.nokia.Telepathy.Channel.Interface.Emergency".
  */
-#define RTCOM_TP_INTERFACE_CHANNEL_INTERFACE_EMERGENCY "com.nokia.Telepathy.Channel.Interface.Emergency"
+#define COMM_HISTORY_TP_INTERFACE_CHANNEL_INTERFACE_EMERGENCY "com.nokia.Telepathy.Channel.Interface.Emergency"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "com.nokia.Telepathy.Channel.Interface.Persistent".
  */
-#define RTCOM_TP_INTERFACE_CHANNEL_INTERFACE_PERSISTENT "com.nokia.Telepathy.Channel.Interface.Persistent"
+#define COMM_HISTORY_TP_INTERFACE_CHANNEL_INTERFACE_PERSISTENT "com.nokia.Telepathy.Channel.Interface.Persistent"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "org.freedesktop.Telepathy.Channel.Interface.Privacy.DRAFT".
  */
-#define RTCOM_TP_INTERFACE_CHANNEL_INTERFACE_PRIVACY "org.freedesktop.Telepathy.Channel.Interface.Privacy.DRAFT"
+#define COMM_HISTORY_TP_INTERFACE_CHANNEL_INTERFACE_PRIVACY "org.freedesktop.Telepathy.Channel.Interface.Privacy.DRAFT"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "com.nokia.Telepathy.Channel.Interface.SMS".
  */
-#define RTCOM_TP_INTERFACE_CHANNEL_INTERFACE_SMS "com.nokia.Telepathy.Channel.Interface.SMS"
+#define COMM_HISTORY_TP_INTERFACE_CHANNEL_INTERFACE_SMS "com.nokia.Telepathy.Channel.Interface.SMS"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "com.nokia.Telepathy.Channel.Interface.Voicemail.Skype".
  */
-#define RTCOM_TP_INTERFACE_CHANNEL_INTERFACE_VOICEMAIL_SKYPE "com.nokia.Telepathy.Channel.Interface.Voicemail.Skype"
+#define COMM_HISTORY_TP_INTERFACE_CHANNEL_INTERFACE_VOICEMAIL_SKYPE "com.nokia.Telepathy.Channel.Interface.Voicemail.Skype"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "com.nokia.Telepathy.Channel.Interface.Skype.GroupChat".
  */
-#define RTCOM_TP_INTERFACE_CHANNEL_INTERFACE_SKYPE_GROUPCHAT "com.nokia.Telepathy.Channel.Interface.Skype.GroupChat"
+#define COMM_HISTORY_TP_INTERFACE_CHANNEL_INTERFACE_SKYPE_GROUPCHAT "com.nokia.Telepathy.Channel.Interface.Skype.GroupChat"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "com.nokia.Telepathy.Channel.Interface.Skype.CallRate".
  */
-#define RTCOM_TP_INTERFACE_CHANNEL_INTERFACE_SKYPE_CALLRATE "com.nokia.Telepathy.Channel.Interface.Skype.CallRate"
+#define COMM_HISTORY_TP_INTERFACE_CHANNEL_INTERFACE_SKYPE_CALLRATE "com.nokia.Telepathy.Channel.Interface.Skype.CallRate"
 
 /**
  * \ingroup ifacestrconsts
  *
  * The interface name "org.freedesktop.Telepathy.Channel.Interface.Conference.DRAFT".
  */
-#define RTCOM_TP_INTERFACE_CHANNEL_INTERFACE_TP_CONFERENCE "org.freedesktop.Telepathy.Channel.Interface.Conference.DRAFT"
+#define COMM_HISTORY_TP_INTERFACE_CHANNEL_INTERFACE_TP_CONFERENCE "org.freedesktop.Telepathy.Channel.Interface.Conference.DRAFT"
 

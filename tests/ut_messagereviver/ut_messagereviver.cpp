@@ -34,7 +34,7 @@
 #include "TelepathyQt4/types.h"
 #include "TelepathyQt4/account.h"
 #include "TelepathyQt4/connection.h"
-#include "RTComTelepathyQt4/Connection"
+#include "TpExtensions/Connection"
 
 #include "connectionutils.h"
 #include "messagereviver.h"
@@ -126,9 +126,9 @@ void Ut_MessageReviver::revive()
     conn->ut_setIsValid(true);
 
     conn->ut_setInterfaces(QStringList()
-                           << RTComTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName());
+                           << CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName());
 
-    RTComTp::Client::ConnectionInterfaceStoredMessagesInterface *sm = conn->optionalInterface<RTComTp::Client::ConnectionInterfaceStoredMessagesInterface>();
+    CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface *sm = conn->optionalInterface<CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface>();
 
     QVERIFY(sm->ut_getDeliveredMessages().isEmpty());
 
