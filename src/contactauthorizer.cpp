@@ -266,7 +266,7 @@ void ContactAuthorizer::upgradeContacts(const Tp::Contacts& contacts)
                 SLOT(slotAvatarDataChanged(Tp::AvatarData)));
         connect(i.data(),
                 SIGNAL(avatarTokenChanged(const QString&)),
-                SIGNAL(slotAvatarTokenChanged(const QString&)));
+                SLOT(slotAvatarTokenChanged(const QString&)));
     }
 
     connect(pc, SIGNAL(finished(Tp::PendingOperation*)),
