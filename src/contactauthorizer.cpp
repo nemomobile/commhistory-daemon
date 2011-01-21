@@ -392,14 +392,19 @@ void ContactAuthorizer::slotDialogDismissed(const QString& dialogId, int result)
                                                  this,
                                                  SLOT(slotDialogDismissed(QString,int)));
 
-        if(result == QMessageBox::Ok) {
-            qDebug() << Q_FUNC_INFO << "authorizing";
+        qDebug() << "DIALOG DISMISSED WITH RESULT = " << result;
+        switch (result) {
+        case QMessageBox::Yes:
             authorizeContact(m_ongoingRequest.contact);
-        } else if(result == QMessageBox::Ignore) {
-            qDebug() << Q_FUNC_INFO << "blocking";
+            break;
+        case QMessageBox::No:
             blockContact(m_ongoingRequest.contact);
-        } else if(result == QMessageBox::Cancel) {
-            qDebug() << Q_FUNC_INFO << "putting request back";
+            break;
+        case QMessageBox::Ignore:
+            removeNotificationForOngoingRequest();
+            m_ongoingRequest = Request();
+            break;
+        default:
             m_ongoingRequest = Request();
         }
     }
