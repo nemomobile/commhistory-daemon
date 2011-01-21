@@ -300,18 +300,11 @@ void ContactAuthorizer::fireAuthorisationRequest()
         args.append(QVariant(transactionId));
         args.append(QVariant(m_account->uniqueIdentifier()));
 
-        QString notificationMessage;
-        if (!message.isEmpty())
-            notificationMessage = message;
-        else {
-            notificationMessage =
-                txt_qtn_pers_authorization_req(request.contact->alias().isEmpty() ?
-                                               request.contact->id() : request.contact->alias());
-        }
-
         MNotification notification(AuthorizationNotificationType,
-                                   id,
-                                   notificationMessage);
+                                   request.contact->alias().isEmpty() ?
+                                       request.contact->id() :
+                                       request.contact->alias(),
+                                   txt_qtn_pers_authorization_req);
 
         MRemoteAction remoteAction(COMM_HISTORY_SERVICE_NAME,
                                    COMM_HISTORY_OBJECT_PATH,

@@ -66,6 +66,6 @@
 #define txt_qtn_msg_general_does_not_support_offline qtTrId("qtn_msg_general_does_not_support_offline")
 
 //% "Authorization request %1"
-#define txt_qtn_pers_authorization_req(STR) qtTrId("qtn_pers_authorization_req").arg(STR)
+#define txt_qtn_pers_authorization_req qtTrId("qtn_pers_authorization_req")
 
 #endif // LOCSTRINGS_H
