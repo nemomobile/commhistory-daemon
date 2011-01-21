@@ -310,6 +310,7 @@ void ContactAuthorizer::fireAuthorisationRequest()
         }
 
         MNotification notification(AuthorizationNotificationType,
+                                   id,
                                    notificationMessage);
 
         MRemoteAction remoteAction(COMM_HISTORY_SERVICE_NAME,
