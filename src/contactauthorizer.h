@@ -90,8 +90,7 @@ private Q_SLOTS:
                                      const QString& message,
                                      const QString& transactionId,
                                      const QString& unused);
-    void slotPresencePublicationRequested(const Tp::Contacts &contacts,
-                                          const QString &message);
+    void slotPresencePublicationRequested(const Tp::Contacts &contacts);
     void slotContactsUpgraded(Tp::PendingOperation *);
     void slotConnectionInvalidated(Tp::DBusProxy*,const QString&, const QString&);
     void slotConnectionFeaturesReady(Tp::PendingOperation* op);
@@ -102,14 +101,13 @@ private Q_SLOTS:
     void slotRequestContactsReady(Tp::PendingOperation* operation);
     void slotAuthorizationAccepted(Tp::PendingOperation* operation);
     void slotContactBlocked(Tp::PendingOperation* operation);
-    void slotConnectionStatusChanged(Tp::Connection::Status connectionStatus);
+    void slotConnectionStatusChanged(Tp::ConnectionStatus connectionStatus);
 
 private:
     void listenToAuthorization(const Tp::ConnectionPtr& connection);
     void requestAvatar(const Tp::ContactPtr& contact);
     void queueAuthorization(const Tp::Contacts contacts,
-                            AuthRequests& requestQueue,
-                            const QString& requestMessage);
+                            AuthRequests& requestQueue);
     void queueAuthorization(const Tp::ContactPtr& contact,
                             const QString& avatarFile);
     void upgradeContacts(const Tp::Contacts& contacts);

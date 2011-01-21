@@ -67,7 +67,7 @@ ContactAuthorizer::ContactAuthorizer(const Tp::ConnectionPtr& connection,
     connect(connection.data(), SIGNAL(invalidated(Tp::DBusProxy*,QString,QString)),
             this, SLOT(slotConnectionInvalidated(Tp::DBusProxy*,QString,QString)));
 
-    if (connection->status() == Tp::Connection::StatusConnected) {
+    if (connection->status() == Tp::ConnectionStatusConnected) {
         qDebug() << Q_FUNC_INFO << "Account's' connection status is CONNECTED!";
         if(connection->isReady(Tp::Connection::FeatureRoster)) {
             listenToAuthorization(connection);
@@ -92,11 +92,11 @@ ContactAuthorizer::~ContactAuthorizer()
     qDebug() << Q_FUNC_INFO;
 }
 
-void ContactAuthorizer::slotConnectionStatusChanged(Tp::Connection::Status connectionStatus)
+void ContactAuthorizer::slotConnectionStatusChanged(Tp::ConnectionStatus connectionStatus)
 {
     qDebug() << Q_FUNC_INFO << "Connection status changed to " << connectionStatus;
 
-    if (connectionStatus == Tp::Connection::StatusConnected) {
+    if (connectionStatus == Tp::ConnectionStatusConnected) {
         qDebug() << Q_FUNC_INFO << "Asking FeatureRoster to be downloaded...";
         Tp::PendingOperation* po = m_connection->becomeReady(Tp::Connection::FeatureCore
                                 | Tp::Connection::FeatureRoster);
@@ -128,10 +128,8 @@ void ContactAuthorizer::listenToAuthorization(const Tp::ConnectionPtr& connectio
     if(m_pContactManager){
         // Connect to listen invitation requests:
         connect(m_pContactManager.data(),
-                SIGNAL(presencePublicationRequested
-                       (const Tp::Contacts &, const QString &)),
-                SLOT(slotPresencePublicationRequested
-                     (const Tp::Contacts &, const QString &)),
+                SIGNAL(presencePublicationRequested(const Tp::Contacts)),
+                SLOT(slotPresencePublicationRequested(const Tp::Contacts &)),
                 Qt::UniqueConnection);
 
         // Check if there are pending invitation requests in ContactManager's queue (like if invitation
@@ -161,17 +159,12 @@ void ContactAuthorizer::listenToAuthorization(const Tp::ConnectionPtr& connectio
             }
         }
 
-        // TODO: We do not yet get the publish state details from Tp::Contact, but in 0.5.2 tp-qt4 (to be ported after DAYOD):
-        // -> Contact::publishStateDetails accessor
-        Tp::Channel::GroupMemberChangeDetails details;
-
         if (pendingContacts.size()>0)
-            slotPresencePublicationRequested(pendingContacts, details);
+            slotPresencePublicationRequested(pendingContacts);
     }
 }
 
-void ContactAuthorizer::slotPresencePublicationRequested
-    (const Tp::Contacts &contacts, const QString &message)
+void ContactAuthorizer::slotPresencePublicationRequested(const Tp::Contacts &contacts)
 {
     qDebug() << Q_FUNC_INFO;
 
@@ -180,10 +173,10 @@ void ContactAuthorizer::slotPresencePublicationRequested
            && m_pContactManager->supportedFeatures().contains(Tp::Contact::FeatureAvatarData)){
             qDebug() << Q_FUNC_INFO << "Adding auth. requests to pending queue";
             upgradeContacts(contacts);
-            queueAuthorization(contacts, m_authRequestWaitingForAvatar, message);
+            queueAuthorization(contacts, m_authRequestWaitingForAvatar);
         } else {
             qDebug() << Q_FUNC_INFO << "Adding auth. requests to main queue";
-            queueAuthorization(contacts, m_authRequests, message);
+            queueAuthorization(contacts, m_authRequests);
         }
     }
 
@@ -191,8 +184,7 @@ void ContactAuthorizer::slotPresencePublicationRequested
 }
 
 void ContactAuthorizer::queueAuthorization(const Tp::Contacts contacts,
-                                           AuthRequests& requestQueue,
-                                           const QString& requestMessage)
+                                           AuthRequests& requestQueue)
 {
     qDebug() << Q_FUNC_INFO;
 
@@ -203,8 +195,8 @@ void ContactAuthorizer::queueAuthorization(const Tp::Contacts contacts,
     for (i = contacts.constBegin(); i != contacts.constEnd(); ++i){
         qDebug() << Q_FUNC_INFO << "Queuing request";
         Request request;
-        request.contact = *i;
-        request.message = requestMessage;
+        request.contact = *i;        
+        request.message = request.contact->publishStateMessage();
         if(!requestQueue.contains(request)){
             requestQueue.append(request);
         }
