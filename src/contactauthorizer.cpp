@@ -399,7 +399,8 @@ void ContactAuthorizer::slotDialogDismissed(const QString& dialogId, int result)
             qDebug() << Q_FUNC_INFO << "blocking";
             blockContact(m_ongoingRequest.contact);
         } else if(result == QMessageBox::Cancel) {
-            qDebug() << Q_FUNC_INFO << "putting request back";
+            qDebug() << Q_FUNC_INFO << "ignoring request";
+            removeNotificationForOngoingRequest();
             m_ongoingRequest = Request();
         }
     }
