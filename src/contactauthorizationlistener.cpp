@@ -110,9 +110,9 @@ void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& 
                state to online state: */
             // TODO: when porting against tpqt4 v. 0.5 after DAYOD change listened signal to be connectionStatusChanged(Tp::ConnectionStatus)
             connect(account.data(),
-                SIGNAL(connectionStatusChanged(Tp::ConnectionStatus, Tp::ConnectionStatusReason)),
+                SIGNAL(connectionStatusChanged(Tp::ConnectionStatus)),
                 m_pConnectionUtils,
-                SLOT(slotConnectionStatusChanged(Tp::ConnectionStatus, Tp::ConnectionStatusReason)),
+                SLOT(slotConnectionStatusChanged(Tp::ConnectionStatus)),
                 Qt::UniqueConnection);
 
             ContactAuthorizer* authorizer = new ContactAuthorizer(connection, account, this);

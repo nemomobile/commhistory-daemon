@@ -146,11 +146,8 @@ void ConnectionUtils::prepareConnection(const Tp::AccountPtr &account)
     }
 }
 
-void ConnectionUtils::slotConnectionStatusChanged(Tp::ConnectionStatus connectionStatus,
-                                                  Tp::ConnectionStatusReason reason)
+void ConnectionUtils::slotConnectionStatusChanged(Tp::ConnectionStatus connectionStatus)
 {
-    Q_UNUSED(reason)
-
     qDebug() << Q_FUNC_INFO;
 
     Tp::Account *account = qobject_cast<Tp::Account *>(sender());
