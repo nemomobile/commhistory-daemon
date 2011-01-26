@@ -1,0 +1,148 @@
+<?xml version="1.0" ?>
+<node name="/Connection_Interface_Stored_Messages"
+  xmlns:tp="http://telepathy.freedesktop.org/wiki/DbusSpec#extensions-v0">
+  <tp:copyright>Copyright (C) 2008 Nokia Corporation</tp:copyright>
+  <tp:license xmlns="http://www.w3.org/1999/xhtml">
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Library General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+  </tp:license>
+
+  <interface name="com.nokia.Telepathy.Connection.Interface.StoredMessages"
+    tp:causes-havoc="experimental">
+    <tp:requires interface="org.freedesktop.Telepathy.Channel.Type.Text"/>
+    <tp:requires interface="org.freedesktop.Telepathy.Channel.Interface.Messages.DRAFT"/>
+    <tp:added >(draft version, not API-stable)</tp:added>
+
+    <tp:docstring xmlns="http://www.w3.org/1999/xhtml">
+      <p>This interface extends the Messages interface to support 
+         store-and-forward messaging protocols like email or SMS.</p>
+
+      <p>A store-and-forward protocol stores the incoming message
+      permanently either locally within ConnectionManager or on a network
+      server. The messages get removed from the storage only when explicitly
+      expunged.
+      </p>
+
+      <p>A store-and-forward protocol using this interface MUST insert the
+         key 'message-token' in the first part of the message with an
+         unique id as its value. The clients use ExpungeMessages when
+         they want to remove the message from the permanent storage.
+      </p>
+
+      <p>A store-and-forward protocol MUST also insert the key
+         'stored-message-received' in the first part of the message if the
+         message is stored permanently.
+      </p>
+
+      <p>If the message is presented first time to the client, the value of
+      'stored-message-received' should be identical to the value of
+      'message-received'. If the message might have been presented earlier,
+      the value of 'stored-message-received' MAY differ from the value of
+      the 'message-received' key.</p>
+
+      <p>If the message has been presented earlier
+      during the Connection lifetime, a key 'rescued' with boolean value
+      True SHOULD be present in the first part of the message.
+      </p>
+    </tp:docstring>
+
+    <property name="StoredMessages" tp:name-for-bindings="Stored_Messages"
+      type="as" access="read" >
+      <tp:docstring xmlns="http://www.w3.org/1999/xhtml">
+        <p>A list of 'message-token' values for permanently stored incoming
+           messages that have not been expunged. Its items can be removed
+           using ExpungeMessages.</p>
+
+        <p>Unless expunged, the permanently stored messages may be presented to
+        the clients again when the Connection restarts.</p>
+      </tp:docstring>
+    </property>
+
+    <method name="DeliverStoredMessages"
+      tp:name-for-bindings="Deliver_Stored_Messages">
+      <tp:docstring xmlns="http://www.w3.org/1999/xhtml">
+        <p>Ask server to deliver again stored messages.</p>
+      </tp:docstring>
+
+      <arg name="StoredMessageTokens" type="as" direction="in">
+        <tp:docstring xmlns="http://www.w3.org/1999/xhtml">
+          The values of "message-token" key of permanently stored messages.
+        </tp:docstring>
+      </arg>
+
+      <tp:possible-errors>
+        <tp:error name="org.freedesktop.Telepathy.Error.InvalidArgument">
+          <tp:docstring>
+            A given message-token was not found, so no action was taken
+          </tp:docstring>
+        </tp:error>
+      </tp:possible-errors>
+    </method>     
+
+    <method name="ExpungeMessages" tp:name-for-bindings="Expunge_Messages">
+      <tp:docstring xmlns="http://www.w3.org/1999/xhtml">
+        <p>Expunge messages from permanent storage.</p>
+      </tp:docstring>
+      <arg name="StoredMessageTokens" type="as" direction="in">
+        <tp:docstring xmlns="http://www.w3.org/1999/xhtml">
+          The values of 'message-token' key of permanently stored messages.
+        </tp:docstring>
+      </arg>
+
+      <tp:possible-errors>
+        <tp:error name="org.freedesktop.Telepathy.Error.InvalidArgument">
+          <tp:docstring>
+            A given 'message-token' was not found, so no action was taken.
+          </tp:docstring>
+        </tp:error>
+      </tp:possible-errors>
+    </method>     
+
+    <signal name="MessagesExpunged" tp:name-for-bindings="Messages_Expunged">
+      <tp:docstring>
+        The messages with the given message-tokens have been expunged. 
+        Clients SHOULD NOT attempt to expunge those messages.
+      </tp:docstring>
+
+      <arg name="Stored_Message_Tokens" type="as">
+        <tp:docstring>
+          The messages that have been removed from the stored message list.
+        </tp:docstring>
+      </arg>
+    </signal>
+
+    <method name="SetStorageState" tp:name-for-bindings="Set_Storage_State">
+      <tp:docstring xmlns="http://www.w3.org/1999/xhtml">
+        <p>Try to pause or continue reception.</p>
+      </tp:docstring>
+      <arg name="OutOfStorage" type="b" direction="in">
+        <tp:docstring xmlns="http://www.w3.org/1999/xhtml">
+         <p><em>True</em> if client has run out of memory to store the incoming
+         messages. The protocol will then pause receiving new messages as if it
+         had run out of storage space itself.</p>
+
+         <p>If <em>false</em> the protocol will try to resume receiving new
+         messages.</p>
+
+         <p>Please note that most protocols, including SMS, try eventually
+         to resume receiving SMSs even after the client has indicated that
+         it is out of memory.
+         </p>
+        </tp:docstring>
+      </arg>
+    </method>
+
+  </interface>
+</node>
+<!-- vim:set sw=2 sts=2 et ft=xml: -->

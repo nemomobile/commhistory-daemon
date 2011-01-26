@@ -4,4 +4,6 @@
 
 <tp:title>Connection interfaces</tp:title>
 
+<xi:include href="Connection_Interface_StoredMessages.xml"/>
+
 </tp:spec>
