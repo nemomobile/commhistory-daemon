@@ -67,5 +67,7 @@
 
 //% "Authorization request %1"
 #define txt_qtn_pers_authorization_req qtTrId("qtn_pers_authorization_req")
+//% "You need to be online to perform this operation"
+#define txt_qtn_pers_offline qtTrId("qtn_pers_offline")
 
 #endif // LOCSTRINGS_H

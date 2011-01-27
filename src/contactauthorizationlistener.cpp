@@ -23,6 +23,7 @@
 #include "contactauthorizationlistener.h"
 #include "contactauthorizer.h"
 #include "connectionutils.h"
+#include "locstrings.h"
 
 // Tp
 #include <TelepathyQt4/PendingReady>
@@ -156,7 +157,7 @@ void ContactAuthorizationListener::slotShowUnableToAuthorizeDialog(const QString
 
     if (showNotification) {
         MNotification *notification = new MNotification(MNotification::DeviceEvent);
-        notification->setBody("Cannot authorize now because you are offline");
+        notification->setBody(txt_qtn_pers_offline);
         notification->publish();
     }
 }
