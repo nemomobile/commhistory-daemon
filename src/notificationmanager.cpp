@@ -713,7 +713,7 @@ QString NotificationManager::notificationText(const CommHistory::Event& event)
         {
             text = event.fromVCardLabel().isEmpty()
                    ? event.freeText()
-                   : txt_qtn_msg_notification_new_vcard.arg(event.fromVCardLabel());
+                   : txt_qtn_msg_notification_new_vcard(event.fromVCardLabel());
             break;
         }
         case CommHistory::Event::MMSEvent:

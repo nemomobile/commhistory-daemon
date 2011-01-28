@@ -30,8 +30,12 @@
 
 //% "%L1 new message(s)"
 #define txt_qtn_msg_notification_new_message(NUM) CHD_PL_TR("qtn_msg_notification_new_message", NUM)
-//% "Contact card of %1"
-#define txt_qtn_msg_notification_new_vcard qtTrId("qtn_msg_received_contact_card")
+//% "Contact card"
+#define txt_qtn_msg_contact_card_label qtTrId("qtn_msg_contact_card_label")
+
+//% "%1 | %2"
+#define txt_qtn_msg_notification_new_vcard(STR) qtTrId("qtn_msg_received_contact_card").arg(txt_qtn_msg_contact_card_label).arg(STR)
+
 //% "%L1 missed call(s)"
 #define txt_qtn_call_missed(NUM) qtTrId("qtn_call_missed", NUM)
 //% "%L1 voicemail(s)"
