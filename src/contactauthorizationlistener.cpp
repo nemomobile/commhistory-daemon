@@ -107,8 +107,7 @@ void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& 
         if ((account->protocolName() != PROTOCOL_TEL) && (account->protocolName() != PROTOCOL_MMS)) {
             /* After connection is ready we need to listen account's connection status changes so that we can
                instantiate ContactAuthorizer again when account goes from offline (ContactAuthorizer destroyed then)
-               state to online state: */
-            // TODO: when porting against tpqt4 v. 0.5 after DAYOD change listened signal to be connectionStatusChanged(Tp::ConnectionStatus)
+               state to online state: */            
             connect(account.data(),
                 SIGNAL(connectionStatusChanged(Tp::ConnectionStatus)),
                 m_pConnectionUtils,
@@ -117,7 +116,6 @@ void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& 
 
             ContactAuthorizer* authorizer = new ContactAuthorizer(connection, account, this);
             if(parent()) {
-                qDebug() << Q_FUNC_INFO << "connecting showAuthorizationDialog signal to ContactAuthorizer slot";
                 connect(parent(), SIGNAL(showAuthorizationDialog(QString, QString, QString,
                                                                  QString, QString, QString)),
                         authorizer, SLOT(slotShowAuthorizationDialog(QString, QString, QString,

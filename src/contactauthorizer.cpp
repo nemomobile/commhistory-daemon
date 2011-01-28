@@ -119,11 +119,6 @@ void ContactAuthorizer::listenToAuthorization(const Tp::ConnectionPtr& connectio
 
     m_pContactManager = connection->contactManager();
 
-    //This method requires Connection::FeatureSelfContact to be enabled.
-    //Tp::ContactPtr meContact = connection->selfContact();
-    //qDebug() << Q_FUNC_INFO << "This connection belongs to " << meContact->id();
-
-    // CHECK IF THERE ARE PENDING presencePublicationRequests in ContactManager queue!
 
     if(m_pContactManager){
         // Connect to listen invitation requests:

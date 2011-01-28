@@ -127,8 +127,6 @@ void ConnectionUtils::slotAddAccount(const Tp::AccountPtr &account)
 
 void ConnectionUtils::prepareConnection(const Tp::AccountPtr &account)
 {
-    qDebug() << Q_FUNC_INFO;
-
     connect(account.data(),
             SIGNAL(validityChanged(bool)),
             SLOT(slotAccountValidityChanged(bool)),
