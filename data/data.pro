@@ -37,14 +37,7 @@ service.files = org.freedesktop.Telepathy.Client.CommHistory.service \
 script.path = /etc/init.d
 script.files = commhistoryd.sh
 
-# -----------------------------------------------------------------------------
-# Installation target for prestart file
-# Note! this should be removed when new prestart configuration is in use
-# -----------------------------------------------------------------------------
-prestart.files = commhistoryd.prestart
-prestart.path  = /etc/prestart
-
 cud.files = commhistoryd-cud.sh
 cud.path  = /etc/osso-cud-scripts
 
-INSTALLS += client service script prestart cud
+INSTALLS += client service script cud
