@@ -51,7 +51,7 @@ private Q_SLOTS:
         void slotAccountReady(Tp::PendingOperation *);
         void slotAddAccount(const Tp::AccountPtr &account);
         void slotAccountValidityChanged(bool valid);
-        void slotConnectionStatusChanged(Tp::ConnectionStatus connectionStatus);
+        void slotConnectionChanged(const Tp::ConnectionPtr &connection);
         void slotConnectionReady(Tp::PendingOperation* operation);
 
 private:

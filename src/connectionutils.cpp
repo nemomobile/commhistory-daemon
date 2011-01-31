@@ -135,42 +135,29 @@ void ConnectionUtils::prepareConnection(const Tp::AccountPtr &account)
     Tp::ConnectionPtr connection = account->connection();
 
     if(!connection.isNull()) {
-        if (!connection->isReady()) {
-            qDebug() << Q_FUNC_INFO << "Connection not ready, making it ready";
-            connect(connection->becomeReady(),
-                    SIGNAL(finished(Tp::PendingOperation*)),
-                    SLOT(slotConnectionReady(Tp::PendingOperation*)));
-        }
+        qDebug() << Q_FUNC_INFO << "Connection object exists";
+        connect(connection->becomeReady(Tp::Connection::FeatureSimplePresence),
+                SIGNAL(finished(Tp::PendingOperation*)),
+                SLOT(slotConnectionReady(Tp::PendingOperation*)));
+    } else {
+        connect(account.data(),
+                SIGNAL(connectionChanged(const Tp::ConnectionPtr &)),
+                SLOT(slotConnectionChanged(const Tp::ConnectionPtr &)));
     }
 }
 
-void ConnectionUtils::slotConnectionStatusChanged(Tp::ConnectionStatus connectionStatus)
+void ConnectionUtils::slotConnectionChanged(const Tp::ConnectionPtr &connection)
 {
     qDebug() << Q_FUNC_INFO;
 
     Tp::Account *account = qobject_cast<Tp::Account *>(sender());
 
     if(account != 0 && account->isValid()) {
-        if (connectionStatus == Tp::ConnectionStatusConnected) {
-            qDebug() << Q_FUNC_INFO << "Connection status changed to Connected";
-            Tp::ConnectionPtr connection = account->connection();
-            if (!connection.isNull() && connection->isValid()) {
-                if (connection->isReady()) {
-                    qDebug() << Q_FUNC_INFO << "Connection is ready";
-                    emit connectionReady(connection);
-                } else {
-                    qDebug() << Q_FUNC_INFO << "Asking connection to become ready";
-                    connect(connection->becomeReady(),
-                            SIGNAL(finished(Tp::PendingOperation*)),
-                            SLOT(slotConnectionReady(Tp::PendingOperation*)));
-                }
-            }
-        } else if (connectionStatus == Tp::ConnectionStatusDisconnected) {
-            qDebug() << Q_FUNC_INFO << "Connection status changed to disconnected";
-        } else if (connectionStatus == Tp::ConnectionStatusConnecting) {
-            qDebug() << Q_FUNC_INFO << "Connection status changed to connecting...";
-        } else {
-            qDebug() << Q_FUNC_INFO << "Unknown connection status!";
+        if(!connection.isNull()) {
+            qDebug() << Q_FUNC_INFO << "Connection object exists";
+            connect(connection->becomeReady(Tp::Connection::FeatureSimplePresence),
+                    SIGNAL(finished(Tp::PendingOperation*)),
+                    SLOT(slotConnectionReady(Tp::PendingOperation*)));
         }
     }
 }

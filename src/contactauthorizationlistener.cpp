@@ -104,14 +104,16 @@ void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& 
 
     if(account) {
         // Create ContactAuthorizer only for IM accounts:
-        if ((account->protocolName() != PROTOCOL_TEL) && (account->protocolName() != PROTOCOL_MMS)) {
+        if (connection->actualFeatures().contains(Tp::Connection::FeatureSimplePresence))
+        {
+            qDebug() << Q_FUNC_INFO << "Creating ContactAuthorizer for " << account->protocolName();
             /* After connection is ready we need to listen account's connection status changes so that we can
                instantiate ContactAuthorizer again when account goes from offline (ContactAuthorizer destroyed then)
                state to online state: */            
             connect(account.data(),
                 SIGNAL(connectionStatusChanged(Tp::ConnectionStatus)),
-                m_pConnectionUtils,
-                SLOT(slotConnectionStatusChanged(Tp::ConnectionStatus)),
+                this,
+                SLOT(slotAccountConnectionStatusChanged(Tp::ConnectionStatus)),
                 Qt::UniqueConnection);
 
             ContactAuthorizer* authorizer = new ContactAuthorizer(connection, account, this);
@@ -121,6 +123,38 @@ void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& 
                         authorizer, SLOT(slotShowAuthorizationDialog(QString, QString, QString,
                                                                      QString, QString, QString)));
             }
+        }
+    }
+}
+
+void ContactAuthorizationListener::slotAccountConnectionStatusChanged(Tp::ConnectionStatus connectionStatus)
+{
+    qDebug() << Q_FUNC_INFO;
+
+    Tp::Account *account = qobject_cast<Tp::Account *>(sender());
+
+    if(account != 0 && account->isValid()) {
+        if (connectionStatus == Tp::ConnectionStatusConnected) {
+            qDebug() << Q_FUNC_INFO << "Connection status changed to Connected";
+            Tp::ConnectionPtr connection = account->connection();
+            if (!connection.isNull() && connection->isValid()) {
+                if (connection->isReady()) {
+                    qDebug() << Q_FUNC_INFO << "Connection is ready";
+                    slotConnectionReady(connection);
+                } else {
+                    qDebug() << Q_FUNC_INFO << "Asking connection to become ready";
+                    connect(connection->becomeReady(Tp::Connection::FeatureSimplePresence),
+                            SIGNAL(finished(Tp::PendingOperation*)),
+                            m_pConnectionUtils,
+                            SLOT(slotConnectionReady(Tp::PendingOperation*)));
+                }
+            }
+        } else if (connectionStatus == Tp::ConnectionStatusDisconnected) {
+            qDebug() << Q_FUNC_INFO << "Connection status changed to disconnected";
+        } else if (connectionStatus == Tp::ConnectionStatusConnecting) {
+            qDebug() << Q_FUNC_INFO << "Connection status changed to connecting...";
+        } else {
+            qDebug() << Q_FUNC_INFO << "Unknown connection status!";
         }
     }
 }

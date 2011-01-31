@@ -44,9 +44,6 @@ namespace RTComLogger {
 #define SHOW_INBOX_METHOD         QLatin1String("showInbox")
 #define START_CONVERSATION_METHOD QLatin1String("startConversation")
 
-#define PROTOCOL_TEL QLatin1String("tel")
-#define PROTOCOL_MMS QLatin1String("mms")
-
 #define CALL_HISTORY_SERVICE_NAME QLatin1String("com.nokia.telephony.callhistory")
 #define CALL_HISTORY_OBJECT_PATH  QLatin1String("/org/maemo/m")
 #define CALL_HISTORY_INTERFACE    QLatin1String("com.nokia.MApplicationIf")
