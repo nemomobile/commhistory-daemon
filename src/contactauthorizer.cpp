@@ -153,8 +153,8 @@ void ContactAuthorizer::listenToAuthorization(const Tp::ConnectionPtr& connectio
             }
         }
 
-        while(!notifications.isEmpty())
-            notifications.takeFirst()->deleteLater();
+        qDeleteAll(notifications);
+        notifications.clear();
 
         if (pendingContacts.size()>0)
             slotPresencePublicationRequested(pendingContacts);
