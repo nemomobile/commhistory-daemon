@@ -109,7 +109,7 @@ void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& 
             qDebug() << Q_FUNC_INFO << "Creating ContactAuthorizer for " << account->protocolName();
             /* After connection is ready we need to listen account's connection status changes so that we can
                instantiate ContactAuthorizer again when account goes from offline (ContactAuthorizer destroyed then)
-               state to online state: */            
+               state to online state: */
             connect(account.data(),
                 SIGNAL(connectionStatusChanged(Tp::ConnectionStatus)),
                 this,
@@ -189,7 +189,7 @@ void ContactAuthorizationListener::slotShowUnableToAuthorizeDialog(const QString
         if (!accountSet->accounts().isEmpty()) {
             Tp::AccountPtr account = accountSet->accounts().first();
 
-            if (NULL == account || account.isNull()) {
+            if (account.isNull()) {
                 qWarning() << "Account is null or invalid.";
                 return;
             }

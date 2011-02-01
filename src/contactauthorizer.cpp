@@ -73,10 +73,7 @@ ContactAuthorizer::ContactAuthorizer(const Tp::ConnectionPtr& connection,
             listenToAuthorization(connection);
         } else {
             qDebug() << Q_FUNC_INFO << "Asking FeatureRoster to be downloaded...";
-            Tp::PendingOperation* po = connection->becomeReady(Tp::Connection::FeatureCore
-                                    | Tp::Connection::FeatureRoster);
-            connect(po, SIGNAL(finished(Tp::PendingOperation*)),
-                    SLOT(slotConnectionFeaturesReady(Tp::PendingOperation*)));
+            slotConnectionStatusChanged(connection->status());
         }
     }
     else
@@ -132,6 +129,8 @@ void ContactAuthorizer::listenToAuthorization(const Tp::ConnectionPtr& connectio
         Tp::Contacts contacts = m_pContactManager->allKnownContacts();
         Tp::Contacts pendingContacts;
 
+        QList<MNotification*> notifications = MNotification::notifications();
+
         foreach(Tp::ContactPtr contact, contacts) {
             QString notificationIdentifier = contact->id() + m_account->objectPath();
             Tp::Contact::PresenceState state = contact->publishState();
@@ -141,7 +140,6 @@ void ContactAuthorizer::listenToAuthorization(const Tp::ConnectionPtr& connectio
                 bool notificationExists = false;
                 // Invitation requests should not be shown anymore if they already exist as notifications
                 // from previous device start-up:
-                QList<MNotification*> notifications = MNotification::notifications();
                 foreach (MNotification *n, notifications) {
                    if (notificationIdentifier == n->identifier()) {
                        qDebug() << Q_FUNC_INFO << "Invitation request is already being shown as a notification.";
@@ -149,10 +147,14 @@ void ContactAuthorizer::listenToAuthorization(const Tp::ConnectionPtr& connectio
                        break;
                     }
                 }
+
                 if (!notificationExists)
                     pendingContacts.insert(contact);
             }
         }
+
+        while(!notifications.isEmpty())
+            notifications.takeFirst()->deleteLater();
 
         if (pendingContacts.size()>0)
             slotPresencePublicationRequested(pendingContacts);
@@ -190,7 +192,7 @@ void ContactAuthorizer::queueAuthorization(const Tp::Contacts contacts,
     for (i = contacts.constBegin(); i != contacts.constEnd(); ++i){
         qDebug() << Q_FUNC_INFO << "Queuing request";
         Request request;
-        request.contact = *i;        
+        request.contact = *i;
         request.message = request.contact->publishStateMessage();
         if(!requestQueue.contains(request)){
             requestQueue.append(request);
