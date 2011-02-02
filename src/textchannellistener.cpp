@@ -853,19 +853,27 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
     if (!status.isValid())
         return result;
 
+    QDateTime deliveryTime;
+    if (message.sent().isValid())
+        deliveryTime = message.sent();
+    else if (message.received().isValid())
+        deliveryTime = message.received();
+    else
+        deliveryTime = QDateTime::currentDateTime();
+
     int deliveryStatus = status.value<int>();
     qDebug() << "[DELIVERY] Message delivery status: " << deliveryStatus;
 
     switch (deliveryStatus) {
     case Tp::DeliveryStatusDelivered: {
         event.setStatus(CommHistory::Event::DeliveredStatus);
-        event.setEndTime(message.received());
+        event.setStartTime(deliveryTime);
 
         break;
     }
     case Tp::DeliveryStatusAccepted: {
         event.setStatus(CommHistory::Event::SentStatus);
-        event.setStartTime(message.sent());
+        event.setStartTime(deliveryTime);
         // set MMS message id
         if (!mmsId.isEmpty()) {
             event.setMmsId(mmsId);
@@ -889,14 +897,14 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
     }
     case Tp::DeliveryStatusRead: {
         event.setStatus(CommHistory::Event::DeliveredStatus); // Message is read by recipient so it defenetelly delivered
-        event.setEndTime(message.received());
+        event.setStartTime(deliveryTime);
         event.setReadStatus(CommHistory::Event::ReadStatusRead);
 
         break;
     }
     case Tp::DeliveryStatusDeleted: {
         event.setStatus(CommHistory::Event::DeliveredStatus); // Message is read by recipient so it defenetelly delivered
-        event.setEndTime(message.received());
+        event.setStartTime(deliveryTime);
         event.setReadStatus(CommHistory::Event::ReadStatusDeleted);
 
         break;
@@ -1131,13 +1139,18 @@ void TextChannelListener::handleReceivedMessage(const Tp::ReceivedMessage &messa
     event.setRemoteUid(remoteId);
 
     QDateTime receivedTime;
-    if (message.received().isValid()) {
+    if (message.received().isValid())
         receivedTime = message.received();
-    } else {
+    else
         receivedTime = QDateTime::currentDateTime();
-    }
-    // TODO: think about start/endtime...
-    event.setStartTime(receivedTime);
+
+    QDateTime sentTime;
+    if (message.sent().isValid())
+        sentTime = message.sent();
+    else
+        sentTime = receivedTime;
+
+    event.setStartTime(sentTime);
     event.setEndTime(receivedTime);
 
     event.setMessageToken(message.messageToken());
