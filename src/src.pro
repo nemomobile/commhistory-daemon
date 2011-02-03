@@ -94,8 +94,7 @@ SOURCES += main.cpp \
 EXTENSIONS_DIR = $$IN_PWD/TpExtensions
 EXTENSIONS_GENERATED_DIR = TpExtensions/.gen
 TOOLS_DIR = $$IN_PWD/../tools
-
-PYTHON = python2.6
+PYTHON = $$TOOLS_DIR/python.sh 2.6
 MOC = moc
 
 XINCLUDATOR = $$TOOLS_DIR/xincludator.py
