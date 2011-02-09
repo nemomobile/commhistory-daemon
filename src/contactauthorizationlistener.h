@@ -30,6 +30,9 @@
 #include <TelepathyQt4/Connection>
 #include <TelepathyQt4/AccountManager>
 
+#include "contactauthorizer.h"
+//class ContactAuthorizer;
+
 namespace RTComLogger
 {
 class ConnectionUtils;
@@ -48,9 +51,11 @@ private Q_SLOTS:
     void slotShowUnableToAuthorizeDialog(const QString&, const QString&, const QString&,
                                          const QString&, const QString&, const QString&);
     void slotAccountConnectionStatusChanged(Tp::ConnectionStatus connectionStatus);
+    void slotRemoveAuthorizer(QObject *removedAuthorizer);
 
 private:
     ConnectionUtils *m_pConnectionUtils;
+    QMap<QString, ContactAuthorizer*> m_authorizers;
 };
 
 } // namespace RTComLogger

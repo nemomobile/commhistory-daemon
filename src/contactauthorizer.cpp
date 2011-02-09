@@ -79,14 +79,38 @@ ContactAuthorizer::ContactAuthorizer(const Tp::ConnectionPtr& connection,
     else
     {
         qDebug() << Q_FUNC_INFO << "Account is not connected yet. Waiting to be connected...";
-        connect(connection.data(), SIGNAL(statusChanged(Tp::Connection::Status)),
-                this, SLOT(slotConnectionStatusChanged(Tp::Connection::Status)));
+        connect(connection.data(), SIGNAL(statusChanged(Tp::ConnectionStatus)),
+                this, SLOT(slotConnectionStatusChanged(Tp::ConnectionStatus)));
     }
 }
 
 ContactAuthorizer::~ContactAuthorizer()
 {
     qDebug() << Q_FUNC_INFO;
+}
+
+QString ContactAuthorizer::accountPath() const
+{
+    qDebug() << Q_FUNC_INFO;
+
+    QString accountPath;
+
+    if (m_account) {
+        qDebug() << "cmName: " << m_account->cmName();
+        qDebug() << "protocolName: " << m_account->protocolName();
+        qDebug() << "serviceName: " << m_account->serviceName();
+        qDebug() << "displayName: " << m_account->displayName();
+        accountPath = m_account->serviceName();
+    }
+
+    return accountPath;
+}
+
+bool ContactAuthorizer::operator == (const ContactAuthorizer& other) const
+{
+    if(!accountPath().isEmpty() && accountPath() == other.accountPath())
+        return true;
+    return false;
 }
 
 void ContactAuthorizer::slotConnectionStatusChanged(Tp::ConnectionStatus connectionStatus)

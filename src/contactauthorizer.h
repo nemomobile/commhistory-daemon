@@ -83,6 +83,10 @@ public:
                                QObject *parent = 0);
     virtual ~ContactAuthorizer();
 
+    QString accountPath() const;
+
+    bool operator == (const ContactAuthorizer& other) const;
+
 private Q_SLOTS:
     void slotShowAuthorizationDialog(const QString& contactId,
                                      const QString& accountPath,

@@ -21,7 +21,7 @@
 ******************************************************************************/
 
 #include "contactauthorizationlistener.h"
-#include "contactauthorizer.h"
+//#include "contactauthorizer.h"
 #include "connectionutils.h"
 #include "locstrings.h"
 #include "constants.h"
@@ -116,7 +116,10 @@ void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& 
                 SLOT(slotAccountConnectionStatusChanged(Tp::ConnectionStatus)),
                 Qt::UniqueConnection);
 
-            ContactAuthorizer* authorizer = new ContactAuthorizer(connection, account, this);
+            ContactAuthorizer *authorizer = new ContactAuthorizer(connection, account, this);
+            connect(authorizer, SIGNAL(destroyed(QObject*)), this, SLOT(slotRemoveAuthorizer(QObject*)));
+
+            m_authorizers.insert(account->serviceName(), authorizer);
             if(parent()) {
                 connect(parent(), SIGNAL(showAuthorizationDialog(QString, QString, QString,
                                                                  QString, QString, QString)),
@@ -127,6 +130,29 @@ void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& 
     }
 }
 
+void ContactAuthorizationListener::slotRemoveAuthorizer(QObject *removedAuthorizer)
+{
+    qDebug() << Q_FUNC_INFO;
+
+    qDebug() << Q_FUNC_INFO << "1) authorizers left in list: " << m_authorizers.size();
+
+    if (removedAuthorizer) {
+        qDebug() << Q_FUNC_INFO << "QObject is not null";
+        QMutableMapIterator<QString,ContactAuthorizer*> i(m_authorizers);
+        while (i.hasNext()) {
+            i.next();
+            if (i.value() == removedAuthorizer) {
+                i.remove();
+            }
+        }
+    } else {
+        qDebug() << Q_FUNC_INFO << "QObject is null";
+    }
+
+    qDebug() << Q_FUNC_INFO << "2) authorizers left in list: " << m_authorizers.size();
+
+}
+
 void ContactAuthorizationListener::slotAccountConnectionStatusChanged(Tp::ConnectionStatus connectionStatus)
 {
     qDebug() << Q_FUNC_INFO;
@@ -135,19 +161,26 @@ void ContactAuthorizationListener::slotAccountConnectionStatusChanged(Tp::Connec
 
     if(account != 0 && account->isValid()) {
         if (connectionStatus == Tp::ConnectionStatusConnected) {
-            qDebug() << Q_FUNC_INFO << "Connection status changed to Connected";
-            Tp::ConnectionPtr connection = account->connection();
-            if (!connection.isNull() && connection->isValid()) {
-                if (connection->isReady()) {
-                    qDebug() << Q_FUNC_INFO << "Connection is ready";
-                    slotConnectionReady(connection);
-                } else {
-                    qDebug() << Q_FUNC_INFO << "Asking connection to become ready";
-                    connect(connection->becomeReady(Tp::Connection::FeatureSimplePresence),
-                            SIGNAL(finished(Tp::PendingOperation*)),
-                            m_pConnectionUtils,
-                            SLOT(slotConnectionReady(Tp::PendingOperation*)));
+            /* Do not create another ContactAuthorizer for same account if it already exists. This happens if we have just created
+               a new account and it is going online. Then we have already ContactAuthorizer created for that account and it is
+               also handling the connection status change. */
+            if (!m_authorizers.contains(account->serviceName())) {
+                qDebug() << Q_FUNC_INFO << "Connection status changed to Connected";
+                Tp::ConnectionPtr connection = account->connection();
+                if (!connection.isNull() && connection->isValid()) {
+                    if (connection->isReady()) {
+                        qDebug() << Q_FUNC_INFO << "Connection is ready";
+                        slotConnectionReady(connection);
+                    } else {
+                        qDebug() << Q_FUNC_INFO << "Asking connection to become ready";
+                        connect(connection->becomeReady(Tp::Connection::FeatureSimplePresence),
+                                SIGNAL(finished(Tp::PendingOperation*)),
+                                m_pConnectionUtils,
+                                SLOT(slotConnectionReady(Tp::PendingOperation*)));
+                    }
                 }
+            } else {
+                qDebug() << Q_FUNC_INFO << "ContactAuthorizer for account " << account->serviceName() << " already exists.";
             }
         } else if (connectionStatus == Tp::ConnectionStatusDisconnected) {
             qDebug() << Q_FUNC_INFO << "Connection status changed to disconnected";
