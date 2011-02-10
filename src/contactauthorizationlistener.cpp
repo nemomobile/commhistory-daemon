@@ -106,7 +106,7 @@ void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& 
         // Create ContactAuthorizer only for IM accounts:
         if (connection->actualFeatures().contains(Tp::Connection::FeatureSimplePresence))
         {
-            qDebug() << Q_FUNC_INFO << "Creating ContactAuthorizer for " << account->protocolName();
+            qDebug() << Q_FUNC_INFO << "Creating ContactAuthorizer for " << account->uniqueIdentifier();
             /* After connection is ready we need to listen account's connection status changes so that we can
                instantiate ContactAuthorizer again when account goes from offline (ContactAuthorizer destroyed then)
                state to online state: */
@@ -119,7 +119,7 @@ void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& 
             ContactAuthorizer *authorizer = new ContactAuthorizer(connection, account, this);
             connect(authorizer, SIGNAL(destroyed(QObject*)), this, SLOT(slotRemoveAuthorizer(QObject*)));
 
-            m_authorizers.insert(account->serviceName(), authorizer);
+            m_authorizers.insert(account->uniqueIdentifier(), authorizer);
             if(parent()) {
                 connect(parent(), SIGNAL(showAuthorizationDialog(QString, QString, QString,
                                                                  QString, QString, QString)),
@@ -164,7 +164,7 @@ void ContactAuthorizationListener::slotAccountConnectionStatusChanged(Tp::Connec
             /* Do not create another ContactAuthorizer for same account if it already exists. This happens if we have just created
                a new account and it is going online. Then we have already ContactAuthorizer created for that account and it is
                also handling the connection status change. */
-            if (!m_authorizers.contains(account->serviceName())) {
+            if (!m_authorizers.contains(account->uniqueIdentifier())) {
                 qDebug() << Q_FUNC_INFO << "Connection status changed to Connected";
                 Tp::ConnectionPtr connection = account->connection();
                 if (!connection.isNull() && connection->isValid()) {
@@ -180,7 +180,7 @@ void ContactAuthorizationListener::slotAccountConnectionStatusChanged(Tp::Connec
                     }
                 }
             } else {
-                qDebug() << Q_FUNC_INFO << "ContactAuthorizer for account " << account->serviceName() << " already exists.";
+                qDebug() << Q_FUNC_INFO << "ContactAuthorizer for account " << account->uniqueIdentifier() << " already exists.";
             }
         } else if (connectionStatus == Tp::ConnectionStatusDisconnected) {
             qDebug() << Q_FUNC_INFO << "Connection status changed to disconnected";

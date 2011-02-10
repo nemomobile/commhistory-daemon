@@ -89,30 +89,6 @@ ContactAuthorizer::~ContactAuthorizer()
     qDebug() << Q_FUNC_INFO;
 }
 
-QString ContactAuthorizer::accountPath() const
-{
-    qDebug() << Q_FUNC_INFO;
-
-    QString accountPath;
-
-    if (m_account) {
-        qDebug() << "cmName: " << m_account->cmName();
-        qDebug() << "protocolName: " << m_account->protocolName();
-        qDebug() << "serviceName: " << m_account->serviceName();
-        qDebug() << "displayName: " << m_account->displayName();
-        accountPath = m_account->serviceName();
-    }
-
-    return accountPath;
-}
-
-bool ContactAuthorizer::operator == (const ContactAuthorizer& other) const
-{
-    if(!accountPath().isEmpty() && accountPath() == other.accountPath())
-        return true;
-    return false;
-}
-
 void ContactAuthorizer::slotConnectionStatusChanged(Tp::ConnectionStatus connectionStatus)
 {
     qDebug() << Q_FUNC_INFO << "Connection status changed to " << connectionStatus;
@@ -264,6 +240,9 @@ void ContactAuthorizer::queueAuthorization(const Tp::ContactPtr& contact,
 void ContactAuthorizer::upgradeContacts(const Tp::Contacts& contacts)
 {
     qDebug() << Q_FUNC_INFO;
+
+    if (!m_pContactManager)
+        return;
 
     Tp::Features features;
     features << Tp::Contact::FeatureAlias
@@ -435,7 +414,7 @@ void ContactAuthorizer::slotShowAuthorizationDialog(const QString& contactId,
     // If we couldn't find a request, it means that the user has tapped on an authorization
     // request that was issued before a reboot, so we have to create the request again and
     // find the contact.
-    if(!requestFound) {
+    if(!requestFound && m_pContactManager) {
         Request req;
         Tp::PendingContacts *pendingContacts;
         QVariant reqVariant;
