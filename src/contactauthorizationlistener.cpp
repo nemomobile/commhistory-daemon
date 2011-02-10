@@ -21,7 +21,6 @@
 ******************************************************************************/
 
 #include "contactauthorizationlistener.h"
-//#include "contactauthorizer.h"
 #include "connectionutils.h"
 #include "locstrings.h"
 #include "constants.h"
@@ -134,10 +133,7 @@ void ContactAuthorizationListener::slotRemoveAuthorizer(QObject *removedAuthoriz
 {
     qDebug() << Q_FUNC_INFO;
 
-    qDebug() << Q_FUNC_INFO << "1) authorizers left in list: " << m_authorizers.size();
-
     if (removedAuthorizer) {
-        qDebug() << Q_FUNC_INFO << "QObject is not null";
         QMutableMapIterator<QString,ContactAuthorizer*> i(m_authorizers);
         while (i.hasNext()) {
             i.next();
@@ -145,12 +141,7 @@ void ContactAuthorizationListener::slotRemoveAuthorizer(QObject *removedAuthoriz
                 i.remove();
             }
         }
-    } else {
-        qDebug() << Q_FUNC_INFO << "QObject is null";
     }
-
-    qDebug() << Q_FUNC_INFO << "2) authorizers left in list: " << m_authorizers.size();
-
 }
 
 void ContactAuthorizationListener::slotAccountConnectionStatusChanged(Tp::ConnectionStatus connectionStatus)
@@ -161,9 +152,6 @@ void ContactAuthorizationListener::slotAccountConnectionStatusChanged(Tp::Connec
 
     if(account != 0 && account->isValid()) {
         if (connectionStatus == Tp::ConnectionStatusConnected) {
-            /* Do not create another ContactAuthorizer for same account if it already exists. This happens if we have just created
-               a new account and it is going online. Then we have already ContactAuthorizer created for that account and it is
-               also handling the connection status change. */
             if (!m_authorizers.contains(account->uniqueIdentifier())) {
                 qDebug() << Q_FUNC_INFO << "Connection status changed to Connected";
                 Tp::ConnectionPtr connection = account->connection();

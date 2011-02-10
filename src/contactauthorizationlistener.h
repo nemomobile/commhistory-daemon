@@ -31,7 +31,6 @@
 #include <TelepathyQt4/AccountManager>
 
 #include "contactauthorizer.h"
-//class ContactAuthorizer;
 
 namespace RTComLogger
 {
