@@ -17,8 +17,7 @@ NotificationManager::NotificationManager(QObject *parent) :
     m_GroupModel->enableContactChanges(false);
 
     if (!m_GroupModel->getGroups()) {
-        qCritical() << "Failed to request group "
-                    << m_GroupModel->lastError().text();
+        qCritical() << "Failed to request group ";
         delete m_GroupModel;
         m_GroupModel = 0;
     }

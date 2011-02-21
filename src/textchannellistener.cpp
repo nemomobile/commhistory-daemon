@@ -265,9 +265,9 @@ void TextChannelListener::requestConversationId()
                     this, SLOT(slotGroupInserted(const QModelIndex &, int, int)));
 
             if (m_GroupModel->isReady()) {
-                slotOnModelReady();
+                slotOnModelReady(true);
             } else {
-                connect(m_GroupModel, SIGNAL(modelReady()), SLOT(slotOnModelReady()));
+                connect(m_GroupModel, SIGNAL(modelReady(bool)), SLOT(slotOnModelReady(bool)));
             }
         } else {
             qCritical() << "Failed to create group model";
@@ -496,12 +496,17 @@ void TextChannelListener::slotGetPropertiesFinished(QDBusPendingCallWatcher *wat
     watcher->deleteLater();
 }
 
-void TextChannelListener::slotOnModelReady()
+void TextChannelListener::slotOnModelReady(bool status)
 {
     qDebug() << __PRETTY_FUNCTION__ << m_Account->objectPath() << targetId();
 
-    disconnect(m_GroupModel, SIGNAL(modelReady()),
-               this, SLOT(slotOnModelReady()));
+    disconnect(m_GroupModel, SIGNAL(modelReady(bool)),
+               this, SLOT(slotOnModelReady(bool)));
+
+    if (!status) {
+        qCritical() << "Group model failed to load";
+        return;
+    }
 
     // if group exist, read group id right away
     // otherwise add a new group only when a new message(received/sent) comes
@@ -766,7 +771,7 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::getEventForToke
             m_pendingEvents.insert(eventKey, model);
             result = DeliveryHandlingPending;
         } else {
-            qWarning() << "Failed query single event model" << model->lastError();
+            qWarning() << "Failed query single event model";
             delete model;
         }
     }
@@ -942,7 +947,7 @@ void TextChannelListener::slotSingleModelReady()
                         if (eventModel().modifyEvent(event)) {
                             addMessage = false;
                         } else {
-                            qWarning() << "Failed modify mms event" << eventModel().lastError();
+                            qWarning() << "Failed modify mms event";
                         }
                     }
                 }
@@ -1234,7 +1239,7 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
                 connect(request, SIGNAL(modelReady()), SLOT(slotSingleModelReady()));
                 addMessage = false;
             } else {
-                qWarning() << "Failed query single event model" << request->lastError();
+                qWarning() << "Failed query single event model";
                 delete request;
             }
         }
@@ -1267,8 +1272,7 @@ void TextChannelListener::saveNewMessage(CommHistory::Event &event)
         m_Group.setLastVCardFileName(event.fromVCardFileName());
         m_Group.setLastVCardLabel(event.fromVCardLabel());
     } else {
-        qWarning() << "failed to add event:"
-                   << eventModel().lastError().text();
+        qWarning() << "failed to add event";
     }
 }
 
@@ -1301,33 +1305,9 @@ void TextChannelListener::updateGroupChatName(ChangedChannelProperty changedChan
             m_Group.setChatName(m_GroupChatName);
             if ( m_GroupModel )
             {
-                // Update group chat name (topic) into tracker.
-                // Requires fully populated group to be signaled in modifyGroup to data models
-                // because the models will replace their group with the group that they get from the signal.
-                // Tracker IO recognizes that just chat name has changed so only that will be updated into tracker:
-
-                if ( m_Group.isPermanent() )
-                {
-                    qDebug() << Q_FUNC_INFO << "Group already in tracker, updating topic";
-                    // Group is already in tracker:
-                    if(!m_GroupModel->modifyGroup(m_Group)) {
-                        qCritical() << "failed to modify group into tracker:" << m_GroupModel->lastError().text();
-                    }
-                    else
-                    {
-                        qDebug() << Q_FUNC_INFO << "Group modified into tracker";
-                    }
-                }
-                else
-                {
-                    // In case of in-memory group no messages exist so do not create group into tracker
-                    // (it will make an empty group to be shown in inbox), but just
-                    // notify UI about topic change:
-                    QList<CommHistory::Group> groups;
-                    groups << m_Group;
-                    // This will make group chat topic to be updated to conversation item in inbox and into the title
-                    // of the conversation page:
-                    m_GroupModel->updateGroups(groups);
+                // Group is already in tracker:
+                if(!m_GroupModel->modifyGroup(m_Group)) {
+                    qCritical() << "failed to modify group into tracker";
                 }
 
                 QString remoteId;

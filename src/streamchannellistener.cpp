@@ -317,8 +317,7 @@ bool StreamChannelListener::addEvent()
     }
 
     if (result == false) {
-        qCritical() << "failed to add event:"
-                    <<  eventModel().lastError().text();
+        qCritical() << "failed to add event";
     }
 
     return result;

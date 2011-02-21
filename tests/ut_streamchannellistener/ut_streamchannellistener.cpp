@@ -154,7 +154,7 @@ void Ut_StreamChannelListener::invalidated()
 
     CommHistory::CallModel model;
 
-    QSignalSpy modelReady(&model, SIGNAL(modelReady()));
+    QSignalSpy modelReady(&model, SIGNAL(modelReady(bool)));
     model.getEvents();
     QVERIFY(waitSignal(modelReady, 5000));
     QVERIFY(model.rowCount() > 0);
@@ -302,7 +302,7 @@ void Ut_StreamChannelListener::normalCall()
 
     CommHistory::CallModel model;
 
-    QSignalSpy modelReady(&model, SIGNAL(modelReady()));
+    QSignalSpy modelReady(&model, SIGNAL(modelReady(bool)));
     model.getEvents();
     QVERIFY(waitSignal(modelReady, 5000));
     QVERIFY(model.rowCount() > 0);
@@ -416,7 +416,7 @@ void Ut_StreamChannelListener::emergency()
 
     CommHistory::CallModel model;
 
-    QSignalSpy modelReady(&model, SIGNAL(modelReady()));
+    QSignalSpy modelReady(&model, SIGNAL(modelReady(bool)));
     model.getEvents();
     QVERIFY(waitSignal(modelReady, 5000));
     QVERIFY(model.rowCount() > 0);

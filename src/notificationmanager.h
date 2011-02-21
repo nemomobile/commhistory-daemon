@@ -128,7 +128,7 @@ private Q_SLOTS:
     void slotContactsRemoved(const QList<QContactLocalId> &contactIds);
     void slotContactsChanged(const QList<QContactLocalId> &contactIds);
     void fireUnknownContactsRequest();
-    void slotOnModelReady();
+    void slotOnModelReady(bool status);
     void slotGroupRemoved(const QModelIndex &index, int start, int end);
     void slotMWICountChanged(int count);
     void slotChannelClosed(ChannelListener *channelListener);

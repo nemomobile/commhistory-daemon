@@ -142,7 +142,7 @@ CommHistory::Group Ut_TextChannelListener::fetchGroup(const QString &localUid,
 {
     CommHistory::GroupModel model;
 
-    QSignalSpy modelReady(&model, SIGNAL(modelReady()));
+    QSignalSpy modelReady(&model, SIGNAL(modelReady(bool)));
     model.getGroups(localUid, remoteUid);
 
     if (!waitSignal(modelReady, 5000))
@@ -165,7 +165,7 @@ end:
 CommHistory::Event Ut_TextChannelListener::fetchEvent(int eventId)
 {
     CommHistory::SingleEventModel model;
-    QSignalSpy modelReady(&model, SIGNAL(modelReady()));
+    QSignalSpy modelReady(&model, SIGNAL(modelReady(bool)));
 
     model.getEventByUri(CommHistory::Event::idToUrl(eventId));
     if(!waitSignal(modelReady, 5000))
@@ -773,7 +773,7 @@ void Ut_TextChannelListener::groups()
     {
         CommHistory::GroupModel gm;
         gm.getGroups(SMS_ACCOUNT_PATH, SMS_NUMBER);
-        QSignalSpy ready(&gm, SIGNAL(modelReady()));
+        QSignalSpy ready(&gm, SIGNAL(modelReady(bool)));
         QVERIFY(waitSignal(ready, 5000));
         gm.deleteAll();
         QTest::qWait(5000);

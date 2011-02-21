@@ -1171,8 +1171,7 @@ CommHistory::GroupModel* NotificationManager::groupModel()
                 SLOT(slotGroupRemoved(const QModelIndex&, int, int)));
 
         if (!m_GroupModel->getGroups()) {
-            qCritical() << "Failed to request group "
-                        << m_GroupModel->lastError().text();
+            qCritical() << "Failed to request group ";
             delete m_GroupModel;
             m_GroupModel = 0;
         }
@@ -1186,17 +1185,20 @@ void NotificationManager::startContactsTimer()
     m_ContactsTimer.start();
 }
 
-void NotificationManager::slotOnModelReady()
+void NotificationManager::slotOnModelReady(bool status)
 {
-    disconnect(m_GroupModel, SIGNAL(modelReady()),
-               this, SLOT(slotOnModelReady()));
-    fireUnknownContactsRequest();
+    disconnect(m_GroupModel, SIGNAL(modelReady(bool)),
+               this, SLOT(slotOnModelReady(bool)));
+    if (status)
+        fireUnknownContactsRequest();
+    else
+        qCritical() << "Group model failed to load";
 }
 
 void NotificationManager::fireUnknownContactsRequest()
 {
     if (!groupModel()->isReady()) {
-        connect(m_GroupModel, SIGNAL(modelReady()), SLOT(slotOnModelReady()));
+        connect(m_GroupModel, SIGNAL(modelReady(bool)), SLOT(slotOnModelReady(bool)));
         return;
     }
 

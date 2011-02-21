@@ -73,7 +73,7 @@ private Q_SLOTS:
     void slotMessageSent(const Tp::Message &message,
                        Tp::MessageSendingFlags flags,
                        const QString &messageToken);
-    void slotOnModelReady();
+    void slotOnModelReady(bool status);
     void slotPresenceChanged(const Tp::Presence &presence);
     void slotGroupRemoved(const QModelIndex &index, int start, int end);
     void slotGroupInserted(const QModelIndex &index, int start, int end);
