@@ -177,6 +177,7 @@ private:
     void requestContact(TpContactUid contactUid, ChannelListener * = 0);
     void resolveEvents();
     QString contactName(const QString &localUid, const QString &remoteUid);
+    QStringList contactNames(const NotificationGroup& group);
 
     /* uses MeeGoTouch notification framework */
     void addGroup(int type);

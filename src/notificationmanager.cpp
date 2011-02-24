@@ -596,6 +596,10 @@ void NotificationManager::updateNotificationGroup(const NotificationGroup &group
         if (!grouped && group.type() != CommHistory::Event::VoicemailEvent) {
             name = contactName(notification.account(),
                                notification.remoteUid());
+            qDebug() << Q_FUNC_INFO << "Setting name " << name << " for a single notification";
+        } else if (grouped && group.type() != CommHistory::Event::VoicemailEvent) {
+            name = contactNames(group).join(CONTACT_SEPARATOR_IN_NOTIFICATION_GROUP);
+            qDebug() << Q_FUNC_INFO << "Setting names " << name << " for a notification group";
         }
         updateGroup(group.type(), name, message, groupAction);
     } else {
@@ -964,6 +968,23 @@ QString NotificationManager::contactName(const QString &localUid,
 
     qDebug() << Q_FUNC_INFO << localUid << remoteUid << result;
     return result;
+}
+
+QStringList NotificationManager::contactNames(const NotificationGroup& group)
+{
+    QStringList names;
+    QList<PersonalNotification> contacts;
+
+    foreach(PersonalNotification pn, m_Notifications.values(group)) {
+        if(!contacts.contains(pn)) {
+            contacts.append(pn);
+        }
+    }
+
+    for (int i=0; i<contacts.size();i++)
+        names.append(contactName(contacts[i].account(), contacts[i].remoteUid()));
+
+    return names;
 }
 
 void NotificationManager::addGroup(int type)
