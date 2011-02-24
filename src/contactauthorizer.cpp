@@ -582,6 +582,8 @@ void ContactAuthorizer::removeNotificationForOngoingRequest()
            }
         }
     }
+    qDeleteAll(notifications);
+    notifications.clear();
 
     // Let's also remove the request from the list of published ones.
     m_publishedAuthRequests.removeOne(m_ongoingRequest);
