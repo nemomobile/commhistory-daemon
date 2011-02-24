@@ -82,6 +82,9 @@ ContactAuthorizer::ContactAuthorizer(const Tp::ConnectionPtr& connection,
         connect(connection.data(), SIGNAL(statusChanged(Tp::ConnectionStatus)),
                 this, SLOT(slotConnectionStatusChanged(Tp::ConnectionStatus)));
     }
+
+    connect(account.data(), SIGNAL(removed()), this, SLOT(slotAccountRemoved()));
+    qDebug() << "Connected to account::removed() for: " << account->objectPath();
 }
 
 ContactAuthorizer::~ContactAuthorizer()
@@ -579,6 +582,8 @@ void ContactAuthorizer::removeNotificationForOngoingRequest()
            }
         }
     }
+    qDeleteAll(notifications);
+    notifications.clear();
 
     // Let's also remove the request from the list of published ones.
     m_publishedAuthRequests.removeOne(m_ongoingRequest);
@@ -636,6 +641,33 @@ void ContactAuthorizer::slotRequestContactsReady(Tp::PendingOperation *operation
         }
     } else {
         qCritical() << Q_FUNC_INFO << "Invalid TpPendingOperation when requesting target contact";
+    }
+}
+
+void ContactAuthorizer::slotAccountRemoved() {
+    // We need to remove the ongoing notifications for this account
+
+    qDebug() << Q_FUNC_INFO;
+
+    Tp::Account *account = qobject_cast<Tp::Account*>(sender());
+
+    QList<MNotification*> notifications = MNotification::notifications();
+    foreach (MNotification *n, notifications) {
+       if (n->identifier().endsWith(account->objectPath())) {
+           if (!n->remove()) {
+               qWarning() << "Failed to remove notification.";
+           }
+        }
+    }
+    qDeleteAll(notifications);
+    notifications.clear();
+
+    if (m_ongoingRequest.notificationId.endsWith(account->objectPath())) {
+        // Let's also remove the request from the list of published ones.
+        m_publishedAuthRequests.removeOne(m_ongoingRequest);
+        m_authRequestWaitingForAvatar.removeOne(m_ongoingRequest);
+        m_authRequests.removeOne(m_ongoingRequest);
+        m_ongoingRequest = Request();
     }
 }
 

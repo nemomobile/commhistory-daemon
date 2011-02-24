@@ -102,6 +102,7 @@ private Q_SLOTS:
     void slotAuthorizationAccepted(Tp::PendingOperation* operation);
     void slotContactBlocked(Tp::PendingOperation* operation);
     void slotConnectionStatusChanged(Tp::ConnectionStatus connectionStatus);
+    void slotAccountRemoved();
 
 private:
     void listenToAuthorization(const Tp::ConnectionPtr& connection);
