@@ -182,6 +182,7 @@ private:
     /* uses MeeGoTouch notification framework */
     void addGroup(int type);
     void updateGroup(int eventType,
+                     int notificationCount,
                      const QString& contactName,
                      const QString& message,
                      const QString& action);

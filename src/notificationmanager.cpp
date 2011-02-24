@@ -601,7 +601,7 @@ void NotificationManager::updateNotificationGroup(const NotificationGroup &group
             name = contactNames(group).join(CONTACT_SEPARATOR_IN_NOTIFICATION_GROUP);
             qDebug() << Q_FUNC_INFO << "Setting names " << name << " for a notification group";
         }
-        updateGroup(group.type(), name, message, groupAction);
+        updateGroup(group.type(), countNotifications(group), name, message, groupAction);
     } else {
         // m_Notifications doesnt have any personal notification of the given group
         // remove the group type completly
@@ -1005,6 +1005,7 @@ void NotificationManager::removeGroup(int type)
 }
 
 void NotificationManager::updateGroup(int eventType,
+                                      int notificationCount,
                                       const QString& contactName,
                                       const QString& message,
                                       const QString& action)
@@ -1015,6 +1016,7 @@ void NotificationManager::updateGroup(int eventType,
             group->setSummary(contactName);
             group->setBody(message);
             group->setAction(MRemoteAction(action));
+            group->setCount(notificationCount);
             group->publish();
         } else
             qWarning() << "NULL group for event type" << eventType;
