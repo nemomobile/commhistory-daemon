@@ -544,7 +544,7 @@ void Ut_TextChannelListener::voicemail()
     // setup connection
     Tp::ConnectionPtr conn(new Tp::Connection());
     conn->ut_setIsReady(true);
-    conn->ut_setInterfaces(QStringList() << RTComTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName());
+    conn->ut_setInterfaces(QStringList() << CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName());
 
     //setup account
     Tp::AccountPtr acc(new Tp::Account(conn, SMS_ACCOUNT_PATH));
@@ -579,8 +579,8 @@ void Ut_TextChannelListener::voicemail()
     QCOMPARE(nm->postedNotifications.size(), 0);
     QCOMPARE(nm->voicemailNotifications, 2);
 
-    RTComTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
-            conn->interface<RTComTp::Client::ConnectionInterfaceStoredMessagesInterface>();
+    CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
+            conn->interface<CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface>();
     QVERIFY(storedMessages);
     QVERIFY(storedMessages->ut_getExpungedMessages().contains(token));
 
@@ -685,7 +685,7 @@ void Ut_TextChannelListener::receiveVCard()
     // setup connection
     Tp::ConnectionPtr conn(new Tp::Connection());
     conn->ut_setIsReady(true);
-    conn->ut_setInterfaces(QStringList() << RTComTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName());
+    conn->ut_setInterfaces(QStringList() << CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName());
 
     //setup account
     Tp::AccountPtr acc(new Tp::Account(conn, SMS_ACCOUNT_PATH));
@@ -759,8 +759,8 @@ void Ut_TextChannelListener::receiveVCard()
     QVERIFY(vcardFile.exists());
     QVERIFY(vcardFile.size() > 0);
 
-    RTComTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
-            conn->interface<RTComTp::Client::ConnectionInterfaceStoredMessagesInterface>();
+    CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
+            conn->interface<CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface>();
     QVERIFY(storedMessages);
     QVERIFY(storedMessages->ut_getExpungedMessages().contains(token));
 }
