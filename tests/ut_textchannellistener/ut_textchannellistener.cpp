@@ -76,14 +76,6 @@ namespace {
         return !spy.isEmpty();
     }
 
-    void justWait(int msec)
-    {
-        QTime timer;
-        timer.start();
-        while (timer.elapsed() < msec)
-            QCoreApplication::processEvents();
-    }
-
     void waitInvocationContext(Tp::MethodInvocationContextPtr<> &ctx, int msec)
     {
         QTime timer;
@@ -272,7 +264,8 @@ void Ut_TextChannelListener::receiving()
     QFETCH(QString, channelPath);
     QFETCH(bool, cellular);
 
-    QString message = messageBase + QString(" : ") + QTime::currentTime().toString(Qt::ISODate);
+    QString message = messageBase + QString(" : ") + QLatin1String(cellular?" cell ":" notcell ")
+                      + QTime::currentTime().toString(Qt::ISODate);
 
     NotificationManager *nm = NotificationManager::instance();
     QVERIFY(nm);
@@ -367,14 +360,15 @@ void Ut_TextChannelListener::smsSending_data()
     QTest::addColumn<bool>("finalStatus");
 
     QTest::newRow("Delivered") << true;
-    QTest::newRow("Failed") << true;
+    QTest::newRow("Failed") << false;
 }
 
 void Ut_TextChannelListener::smsSending()
 {
     QFETCH(bool, finalStatus);
 
-    QString message = QString(SENT_MESSAGE) + QString(" : ") + QTime::currentTime().toString(Qt::ISODate);
+    QString message = QString(SENT_MESSAGE) + QString(" : ") + QLatin1String(finalStatus ? " delivered ":" failed ")
+                      + QTime::currentTime().toString(Qt::ISODate);
 
     NotificationManager *nm = NotificationManager::instance();
     QVERIFY(nm);
@@ -494,7 +488,7 @@ void Ut_TextChannelListener::smsSending()
         QCOMPARE(g.lastEventStatus(), CommHistory::Event::FailedStatus);
 
     e = fetchEvent(g.lastEventId());
-    QCOMPARE(e.endTime().toTime_t(), timestampDelivered);
+    QCOMPARE(e.startTime().toTime_t(), timestampDelivered);
 
     RTComTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
             conn->interface<RTComTp::Client::ConnectionInterfaceStoredMessagesInterface>();
@@ -779,7 +773,7 @@ void Ut_TextChannelListener::groups()
         QSignalSpy ready(&gm, SIGNAL(modelReady()));
         QVERIFY(waitSignal(ready, 5000));
         gm.deleteAll();
-        justWait(5000);
+        QTest::qWait(5000);
     }
 
     NotificationManager *nm = NotificationManager::instance();
