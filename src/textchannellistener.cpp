@@ -123,6 +123,17 @@ QTM_USE_NAMESPACE;
 
 namespace {
 
+static CommHistory::Event::PropertySet deliveryHandlingProperties = CommHistory::Event::PropertySet()
+                                                 << CommHistory::Event::Id
+                                                 << CommHistory::Event::Direction
+                                                 << CommHistory::Event::Status
+                                                 << CommHistory::Event::LocalUid
+                                                 << CommHistory::Event::RemoteUid
+                                                 << CommHistory::Event::GroupId
+                                                 << CommHistory::Event::MessageToken
+                                                 << CommHistory::Event::ReportDelivery
+                                                 << CommHistory::Event::MmsId;
+
 bool isVoicemail(const Tp::MessagePart &header)
 {
     if (header.contains(MAILBOX_NOTIFICATION)) {
@@ -766,6 +777,7 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::getEventForToke
         }
     } else {
         CommHistory::SingleEventModel *model = new CommHistory::SingleEventModel(this);
+        model->setPropertyMask(deliveryHandlingProperties);
         if (model->getEventByTokens(token, mmsId, groupId)) {
             connect(model, SIGNAL(modelReady(bool)), SLOT(slotSingleModelReady(bool)));
             m_pendingEvents.insert(eventKey, model);
