@@ -482,10 +482,11 @@ void Ut_TextChannelListener::smsSending()
     QVERIFY(g.isValid());
     QCOMPARE(g.lastMessageText(), message);
     QCOMPARE(g.lastEventType(), CommHistory::Event::SMSEvent);
+
     if (finalStatus)
         QCOMPARE(g.lastEventStatus(), CommHistory::Event::DeliveredStatus);
     else
-        QCOMPARE(g.lastEventStatus(), CommHistory::Event::FailedStatus);
+        QCOMPARE(g.lastEventStatus(), CommHistory::Event::PermanentlyFailedStatus);
 
     e = fetchEvent(g.lastEventId());
     QCOMPARE(e.startTime().toTime_t(), timestampDelivered);
