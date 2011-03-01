@@ -767,7 +767,7 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::getEventForToke
     } else {
         CommHistory::SingleEventModel *model = new CommHistory::SingleEventModel(this);
         if (model->getEventByTokens(token, mmsId, groupId)) {
-            connect(model, SIGNAL(modelReady()), SLOT(slotSingleModelReady()));
+            connect(model, SIGNAL(modelReady(bool)), SLOT(slotSingleModelReady(bool)));
             m_pendingEvents.insert(eventKey, model);
             result = DeliveryHandlingPending;
         } else {
@@ -926,9 +926,11 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
     return result;
 }
 
-void TextChannelListener::slotSingleModelReady()
+void TextChannelListener::slotSingleModelReady(bool status)
 {
+    Q_UNUSED(status);
     qDebug() << Q_FUNC_INFO;
+
     CommHistory::SingleEventModel *request= qobject_cast<CommHistory::SingleEventModel*>(sender());
 
     if (m_sendMms.contains(request)) {

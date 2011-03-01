@@ -94,7 +94,7 @@ private Q_SLOTS:
     void slotListPropertiesFinished(QDBusPendingCallWatcher *watcher);
     void slotGetPropertiesFinished(QDBusPendingCallWatcher *watcher);
     void slotExpungeMessages();
-    void slotSingleModelReady();
+    void slotSingleModelReady(bool status);
 
 private:
 
