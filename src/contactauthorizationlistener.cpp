@@ -115,6 +115,8 @@ void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& 
                 SLOT(slotAccountConnectionStatusChanged(Tp::ConnectionStatus)),
                 Qt::UniqueConnection);
 
+            connect(account.data(), SIGNAL(removed()), this, SLOT(slotAccountRemoved()));
+
             ContactAuthorizer *authorizer = new ContactAuthorizer(connection, account, this);
             connect(authorizer, SIGNAL(destroyed(QObject*)), this, SLOT(slotRemoveAuthorizer(QObject*)));
 
@@ -125,6 +127,9 @@ void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& 
                         authorizer, SLOT(slotShowAuthorizationDialog(QString, QString, QString,
                                                                      QString, QString, QString)));
             }
+
+            // Keep a reference to the AccountPtr so it won't be destroyed
+            m_accounts.insert(account->objectPath(), account);
         }
     }
 }
@@ -232,5 +237,26 @@ void ContactAuthorizationListener::slotShowUnableToAuthorizeDialog(const QString
         notification->setBody(txt_qtn_pers_offline);
         notification->publish();
     }
+}
+
+void ContactAuthorizationListener::slotAccountRemoved() {
+    // We need to remove the ongoing notifications for this account
+
+    qDebug() << Q_FUNC_INFO;
+
+    Tp::Account *account = qobject_cast<Tp::Account*>(sender());
+
+    QList<MNotification*> notifications = MNotification::notifications();
+    foreach (MNotification *n, notifications) {
+       if (n->identifier().endsWith(account->objectPath())) {
+           if (!n->remove()) {
+               qWarning() << "Failed to remove notification.";
+           }
+        }
+    }
+    qDeleteAll(notifications);
+    notifications.clear();
+
+    m_accounts.remove(account->objectPath());
 }
 

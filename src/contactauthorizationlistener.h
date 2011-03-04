@@ -47,6 +47,7 @@ public:
 
 private Q_SLOTS:
     void slotConnectionReady(const Tp::ConnectionPtr& connection);
+    void slotAccountRemoved();
     void slotShowUnableToAuthorizeDialog(const QString&, const QString&, const QString&,
                                          const QString&, const QString&, const QString&);
     void slotAccountConnectionStatusChanged(Tp::ConnectionStatus connectionStatus);
@@ -55,6 +56,7 @@ private Q_SLOTS:
 private:
     ConnectionUtils *m_pConnectionUtils;
     QMap<QString, ContactAuthorizer*> m_authorizers;
+    QMap<QString, Tp::AccountPtr> m_accounts;
 };
 
 } // namespace RTComLogger
