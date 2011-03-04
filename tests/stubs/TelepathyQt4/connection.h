@@ -103,8 +103,11 @@ public:
 
     ContactManagerPtr contactManager() const;
 
+    uint selfHandle() const;
+
 public: // ut
     void ut_setInterfaces(const QStringList& interfaces);
+    void ut_setSelfHandle(uint handle);
 
 private:
     struct Private;

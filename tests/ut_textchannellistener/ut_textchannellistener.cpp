@@ -55,6 +55,8 @@
 #define IM_CHANNEL_PATH QLatin1String("/org/freedesktop/Telepathy/Account/gabble/jabber/dut_40localhost0")
 #define SMS_CHANNEL_PATH QLatin1String("/org/freedesktop/Telepathy/Connection/ring/tel/ring/text0")
 #define TARGET_HANDLE 1
+#define SELF_HANDLE 0
+#define IM_REMOTE_ID QLatin1String("td@jabber.org")
 
 #define VCARD_CONTENT QLatin1String("BEGIN:VCARD\n" \
                                     "VERSION:2.1\n" \
@@ -887,6 +889,85 @@ void Ut_TextChannelListener::groups()
     }
 
     QVERIFY(firstGroup != tcl.m_Group.id());
+}
+
+/*
+ * Test receiving IM message from remote device that is using same account as us.
+ */
+void Ut_TextChannelListener::receivingFromSelf()
+{
+    QString message = RECEIVED_MESSAGE + QString(" : ") + QTime::currentTime().toString(Qt::ISODate);
+
+    NotificationManager *nm = NotificationManager::instance();
+    QVERIFY(nm);
+    nm->postedNotifications.clear();
+
+    // setup connection
+    Tp::ConnectionPtr conn(new Tp::Connection());
+    conn->ut_setIsReady(true);
+    conn->ut_setSelfHandle(SELF_HANDLE);
+
+    //setup account
+    Tp::AccountPtr acc(new Tp::Account(conn, IM_ACCOUNT_PATH));
+
+    //setup channel
+    Tp::ChannelPtr ch(new Tp::TextChannel(IM_CHANNEL_PATH));
+    ch->ut_setIsRequested(false);
+    ch->ut_setTargetHandleType(Tp::HandleTypeContact);
+    ch->ut_setTargetHandle(TARGET_HANDLE);
+    QVariantMap immProp;
+    immProp.insert(TELEPATHY_INTERFACE_CHANNEL ".TargetID", IM_REMOTE_ID);
+    ch->ut_setImmutableProperties(immProp);
+    ch->ut_setConnection(conn);
+
+    Tp::MethodInvocationContextPtr<> ctx(new Tp::MethodInvocationContext<>());
+
+    TextChannelListener tcl(acc, ch, ctx);
+    waitInvocationContext(ctx, 5000);
+
+    QVERIFY(ctx->isFinished());
+    QVERIFY(!ctx->isError());
+
+    // send received message
+    Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
+
+    uint timestamp = QDateTime::currentDateTime().toTime_t();
+    addMsgHeader(msg, 0, "received", timestamp);
+    addMsgHeader(msg, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNormal);
+    QString token = QUuid::createUuid().toString();
+    addMsgHeader(msg, 0, "message-token", token);
+
+    addMsgHeader(msg, 1,"content-type", "text/plain");
+    addMsgHeader(msg, 1,"content", message);
+    // set sender contact
+    Tp::ContactPtr sender(new Tp::Contact());
+    sender->ut_setHandle(SELF_HANDLE);
+    sender->ut_setId(IM_USERNAME);
+    msg.ut_setSender(sender);
+
+    Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(msg);
+
+    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
+    QVERIFY(waitSignal(eventCommitted, 5000));
+
+    CommHistory::Group g = fetchGroup(IM_ACCOUNT_PATH, IM_REMOTE_ID, true);
+
+    QVERIFY(g.isValid());
+    QCOMPARE(g.localUid(), IM_ACCOUNT_PATH);
+    QCOMPARE(g.remoteUids().first(), IM_REMOTE_ID);
+    QCOMPARE(g.lastMessageText(), message);
+    QCOMPARE(g.lastEventType(), CommHistory::Event::IMEvent);
+
+    CommHistory::Event e = fetchEvent(g.lastEventId());
+    QCOMPARE(e.id(), g.lastEventId());
+    QCOMPARE(e.direction(), CommHistory::Event::Outbound);
+    QCOMPARE(e.isRead(), true);
+    QCOMPARE(e.freeText(), message);
+    QCOMPARE(e.startTime().toTime_t(), timestamp);
+    QCOMPARE(e.endTime().toTime_t(), timestamp);
+    QCOMPARE(e.messageToken(), token);
+
+    QCOMPARE(nm->postedNotifications.size(), 0);
 }
 
 QTEST_MAIN(Ut_TextChannelListener)

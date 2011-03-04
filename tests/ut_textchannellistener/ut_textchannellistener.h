@@ -55,6 +55,7 @@ private Q_SLOTS:
     void voicemail();
     void receiveVCard();
     void groups();
+    void receivingFromSelf();
 
 private:
     CommHistory::Group fetchGroup(const QString &localUid, const QString &remoteUid, bool wait);

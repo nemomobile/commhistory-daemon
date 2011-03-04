@@ -11,6 +11,7 @@ struct Connection::Private
 {
     QStringList m_interfaces;
     ContactManagerPtr m_manager;
+    uint m_selfHandle;
 };
 
 Connection::Connection(const QString &objectPath) :
@@ -40,9 +41,18 @@ ContactManagerPtr Connection::contactManager() const
     return mPriv->m_manager;
 }
 
+uint Connection::selfHandle() const
+{
+    return mPriv->m_selfHandle;
+}
+
 void Connection::ut_setInterfaces(const QStringList& interfaces)
 {
     mPriv->m_interfaces = interfaces;
 }
 
+void Connection::ut_setSelfHandle(uint handle)
+{
+    mPriv->m_selfHandle = handle;
+}
 }

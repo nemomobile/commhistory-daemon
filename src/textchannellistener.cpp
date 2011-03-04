@@ -638,7 +638,8 @@ void TextChannelListener::handleMessages()
                 }
                 addMessages << message;
 
-                nManager->showNotification(this, event, targetId(), m_Group.chatType());
+                if (event.direction() != CommHistory::Event::Outbound)
+                    nManager->showNotification(this, event, targetId(), m_Group.chatType());
             }
             break;
         }
@@ -1122,7 +1123,12 @@ void TextChannelListener::handleReceivedMessage(const Tp::ReceivedMessage &messa
     QString messageText = message.text();
 
     uint handle = message.sender()->handle().first();
-    if (m_HandleOwnerNames.contains(handle))
+
+    bool fromSelf = false;
+    if (m_Connection && m_Connection->isReady() && m_Connection->selfHandle() == handle) {
+        fromSelf = true;
+        remoteId = targetId();
+    } else if (m_HandleOwnerNames.contains(handle))
         remoteId = m_HandleOwnerNames.value(handle);
     else if (message.sender())
         remoteId = message.sender()->id();
@@ -1131,12 +1137,18 @@ void TextChannelListener::handleReceivedMessage(const Tp::ReceivedMessage &messa
         remoteId = targetId();
     }
 
-    qDebug() << "Handling received message: " << remoteId << "->"
+    qDebug() << "Handling received message: " << remoteId << (fromSelf ? "<-" : "->")
              << m_Account->objectPath() << messageText;
 
     fillEventFromMessage(message, event);
-    event.setDirection(CommHistory::Event::Inbound);
     event.setRemoteUid(remoteId);
+
+    if (fromSelf) {
+        event.setDirection(CommHistory::Event::Outbound);
+        event.setIsRead(true);
+    } else {
+        event.setDirection(CommHistory::Event::Inbound);
+    }
 
     QDateTime receivedTime;
     if (message.received().isValid())
