@@ -196,19 +196,16 @@ void NotificationManager::init()
     }
 
     m_ObservedConversation->subscribe();
-    m_ObservedConversation->waitForSubscription();
     connect(m_ObservedConversation,
             SIGNAL(valueChanged()),
             SLOT(slotObservedConversationChanged()));
 
     m_ObservedInbox->subscribe();
-    m_ObservedInbox->waitForSubscription();
     connect(m_ObservedInbox,
             SIGNAL(valueChanged()),
             SLOT(slotObservedInboxChanged()));
 
     m_ObservedCallHistory->subscribe();
-    m_ObservedCallHistory->waitForSubscription();
     connect(m_ObservedCallHistory,
             SIGNAL(valueChanged()),
             SLOT(slotObservedCallHistoryChanged()));
@@ -300,9 +297,8 @@ bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& even
 
     // check contextkit property status, if not ready, we assume
     // ui is not observed
-    if(m_ObservedConversation) {
-        const ContextPropertyInfo* info = m_ObservedConversation->info();
-        if (info && info->exists() && info->provided()) {
+    if (m_ObservedConversation) {
+        if (!m_ObservedConversation->value().isNull()) {
             QString remoteMatch;
             if (chatType == CommHistory::Group::ChatTypeP2P)
                 remoteMatch = event.remoteUid();
