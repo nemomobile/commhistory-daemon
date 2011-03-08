@@ -1164,7 +1164,7 @@ CommHistory::GroupModel* NotificationManager::groupModel()
 {
     if (!m_GroupModel) {
         m_GroupModel = new CommHistory::GroupModel(this);
-        m_GroupModel->enableContactChanges(false);
+        m_GroupModel->enableContactChanges(true);
         connect(m_GroupModel,
                 SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
                 this,

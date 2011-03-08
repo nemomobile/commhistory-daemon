@@ -298,15 +298,26 @@ void TextChannelListener::slotGroupDataChanged(const QModelIndex &topLeft, const
         return;
     }
 
+    bool pendingGroupsHandled = false;
+
     for (int i = topLeft.row(); i <= bottomRight.row(); i++) {
         QModelIndex row = m_GroupModel->index(i, 0);
         CommHistory::Group group = m_GroupModel->group(row);
-        if (group.isValid()
-            && m_Group.id() == group.id()) {
-            m_Group = group;
-            break;
+        if (group.isValid()) {
+            if (m_pendingGroups.contains(group.id())) {
+                pendingGroupsHandled = true;
+                m_pendingGroups.removeAll(group.id());
+            }
+
+            if (m_Group.id() == group.id())
+                m_Group = group;
         }
     }
+
+    if (pendingGroupsHandled)
+        handleMessages();
+
+    tryToClose();
 }
 
 void TextChannelListener::slotGroupInserted(const QModelIndex &index, int start, int end)
@@ -549,12 +560,12 @@ void TextChannelListener::handleMessages()
 {
     QList<CommHistory::Event> scrollbackEvents;
     QList<CommHistory::Event> addEvents;
-    QList<CommHistory::Event> modifyEvents;
+    QHash<int, QList<CommHistory::Event> > modifyEvents; // separate list for each group
     QList<Tp::ReceivedMessage> ackMessages;
     QList<Tp::ReceivedMessage> addMessages;
-    QList<Tp::ReceivedMessage> modifyMessages;
+    QHash<int, QList<Tp::ReceivedMessage> > modifyMessages;
     // expunge tokens for committing events
-    QMultiHash<int, QString> modifyTokens;
+    QHash<int, QMultiHash<int, QString> > modifyTokens;
 
     NotificationManager* nManager = NotificationManager::instance();
 
@@ -574,16 +585,22 @@ void TextChannelListener::handleMessages()
             DeliveryHandlingStatus status = handleDeliveryReport(message, event);
             switch (status) {
             case DeliveryHandlingResolved:
+                if (m_pendingGroups.contains(event.groupId())) {
+                    wait = true;
+                    break;
+                }
+
                 if (event.isValid()) {
-                    modifyEvents << event;
-                    modifyMessages << message;
+                    int groupId = event.groupId();
+                    modifyEvents[groupId] << event;
+                    modifyMessages[groupId] << message;
 
                     QString token = message.messageToken();
-                    if (token.isEmpty()) {
-                        qDebug() << "Message doesn't have token. Using one in event:" << event.messageToken();
+                    if (token.isEmpty())
                         token = event.messageToken();
-                    }
-                    modifyTokens.insertMulti(event.id(), token);
+
+                    modifyTokens[groupId].insertMulti(event.id(), token);
+
                 } else {
                     // recovered message should be added
                     addEvents << event;
@@ -601,7 +618,7 @@ void TextChannelListener::handleMessages()
                 wait = true;
                 break;
             default:
-                qCritical() << "Unknown DleiveryHandlingStatus" << status;
+                qCritical() << "Unknown DeliveryHandlingStatus" << status;
             }
             break;
         }
@@ -634,9 +651,12 @@ void TextChannelListener::handleMessages()
                         qWarning() << "Move events failed" << event.id();
                     }
                 }
-                modifyEvents << event;
-                modifyMessages << message;
-              // class 0 sms
+
+                int groupId = event.groupId();
+                modifyEvents[groupId] << event;
+                modifyMessages[groupId] << message;
+
+            // class 0 sms
             } else if(m_isClassZeroSMS){
                 // just ack message, expunge would be called
                 // as soon as user reads message
@@ -652,8 +672,9 @@ void TextChannelListener::handleMessages()
                 }
                 addMessages << message;
 
-                if (event.direction() != CommHistory::Event::Outbound)
+                if (event.direction() != CommHistory::Event::Outbound) {
                     nManager->showNotification(this, event, targetId(), m_Group.chatType());
+                }
             }
             break;
         }
@@ -710,11 +731,15 @@ void TextChannelListener::handleMessages()
     }
 
     if (!modifyEvents.isEmpty()) {
-        if (eventModel().modifyEventsInGroup(modifyEvents, m_Group)) {
-            ackMessages << modifyMessages;
-            m_EventTokens += modifyTokens;
-        } else {
-            qWarning() << "Modify events failed";
+        QHash<int, QList<CommHistory::Event> >::iterator i;
+        for (i = modifyEvents.begin(); i != modifyEvents.end(); ++i) {
+            CommHistory::Group group = getGroupById(i.key());
+            if (group.isValid() && eventModel().modifyEventsInGroup(i.value(), group)) {
+                ackMessages << modifyMessages[i.key()];
+                m_EventTokens += modifyTokens[i.key()];
+            } else {
+                qWarning() << "Modify events failed for group" << i.key();
+            }
         }
     }
 
@@ -956,7 +981,9 @@ void TextChannelListener::slotSingleModelReady(bool status)
                     CommHistory::Event oldEvent = model->event(model->index(0,0));
                     if (oldEvent.isValid()) {
                         event.setId(oldEvent.id());
-                        if (eventModel().modifyEvent(event)) {
+                        CommHistory::Group group = getGroupById(event.groupId());
+                        if (group.isValid() && eventModel().modifyEventsInGroup(
+                                QList<CommHistory::Event>() << event, group)) {
                             m_EventTokens.insertMulti(event.id(), event.messageToken());
                             addMessage = false;
                         } else {
@@ -1272,19 +1299,10 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
 
 void TextChannelListener::saveNewMessage(CommHistory::Event &event)
 {
-   if (eventModel().addEvent(event)) {
-        // make sure our group is up to date, delivery reports for
-        // this event might come before eventsAdded
-        m_Group.setLastEventId(event.id());
-        m_Group.setLastEventType(event.type());
-        m_Group.setLastEventStatus(event.status());
-        if (event.type() == CommHistory::Event::MMSEvent && !event.subject().isEmpty()) {
-            m_Group.setLastMessageText(event.subject());
-        } else {
-            m_Group.setLastMessageText(event.freeText());
-        }
-        m_Group.setLastVCardFileName(event.fromVCardFileName());
-        m_Group.setLastVCardLabel(event.fromVCardLabel());
+    qDebug() << Q_FUNC_INFO << event.toString();
+
+    if (eventModel().addEvent(event)) {
+        m_pendingGroups.append(event.groupId());
     } else {
         qWarning() << "failed to add event";
     }
@@ -1830,7 +1848,8 @@ bool TextChannelListener::hasPendingOperations() const
     return !(m_sendMms.isEmpty()
              && m_pendingEvents.isEmpty()
              && m_expungeTokens.isEmpty()
-             && m_EventTokens.isEmpty());
+             && m_EventTokens.isEmpty()
+             && m_pendingGroups.isEmpty());
 }
 
 void TextChannelListener::tryToClose()
@@ -1850,4 +1869,26 @@ void TextChannelListener::finishedWithError(const QString& errorName,
     m_channelClosed = true;
 
     tryToClose();
+}
+
+CommHistory::Group TextChannelListener::getGroupById(int groupId) const
+{
+    // Check most common case first
+    if (m_Group.isValid() && m_Group.id() == groupId)
+        return m_Group;
+
+    if (!m_GroupModel || !m_GroupModel->isReady()) {
+        qWarning() << Q_FUNC_INFO << "Can't read group model";
+        return CommHistory::Group();
+    }
+
+    for (int row = 0; row < m_GroupModel->rowCount(); row++) {
+        QModelIndex index = m_GroupModel->index(row, 0);
+        CommHistory::Group group = m_GroupModel->group(index);
+        if (group.isValid() && group.id() == groupId)
+            return group;
+    }
+
+    qWarning() << Q_FUNC_INFO << "Didn't find matching group";
+    return CommHistory::Group();
 }

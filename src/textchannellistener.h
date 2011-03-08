@@ -160,6 +160,8 @@ private:
     bool hasPendingOperations() const;
     void tryToClose();
 
+    CommHistory::Group getGroupById(int groupId) const;
+
 private:
 
     // TODO: only for 1-1 chat, should be fixed later
@@ -204,6 +206,9 @@ private:
     QHash<CommHistory::SingleEventModel*, CommHistory::Event> m_sendMms;
     // flag to destroy listener as soon as all pending operations (updating events, expunging) complete
     bool m_channelClosed;
+    // groups that have added events but have not yet emitted updated signal
+    QList<int> m_pendingGroups;
+
 #ifdef UNIT_TEST
     friend class Ut_TextChannelListener;
 #endif
