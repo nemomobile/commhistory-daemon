@@ -175,18 +175,22 @@ void Ut_StreamChannelListener::normalCall_data()
     QTest::addColumn<bool>("accept");
     QTest::addColumn<bool>("endLocally");
     QTest::addColumn<bool>("missLocally");
+    QTest::addColumn<QString>("invalidateError");
 
-    QTest::newRow("incoming acceptAndEnd") << true << true << true << false;
-    QTest::newRow("incoming acceptAndEnded") << true << true << false << false;
-    QTest::newRow("incoming rejectedLocally") << true << false << true << false;
-    QTest::newRow("incoming rejectedRemotley") << true << false << false << false;
-    QTest::newRow("incoming missLocally") << true << false << true << true;
+    QTest::newRow("incoming acceptAndEnd") << true << true << true << false << QString();
+    QTest::newRow("incoming acceptAndEnded") << true << true << false << false << QString();
+    QTest::newRow("incoming rejectedLocally") << true << false << true << false << QString();
+    QTest::newRow("incoming rejectedRemotley") << true << false << false << false << QString();
+    QTest::newRow("incoming missLocally") << true << false << true << true << QString();
 
-    QTest::newRow("outgoing acceptAndEnd") << false << true << true << false;
-    QTest::newRow("outgoing acceptAndEnded") << false << true << false << false;
-    QTest::newRow("outgoing rejectedLocally") << false << false << true << false;
-    QTest::newRow("outgoing rejectedRemotley") << false << false << false << false;
-    QTest::newRow("outgoing missLocally") << false << false << true << true;
+    QTest::newRow("outgoing acceptAndEnd") << false << true << true << false << QString();
+    QTest::newRow("outgoing acceptAndEnded") << false << true << false << false << QString();
+    QTest::newRow("outgoing rejectedLocally") << false << false << true << false << QString();
+    QTest::newRow("outgoing rejectedRemotley") << false << false << false << false << QString();
+    QTest::newRow("outgoing missLocally") << false << false << true << true << QString();
+
+    QTest::newRow("error before start") << true << false << true << false << QString(TP_QT4_ERROR_NOT_AVAILABLE);
+    QTest::newRow("error after end") << true << true << true << false << QString(TP_QT4_ERROR_NOT_AVAILABLE);
 }
 
 void Ut_StreamChannelListener::normalCall()
@@ -195,6 +199,7 @@ void Ut_StreamChannelListener::normalCall()
     QFETCH(bool, accept);
     QFETCH(bool, endLocally);
     QFETCH(bool, missLocally);
+    QFETCH(QString, invalidateError);
 
     NotificationManager *nm = NotificationManager::instance();
     QVERIFY(nm);
@@ -292,7 +297,7 @@ void Ut_StreamChannelListener::normalCall()
     }
 
     QSignalSpy closed(&scl, SIGNAL(channelClosed(ChannelListener*)));
-    ch->ut_invalidate(QString(), QString());
+    ch->ut_invalidate(invalidateError, QString());
     QVERIFY(waitSignal(closed, 5000));
 
     CommHistory::CallModel model;
@@ -317,7 +322,7 @@ void Ut_StreamChannelListener::normalCall()
     else
         QCOMPARE(e.direction(), CommHistory::Event::Outbound);
 
-    if (incoming && ((!accept && !endLocally) || missLocally)) {
+    if (incoming && ((!accept && !endLocally) || missLocally || (!accept && !invalidateError.isEmpty()))) {
         QVERIFY(e.isMissedCall());
         QCOMPARE(nm->postedNotifications.size(), 1);
     } else {

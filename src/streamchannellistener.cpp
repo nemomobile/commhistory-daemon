@@ -119,7 +119,6 @@ void StreamChannelListener::callEnded()
 {
     qDebug() << Q_FUNC_INFO;
 
-    m_CallStarted = false;
     m_CallEnded = true;
 
     struct timespec tp;
