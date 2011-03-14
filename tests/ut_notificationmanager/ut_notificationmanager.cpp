@@ -350,8 +350,8 @@ void Ut_NotificationManager::testImNotification()
     mgtGroup = getGroup(event.type(), 5000);
     QVERIFY(mgtGroup);
     QVERIFY(mgtGroup->isPublished());
-    QString summary = CONTACT_2_REMOTE_ID + CONTACT_SEPARATOR_IN_NOTIFICATION_GROUP + CONTACT_1_REMOTE_ID;
-    QCOMPARE(mgtGroup->summary(),summary);
+    QVERIFY(mgtGroup->summary().contains(CONTACT_1_REMOTE_ID));
+    QVERIFY(mgtGroup->summary().contains(CONTACT_2_REMOTE_ID));
     QCOMPARE(mgtGroup->body(), txt_qtn_msg_notification_new_message(3));
 }
 
@@ -450,8 +450,8 @@ void Ut_NotificationManager::testMissedCallNotification()
     mgtGroup = getGroup(event.type(), 5000);
     QVERIFY(mgtGroup);
     QVERIFY(mgtGroup->isPublished());
-    QString summary = CONTACT_2_REMOTE_ID + CONTACT_SEPARATOR_IN_NOTIFICATION_GROUP + CONTACT_1_REMOTE_ID;
-    QCOMPARE(mgtGroup->summary(),summary);
+    QVERIFY(mgtGroup->summary().contains(CONTACT_1_REMOTE_ID));
+    QVERIFY(mgtGroup->summary().contains(CONTACT_2_REMOTE_ID));
     QCOMPARE(mgtGroup->body(), txt_qtn_call_missed(3));
 }
 
