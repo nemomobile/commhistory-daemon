@@ -1250,7 +1250,7 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
                                           QString(), //mmsId
                                           groupId)) {
                 m_sendMms.insert(request, event);
-                connect(request, SIGNAL(modelReady()), SLOT(slotSingleModelReady()));
+                connect(request, SIGNAL(modelReady(bool)), SLOT(slotSingleModelReady(bool)));
                 addMessage = false;
             } else {
                 qWarning() << "Failed query single event model";
