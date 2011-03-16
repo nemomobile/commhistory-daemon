@@ -155,6 +155,10 @@ private:
                                             CommHistory::Event &event);
 
     void saveNewMessage(CommHistory::Event &event);
+    virtual void finishedWithError(const QString& errorName, const QString& errorMessage);
+
+    bool hasPendingOperations() const;
+    void tryToClose();
 
 private:
 
@@ -169,7 +173,8 @@ private:
     QList<QString> m_expungeTokens;
     // map event id to tokens that should be expunged,
     // Event does not have report delivery token, therefore it's stored here
-    // until events are committed
+    // until events are committed than if OK they are moved to m_expungeTokens
+    // for actual expunging
     QMultiHash<int, QString> m_EventTokens;
 
     bool m_ShowOfflineChatError;
@@ -192,9 +197,13 @@ private:
     uint m_ChannelSubjectContactHandle;
     QString m_PersistentId;
 
+    // messageToken -> messageRequest map
+    // used when looking up event when handling delivery report
     QHash<QString, CommHistory::SingleEventModel*> m_pendingEvents;
-    QHash<CommHistory::SingleEventModel*, CommHistory::Event> m_sendMms; //serately handle mms saving as it needs event lookup before saving
-
+     // serately handle mms saving as it needs event lookup before saving
+    QHash<CommHistory::SingleEventModel*, CommHistory::Event> m_sendMms;
+    // flag to destroy listener as soon as all pending operations (updating events, expunging) complete
+    bool m_channelClosed;
 #ifdef UNIT_TEST
     friend class Ut_TextChannelListener;
 #endif

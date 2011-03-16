@@ -195,7 +195,8 @@ TextChannelListener::TextChannelListener(const Tp::AccountPtr &account,
       m_isClassZeroSMS(false),
       m_pClassZeroSMSModel(0),
       m_PropertiesIf(0),
-      m_IsGroupChat(false)
+      m_IsGroupChat(false),
+      m_channelClosed(false)
 {
     qDebug() << __PRETTY_FUNCTION__;
     makeChannelReady(Tp::TextChannel::FeatureMessageQueue
@@ -252,9 +253,6 @@ bool TextChannelListener::checkStoredMessagesIf()
     }
 
     if (m_Connection->hasInterface(CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName())) {
-        connect(&eventModel(), SIGNAL(eventsCommitted(QList<CommHistory::Event>,bool)),
-                SLOT(slotEventsCommitted(QList<CommHistory::Event>,bool)),
-                Qt::UniqueConnection);
         eventModel().setSyncMode(true);
         result = true;
     }
@@ -959,6 +957,7 @@ void TextChannelListener::slotSingleModelReady(bool status)
                     if (oldEvent.isValid()) {
                         event.setId(oldEvent.id());
                         if (eventModel().modifyEvent(event)) {
+                            m_EventTokens.insertMulti(event.id(), event.messageToken());
                             addMessage = false;
                         } else {
                             qWarning() << "Failed modify mms event";
@@ -976,6 +975,8 @@ void TextChannelListener::slotSingleModelReady(bool status)
     } else {
         handleMessages();
     }
+
+    tryToClose();
 }
 
 void TextChannelListener::handleMessageFailed(const Tp::ReceivedMessage &message,
@@ -1053,7 +1054,6 @@ void TextChannelListener::parseMMSHeaders(const Tp::Message &message,
                                           CommHistory::Event &event)
 {
     event.setSubject(message.header().value(MMS_MESSAGE_SUBJECT).variant().toString());
-
     event.setReportReadRequested(message.header().value(MMS_READ_REPORT).variant().toBool());
     event.setMmsId(message.header().value(MMS_MESSAGE_ID).variant().toString());
 
@@ -1374,15 +1374,16 @@ void TextChannelListener::slotEventsCommitted(QList<CommHistory::Event> events, 
 {
     qDebug() << Q_FUNC_INFO << status;
 
-    if (status) {
-        foreach (CommHistory::Event e, events) {
-            if (m_EventTokens.contains(e.id())) {
-                QString token = m_EventTokens.values(e.id()).last();
+    foreach (CommHistory::Event e, events) {
+        if (m_EventTokens.contains(e.id())) {
+            QString token = m_EventTokens.values(e.id()).last();
+            if (status)
                 expungeMessage(token);
-                m_EventTokens.remove(e.id(), token);
-            }
+            m_EventTokens.remove(e.id(), token);
         }
     }
+
+    tryToClose();
 }
 
 void TextChannelListener::slotExpungeMessages()
@@ -1401,6 +1402,8 @@ void TextChannelListener::slotExpungeMessages()
     } else {
         qCritical() << Q_FUNC_INFO << "No stored messages interface present";
     }
+
+    tryToClose();
 }
 
 QString TextChannelListener::fetchContactLabelFromVCard(const QString &vcard)
@@ -1671,6 +1674,9 @@ void TextChannelListener::channelReady()
             }
         }
         checkStoredMessagesIf();
+        connect(&eventModel(), SIGNAL(eventsCommitted(QList<CommHistory::Event>,bool)),
+                SLOT(slotEventsCommitted(QList<CommHistory::Event>,bool)),
+                Qt::UniqueConnection);
         // call this last as it may start handle pending messages
         requestConversationId();
     } else {
@@ -1817,4 +1823,31 @@ void TextChannelListener::slotHandleOwnersChanged(const Tp::HandleOwnerMap &hand
 
     foreach (uint handle, removed)
         m_HandleOwnerNames.remove(handle);
+}
+
+bool TextChannelListener::hasPendingOperations() const
+{
+    return !(m_sendMms.isEmpty()
+             && m_pendingEvents.isEmpty()
+             && m_expungeTokens.isEmpty()
+             && m_EventTokens.isEmpty());
+}
+
+void TextChannelListener::tryToClose()
+{
+    if (m_channelClosed && !hasPendingOperations()) {
+        closed();
+    }
+}
+
+void TextChannelListener::finishedWithError(const QString& errorName,
+                                            const QString& errorMessage)
+{
+    qDebug() << Q_FUNC_INFO;
+    if (!m_InvocationContext.isNull())
+        m_InvocationContext->setFinishedWithError(errorName, errorMessage);
+
+    m_channelClosed = true;
+
+    tryToClose();
 }

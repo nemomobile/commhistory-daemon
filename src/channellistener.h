@@ -104,7 +104,7 @@ protected:
      * \brief handles error. Tells to invocation context object that invocation
      * was unsuccessful and then closes channel. closed();
      */
-    void finishedWithError(const QString& errorName, const QString& errorMessage);
+    virtual void finishedWithError(const QString& errorName, const QString& errorMessage);
 
 protected Q_SLOTS:
     /*!
