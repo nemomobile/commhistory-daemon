@@ -1,6 +1,6 @@
 <set description="commhistory-daemon-tests:ut_notificationmanager" name="ut_notificationmanager">
                 <case description="commhistory-daemon-tests:ut_notificationmanager" name="notificationmanager">
-			<step expected_result="0">/usr/share/commhistory-daemon-tests/ut_notificationmanager </step>
+			<step expected_result="0">su -l user -c /usr/share/commhistory-daemon-tests/ut_notificationmanager </step>
                  </case>
                  <environments><scratchbox>true</scratchbox><hardware>true</hardware></environments>
 </set>

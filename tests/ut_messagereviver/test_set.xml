@@ -1,6 +1,6 @@
 <set description="commhistory-daemon-tests:ut_messagereviver" name="ut_messagereviver">
                 <case description="commhistory-daemon-tests:ut_messagereviver" name="messagereviver">
-			<step expected_result="0">/usr/share/commhistory-daemon-tests/ut_messagereviver </step>
+			<step expected_result="0">su -l user -c /usr/share/commhistory-daemon-tests/ut_messagereviver </step>
                  </case>
                  <environments><scratchbox>true</scratchbox><hardware>true</hardware></environments>
 </set>
