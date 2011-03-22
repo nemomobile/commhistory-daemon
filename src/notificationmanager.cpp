@@ -155,9 +155,6 @@ NotificationManager::~NotificationManager()
     foreach(QContactFetchRequest *request, m_requests.keys())
         delete request;
     m_requests.clear();
-
-    // TODO: remove when https://projects.maemo.org/bugzilla/show_bug.cgi?id=199411 fixed
-    m_pContactManager->deleteLater();
 }
 
 void NotificationManager::init()
@@ -1086,8 +1083,7 @@ QContactManager* NotificationManager::contactManager()
 {
     if(!m_pContactManager){
         m_pContactManager = new QContactManager(CONTACT_STORAGE_TYPE);
-        // TODO: uncomment when https://projects.maemo.org/bugzilla/show_bug.cgi?id=199411 fixed
-        //m_pContactManager->setParent(this);
+        m_pContactManager->setParent(this);
         connect(m_pContactManager,
                 SIGNAL(contactsAdded(const QList<QContactLocalId>&)),
                 SLOT(slotContactsAdded(const QList<QContactLocalId>&)));
