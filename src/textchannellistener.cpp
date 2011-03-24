@@ -926,6 +926,7 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
     case Tp::DeliveryStatusPermanentlyFailed: {
         // If sending fails, event is marked as temporarily failed
         // If delivery fails, event is marked as permanently failed
+        event.setStartTime(deliveryTime);
         if (event.reportDelivery()
             && event.status() == CommHistory::Event::SentStatus) {
             event.setStatus(CommHistory::Event::PermanentlyFailedStatus);

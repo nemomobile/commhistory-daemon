@@ -148,6 +148,7 @@ CommHistory::Group Ut_TextChannelListener::fetchGroup(const QString &localUid,
     if (!waitSignal(modelReady, 5000))
         goto end;
 
+    qRegisterMetaType<QModelIndex>("QModelIndex");
     if (!model.rowCount() && wait) {
         QSignalSpy rowInsert(&model, SIGNAL(rowsInserted(const QModelIndex &, int, int)));
         if (!waitSignal(rowInsert, 5000))
@@ -775,8 +776,9 @@ void Ut_TextChannelListener::groups()
         gm.getGroups(SMS_ACCOUNT_PATH, SMS_NUMBER);
         QSignalSpy ready(&gm, SIGNAL(modelReady(bool)));
         QVERIFY(waitSignal(ready, 5000));
+        QSignalSpy groupsCommitted(&gm, SIGNAL(groupsCommitted(const QList<int>&, bool)));
         gm.deleteAll();
-        QTest::qWait(5000);
+        QVERIFY(waitSignal(groupsCommitted, 5000));
     }
 
     NotificationManager *nm = NotificationManager::instance();
@@ -849,7 +851,9 @@ void Ut_TextChannelListener::groups()
     int firstGroup = tcl.m_Group.id();
 
     // delete group
+    QSignalSpy groupsCommitted(nm->m_GroupModel, SIGNAL(groupsCommitted(const QList<int>&, bool)));
     nm->m_GroupModel->deleteAll();
+    QVERIFY(waitSignal(groupsCommitted, 5000));
 
     g = fetchGroup(SMS_ACCOUNT_PATH, SMS_NUMBER, true);
 
