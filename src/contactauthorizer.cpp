@@ -116,7 +116,6 @@ void ContactAuthorizer::listenToAuthorization(const Tp::ConnectionPtr& connectio
 
     m_pContactManager = connection->contactManager();
 
-
     if(m_pContactManager){
         // Connect to listen invitation requests:
         connect(m_pContactManager.data(),
@@ -127,37 +126,8 @@ void ContactAuthorizer::listenToAuthorization(const Tp::ConnectionPtr& connectio
         // Check if there are pending invitation requests in ContactManager's queue (like if invitation
         // request has been triggered during offline mode):
         Tp::Contacts contacts = m_pContactManager->allKnownContacts();
-        Tp::Contacts pendingContacts;
-
-        QList<MNotification*> notifications = MNotification::notifications();
-
-        foreach(Tp::ContactPtr contact, contacts) {
-            QString notificationIdentifier = contact->id() + m_account->objectPath();
-            Tp::Contact::PresenceState state = contact->publishState();
-            qDebug() << Q_FUNC_INFO << "Publish state for contact " << contact->id() << " is " << state;
-            if (state == Tp::Contact::PresenceStateAsk) {
-                qDebug() << Q_FUNC_INFO << "Contact " << contact->id() << " has requested an invitation.";
-                bool notificationExists = false;
-                // Invitation requests should not be shown anymore if they already exist as notifications
-                // from previous device start-up:
-                foreach (MNotification *n, notifications) {
-                   if (notificationIdentifier == n->identifier()) {
-                       qDebug() << Q_FUNC_INFO << "Invitation request is already being shown as a notification.";
-                       notificationExists = true;
-                       break;
-                    }
-                }
-
-                if (!notificationExists)
-                    pendingContacts.insert(contact);
-            }
-        }
-
-        qDeleteAll(notifications);
-        notifications.clear();
-
-        if (pendingContacts.size()>0)
-            slotPresencePublicationRequested(pendingContacts);
+        if (!contacts.isEmpty())
+            slotPresencePublicationRequested(contacts);
     }
 }
 
@@ -165,15 +135,42 @@ void ContactAuthorizer::slotPresencePublicationRequested(const Tp::Contacts &con
 {
     qDebug() << Q_FUNC_INFO;
 
-    if(!contacts.isEmpty()){
+    Tp::Contacts pendingContacts;
+    QList<MNotification*> notifications = MNotification::notifications();
+
+    foreach(Tp::ContactPtr contact, contacts) {
+        QString notificationIdentifier = contact->id() + m_account->objectPath();
+        Tp::Contact::PresenceState state = contact->publishState();
+        qDebug() << Q_FUNC_INFO << "Publish state for contact " << contact->id() << " is " << state;
+        if (state == Tp::Contact::PresenceStateAsk) {
+            qDebug() << Q_FUNC_INFO << "Contact " << contact->id() << " has requested an invitation.";
+            bool notificationExists = false;
+            // Invitation requests should not be shown if they already exist as notifications
+            foreach (MNotification *n, notifications) {
+               if (notificationIdentifier == n->identifier()) {
+                   qDebug() << Q_FUNC_INFO << "Invitation request is already being shown as a notification.";
+                   notificationExists = true;
+                   break;
+                }
+            }
+
+            if (!notificationExists)
+                pendingContacts.insert(contact);
+        }
+    }
+
+    qDeleteAll(notifications);
+    notifications.clear();
+
+    if(!pendingContacts.isEmpty()){
         if(m_pContactManager
            && m_pContactManager->supportedFeatures().contains(Tp::Contact::FeatureAvatarData)){
             qDebug() << Q_FUNC_INFO << "Adding auth. requests to pending queue";
-            upgradeContacts(contacts);
-            queueAuthorization(contacts, m_authRequestWaitingForAvatar);
+            upgradeContacts(pendingContacts);
+            queueAuthorization(pendingContacts, m_authRequestWaitingForAvatar);
         } else {
             qDebug() << Q_FUNC_INFO << "Adding auth. requests to main queue";
-            queueAuthorization(contacts, m_authRequests);
+            queueAuthorization(pendingContacts, m_authRequests);
         }
     }
 
