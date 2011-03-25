@@ -81,6 +81,7 @@ Ut_StreamChannelListener::~Ut_StreamChannelListener()
  */
 void Ut_StreamChannelListener::initTestCase()
 {
+    qRegisterMetaType<ChannelListener*>("ChannelListener*");
     //qRegisterMetaType<Tp::PendingOperation*>("Tp::PendingOperation*");
 }
 
@@ -311,6 +312,7 @@ void Ut_StreamChannelListener::normalCall()
     QCOMPARE(e.localUid(), ACCOUNT_PATH);
     QCOMPARE(e.remoteUid(), NUMBER);
     QVERIFY(startTime.toTime_t() <= e.startTime().toTime_t());
+    justWait(1000); // account for rounding errors with clock_monotonic vs. QDateTime
     QVERIFY(QDateTime::currentDateTime().toTime_t() >= e.endTime().toTime_t());
     QCOMPARE(e.isEmergencyCall(), false);
 
