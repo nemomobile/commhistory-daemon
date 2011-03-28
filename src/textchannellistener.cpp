@@ -1081,7 +1081,9 @@ void TextChannelListener::showErrorNote(const QString &errorMsg)
 void TextChannelListener::parseMMSHeaders(const Tp::Message &message,
                                           CommHistory::Event &event)
 {
-    event.setSubject(message.header().value(MMS_MESSAGE_SUBJECT).variant().toString());
+    QString subject = message.header().value(MMS_MESSAGE_SUBJECT).variant().toString();
+    if (!subject.isEmpty())
+        event.setSubject(subject);
     event.setReportReadRequested(message.header().value(MMS_READ_REPORT).variant().toBool());
     event.setMmsId(message.header().value(MMS_MESSAGE_ID).variant().toString());
 
