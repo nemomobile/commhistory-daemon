@@ -145,7 +145,8 @@ NotificationManager::NotificationManager(QObject* parent)
 
 NotificationManager::~NotificationManager()
 {
-    removeNotificationGroup(CommHistory::Event::VoicemailEvent);
+    if (removeNotificationGroup(CommHistory::Event::VoicemailEvent))
+        saveState();
 
     foreach (MNotificationGroup *group, m_MgtGroups) {
         delete group;
@@ -383,10 +384,10 @@ void NotificationManager::slotObservedInboxChanged()
             if (inbox) {
                 // remove sms and im notification groups and save state
                 // remove meegotouch groups
-                removeNotificationGroup(CommHistory::Event::IMEvent);
-                removeNotificationGroup(CommHistory::Event::SMSEvent);
-                removeNotificationGroup(CommHistory::Event::MMSEvent);
-                saveState();
+                if (removeNotificationGroup(CommHistory::Event::IMEvent)
+                    || removeNotificationGroup(CommHistory::Event::SMSEvent)
+                    || removeNotificationGroup(CommHistory::Event::MMSEvent))
+                    saveState();
             }
         }
     }
@@ -400,8 +401,8 @@ void NotificationManager::slotObservedCallHistoryChanged()
             bool inbox = value.toBool();
             qDebug() << Q_FUNC_INFO << " call history inbox? " << inbox;
             if (inbox) {
-                removeNotificationGroup(CommHistory::Event::CallEvent);
-                saveState();
+                if (removeNotificationGroup(CommHistory::Event::CallEvent))
+                    saveState();
             }
         }
     }
@@ -411,7 +412,6 @@ bool NotificationManager::removeNotificationGroup(int type)
 {
     NotificationGroup group(type);
     removeGroup(type);
-    saveState();
     return m_Notifications.remove(group) > 0;
 }
 
@@ -1033,7 +1033,6 @@ void NotificationManager::saveState()
     }
     out.setVersion(QDataStream::Qt_4_6);
     out << m_Notifications;
-    m_Storage.flush();
     m_Storage.close();
 }
 
@@ -1314,7 +1313,8 @@ void NotificationManager::slotMWICountChanged(int count)
     }
 
     if (count == 0) {
-        removeNotificationGroup(CommHistory::Event::VoicemailEvent);
+        if (removeNotificationGroup(CommHistory::Event::VoicemailEvent))
+            saveState();
         return;
     }
 
