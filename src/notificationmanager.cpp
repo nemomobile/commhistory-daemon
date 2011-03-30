@@ -265,10 +265,12 @@ void NotificationManager::showNotification(ChannelListener * channelListener,
         TpContactUid cuid(event.localUid(),
                           event.remoteUid());
         if (!event.remoteUid().isEmpty() // private number
-            && !m_contacts.contains(cuid))
+            && !m_contacts.contains(cuid)) {
             requestContact(cuid, channelListener);
-        else
+            qDebug() << Q_FUNC_INFO << "Contacts cache does not contain contact for " << event.remoteUid() << ". Creating contact fetch request...";
+        } else {
             resolveEvents();
+        }
     } else if (observed
                && event.direction() == Event::Inbound) {
 
@@ -410,9 +412,47 @@ void NotificationManager::slotObservedCallHistoryChanged()
 
 bool NotificationManager::removeNotificationGroup(int type)
 {
+    qDebug() << Q_FUNC_INFO << "START";
+
     NotificationGroup group(type);
     removeGroup(type);
-    return m_Notifications.remove(group) > 0;
+    bool success = m_Notifications.remove(group) > 0;
+
+    // We need to iterate here through still existing notification groups and if our contact cache contains a contact
+    // that does not belong to any notification group anymore then we can delete that contact from contact cache.
+
+    QList<TpContactUid> tpContactUids;
+
+    // Iterate through existing notifications groups we have and collect all TpContactUids:
+    qDebug() << Q_FUNC_INFO << "** NOTIFICATIONS ITERATION **";
+    QList<NotificationGroup> keys = m_Notifications.uniqueKeys();
+    foreach(NotificationGroup ng,keys) {
+        QList<PersonalNotification> notifications = m_Notifications.values(ng);
+        foreach(PersonalNotification pn,notifications) {
+            TpContactUid cuid(pn.account(), pn.remoteUid());
+            qDebug() << Q_FUNC_INFO << "Found " << pn.account() << ":" << pn.remoteUid() << " from notifications";
+            if (!tpContactUids.contains(cuid)) {
+                qDebug() << Q_FUNC_INFO << "Add into tpContactUids list";
+                tpContactUids.append(cuid);
+            }
+        }
+    }
+
+    // Remove those contacts from our contacts cache that are not part of any notification group anymore:
+    qDebug() << Q_FUNC_INFO << "** CONTACT CACHE ITERATION **";
+    QMutableHashIterator<TpContactUid, QContact> contactIt(m_contacts);
+    while (contactIt.hasNext()) {
+        contactIt.next();
+        qDebug() << Q_FUNC_INFO << "Found " << contactIt.key().first << ":" << contactIt.key().second << " from contact cache";
+        if (!tpContactUids.contains(contactIt.key())) {
+            qDebug() << Q_FUNC_INFO << "Removing from contact cache because not used in any notification group anymore.";
+            contactIt.remove();
+        }
+    }
+
+    qDebug() << Q_FUNC_INFO << "END. Returning " << success;
+
+    return success;
 }
 
 NotificationGroup NotificationManager::notificationGroup(int type)
@@ -444,6 +484,8 @@ void NotificationManager::addNotification(PersonalNotification notification)
 
 void NotificationManager::resolveEvents()
 {
+    qDebug() << Q_FUNC_INFO << "START";
+
     while(!m_unresolvedEvents.isEmpty()) {
         PersonalNotification notification = m_unresolvedEvents.head();
 
@@ -452,6 +494,7 @@ void NotificationManager::resolveEvents()
         if (notification.remoteUid().isEmpty()) {
             addNotification(m_unresolvedEvents.dequeue());
         } else if (m_contacts.contains(cuid)) {
+            qDebug() << Q_FUNC_INFO << "Contact for " << notification.remoteUid() << " found from contacts cache.";
             QContact contact = m_contacts.value(cuid);
 
             //set contact id for usage by notification key
@@ -849,7 +892,7 @@ void NotificationManager::slotResultsAvailable()
     qDebug() << Q_FUNC_INFO << request->contacts().size() << "contacts";
 
     TpContactUid cuid = m_requests.value(request);
-    QContact contact;  // insert emtpy contact to indicate
+    QContact contact;  // insert empty contact to indicate
                        // there is no contact for the remote id
 
     if (request->contacts().size() > 1) {
@@ -898,6 +941,8 @@ void NotificationManager::slotResultsAvailable()
 
 void NotificationManager::slotChannelClosed(ChannelListener *channelListener)
 {
+    qDebug() << Q_FUNC_INFO << "START";
+
     disconnect(channelListener,
                SIGNAL(channelClosed(ChannelListener *)),
                this,
@@ -930,7 +975,8 @@ void NotificationManager::slotChannelClosed(ChannelListener *channelListener)
                     QContact foundContact = j.next().value();
                     if (foundContact == contact) {
                         // BAM!
-                        j.remove();
+                        //j.remove();
+                        qDebug() << Q_FUNC_INFO << "Do NOT remove contact " << contact.displayLabel() << " from contacts cache!";
                         break; // out of the inner while.
                     }
                 }
@@ -941,6 +987,7 @@ void NotificationManager::slotChannelClosed(ChannelListener *channelListener)
             break;
         }
     }
+    qDebug() << Q_FUNC_INFO << "END";
 }
 
 QString NotificationManager::contactName(const QString &localUid,
