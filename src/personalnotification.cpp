@@ -152,8 +152,7 @@ void PersonalNotification::setHasPendingEvents(bool hasPendingEvents)
 
 bool PersonalNotification::operator == (const PersonalNotification& other) const
 {
-    if(contactId() == other.contactId()
-       && remoteUid() == other.remoteUid()
+    if(remoteUid() == other.remoteUid()
        && eventType() == other.eventType()
        && targetId() == other.targetId()
        && chatType() == other.chatType()
