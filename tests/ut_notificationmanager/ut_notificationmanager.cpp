@@ -312,7 +312,7 @@ void Ut_NotificationManager::testImNotification()
 
     QVERIFY(getGroup(event.type(), 10) == 0);
 
-    nm->showNotification(NULL, event, CONTACT_1_REMOTE_ID);
+    nm->showNotification(event, CONTACT_1_REMOTE_ID);
 
     MNotificationGroup *mgtGroup = getGroup(event.type(), 5000);
     QVERIFY(mgtGroup);
@@ -329,7 +329,7 @@ void Ut_NotificationManager::testImNotification()
 
     // Multiple notifications from contact 1
     CommHistory::Event event1 = createImEvent(CONTACT_1_REMOTE_ID, CONTACT_1_ID);
-    nm->showNotification(NULL, event1, CONTACT_1_REMOTE_ID);
+    nm->showNotification(event1, CONTACT_1_REMOTE_ID);
 
     mgtGroup = getGroup(event.type(), 5000);
     QVERIFY(mgtGroup);
@@ -343,7 +343,7 @@ void Ut_NotificationManager::testImNotification()
     justWait(NOTIFICATION_THRESHOLD + 500);
 
     CommHistory::Event event2 = createImEvent(CONTACT_2_REMOTE_ID, CONTACT_2_ID);
-    nm->showNotification(NULL, event2, CONTACT_2_REMOTE_ID);
+    nm->showNotification(event2, CONTACT_2_REMOTE_ID);
 
     justWait(2000); //wait for contact resolving
 
@@ -412,7 +412,7 @@ void Ut_NotificationManager::testMissedCallNotification()
 
     QVERIFY(getGroup(event.type(), 10) == 0);
 
-    nm->showNotification(NULL, event, CONTACT_1_REMOTE_ID);
+    nm->showNotification(event, CONTACT_1_REMOTE_ID);
 
     MNotificationGroup *mgtGroup = getGroup(event.type(), 5000);
     QVERIFY(mgtGroup);
@@ -429,7 +429,7 @@ void Ut_NotificationManager::testMissedCallNotification()
 
     // Multiple notifications from contact 1
     CommHistory::Event event1 = createMissedCallEvent(CONTACT_1_REMOTE_ID, CONTACT_1_ID);
-    nm->showNotification(NULL, event1, CONTACT_1_REMOTE_ID);
+    nm->showNotification(event1, CONTACT_1_REMOTE_ID);
 
     mgtGroup = getGroup(event.type(), 5000);
     QVERIFY(mgtGroup);
@@ -443,7 +443,7 @@ void Ut_NotificationManager::testMissedCallNotification()
     justWait(NOTIFICATION_THRESHOLD + 500);
 
     CommHistory::Event event2 = createMissedCallEvent(CONTACT_2_REMOTE_ID, CONTACT_2_ID);
-    nm->showNotification(NULL, event2, CONTACT_2_REMOTE_ID);
+    nm->showNotification(event2, CONTACT_2_REMOTE_ID);
 
     justWait(2000); //wait for contact resolving
 

@@ -60,7 +60,6 @@ QTM_END_NAMESPACE
 namespace RTComLogger {
 
 class MWIListener;
-class ChannelListener;
 
 typedef QPair<QString,QString> TpContactUid;
 
@@ -83,8 +82,7 @@ public:
      * \brief shows notification
      * \param event to be shown
      */
-    void showNotification(ChannelListener *channelListener,
-                          const CommHistory::Event& event,
+    void showNotification(const CommHistory::Event& event,
                           const QString &channelTargetId = QString(),
                           CommHistory::Group::ChatType chatType = CommHistory::Group::ChatTypeP2P);
 
@@ -131,7 +129,6 @@ private Q_SLOTS:
     void slotOnModelReady(bool status);
     void slotGroupRemoved(const QModelIndex &index, int start, int end);
     void slotMWICountChanged(int count);
-    void slotChannelClosed(ChannelListener *channelListener);
 
 private:
 
@@ -172,7 +169,7 @@ private:
     void loadState();
 
     /* contacts fetching */
-    void requestContact(TpContactUid contactUid, ChannelListener * = 0);
+    void requestContact(TpContactUid contactUid);
     void resolveEvents();
     QString contactName(const QString &localUid, const QString &remoteUid);
     QStringList contactNames(const NotificationGroup& group);
@@ -203,6 +200,8 @@ private:
     void clearPendingEvents(const NotificationGroup &group);
     void removeNotPendingEvents(const NotificationGroup &group);
 
+    void clearContactsCache();
+
 private:
     static NotificationManager* m_pInstance;
     QMultiHash<NotificationGroup,PersonalNotification> m_Notifications;
@@ -220,8 +219,6 @@ private:
     QQueue<PersonalNotification> m_unresolvedEvents;
     QHash<TpContactUid, QContact> m_contacts;
     QHash<QContactFetchRequest*, TpContactUid> m_requests;
-    QHash<QContactFetchRequest*, QWeakPointer<ChannelListener> > m_pendingChannelListeners;
-    QHash<QContact, QList<QWeakPointer<ChannelListener> >*> m_channelsPerContact;
 
     // Delayed notifications
     QTimer m_NotificationTimer;

@@ -278,7 +278,7 @@ void StreamChannelListener::invalidated(Tp::DBusProxy *proxy,
 
     if (addEvent() && m_Event.isMissedCall()) {
         NotificationManager* nManager = NotificationManager::instance();
-        nManager->showNotification(this, m_Event);
+        nManager->showNotification(m_Event);
     }
 
     // don't quit and destroy the event model before the final call

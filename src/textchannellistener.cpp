@@ -673,7 +673,7 @@ void TextChannelListener::handleMessages()
                 addMessages << message;
 
                 if (event.direction() != CommHistory::Event::Outbound) {
-                    nManager->showNotification(this, event, targetId(), m_Group.chatType());
+                    nManager->showNotification(event, targetId(), m_Group.chatType());
                 }
             }
             break;
