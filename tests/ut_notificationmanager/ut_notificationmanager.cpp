@@ -168,10 +168,12 @@ void Ut_NotificationManager::testAddImNotification()
     NotificationManager* nm = NotificationManager::instance();
     nm->addNotification(createPersonalNotification(event));
     NotificationGroup group = nm->notificationGroup(event.type());
+    QList<int> types;
+    types << event.type();
 
     QVERIFY(nm->countContacts(group) == 1);
     QVERIFY(nm->countNotifications(group) == 1);
-    QVERIFY(nm->removeNotificationGroup(event.type()) == true);
+    QVERIFY(nm->removeNotificationGroups(types).contains(true));
     QVERIFY(nm->countContacts(group) == 0);
     QVERIFY(nm->countNotifications(group) == 0);
 
@@ -180,9 +182,11 @@ void Ut_NotificationManager::testAddImNotification()
     CommHistory::Event event2 = createImEvent(CONTACT_1_REMOTE_ID, CONTACT_1_ID);
     nm->addNotification(createPersonalNotification(event1));
     nm->addNotification(createPersonalNotification(event2));
+    types.clear();
+    types << event1.type();
     QVERIFY(nm->countContacts(group) == 1);
     QVERIFY(nm->countNotifications(group) == 2);
-    QVERIFY(nm->removeNotificationGroup(event1.type()) == true);
+    QVERIFY(nm->removeNotificationGroups(types).contains(true));
     QVERIFY(nm->countContacts(group) == 0);
     QVERIFY(nm->countNotifications(group) == 0);
 }
@@ -195,10 +199,12 @@ void Ut_NotificationManager::testAddGroupImNotification()
     nm->addNotification(createPersonalNotification(event1));
     nm->addNotification(createPersonalNotification(event2));
     NotificationGroup group = nm->notificationGroup(event1.type());
+    QList<int> types;
+    types << event1.type();
 
     QVERIFY(nm->countContacts(group) == 2);
     QVERIFY(nm->countNotifications(group) == 2);
-    QVERIFY(nm->removeNotificationGroup(event1.type()) == true);
+    QVERIFY(nm->removeNotificationGroups(types).contains(true));
     QVERIFY(nm->countContacts(group) == 0);
     QVERIFY(nm->countNotifications(group) == 0);
 }
@@ -210,10 +216,12 @@ void Ut_NotificationManager::testAddMissedCallNotification()
     NotificationManager* nm = NotificationManager::instance();
     nm->addNotification(createPersonalNotification(event));
     NotificationGroup group = nm->notificationGroup(event.type());
+    QList<int> types;
+    types << event.type();
 
     QVERIFY(nm->countNotifications(group) == 1);
     QVERIFY(nm->countContacts(group) == 1);
-    QVERIFY(nm->removeNotificationGroup(event.type()) == true);
+    QVERIFY(nm->removeNotificationGroups(types).contains(true));
     QVERIFY(nm->countNotifications(group) == 0);
     QVERIFY(nm->countContacts(group) == 0);
 
@@ -222,9 +230,11 @@ void Ut_NotificationManager::testAddMissedCallNotification()
     CommHistory::Event event2 = createMissedCallEvent(CONTACT_1_REMOTE_ID, CONTACT_1_ID);
     nm->addNotification(createPersonalNotification(event1));
     nm->addNotification(createPersonalNotification(event2));
+    types.clear();
+    types << event1.type();
     QVERIFY(nm->countNotifications(group) == 2);
     QVERIFY(nm->countContacts(group) == 1);
-    QVERIFY(nm->removeNotificationGroup(event1.type()) == true);
+    QVERIFY(nm->removeNotificationGroups(types).contains(true));
     QVERIFY(nm->countNotifications(group) == 0);
     QVERIFY(nm->countContacts(group) == 0);
 }
@@ -237,10 +247,12 @@ void Ut_NotificationManager::testAddGroupMissedCallNotification()
     nm->addNotification(createPersonalNotification(event1));
     nm->addNotification(createPersonalNotification(event2));
     NotificationGroup group = nm->notificationGroup(event1.type());
+    QList<int> types;
+    types << event1.type();
 
     QVERIFY(nm->countNotifications(group) == 2);
     QVERIFY(nm->countContacts(group) == 2);
-    QVERIFY(nm->removeNotificationGroup(event1.type()) == true);
+    QVERIFY(nm->removeNotificationGroups(types).contains(true));
     QVERIFY(nm->countNotifications(group) == 0);
     QVERIFY(nm->countContacts(group) == 0);
 
@@ -253,22 +265,26 @@ void Ut_NotificationManager::testRemoveNotificationGrouop()
     // One IM notification from contact 1
     CommHistory::Event event = createImEvent(CONTACT_1_REMOTE_ID, CONTACT_1_ID);
     nm->addNotification(createPersonalNotification(event));
+    QList<int> types;
+    types << event.type();
 
     // 1st time to remove NotificationGroup, return true
-    QVERIFY(nm->removeNotificationGroup(event.type()) == true);
+    QVERIFY(nm->removeNotificationGroups(types).contains(true));
     // 2nd time to remove the same NotificationGroup, return false
-    QVERIFY(nm->removeNotificationGroup(event.type()) == false);
+    QVERIFY(nm->removeNotificationGroups(types).contains(false));
 
     //Mutile IM notifications from contact 1
     CommHistory::Event event1 = createMissedCallEvent(CONTACT_1_REMOTE_ID, CONTACT_1_ID);
     CommHistory::Event event2 = createMissedCallEvent(CONTACT_1_REMOTE_ID, CONTACT_1_ID);
     nm->addNotification(createPersonalNotification(event1));
     nm->addNotification(createPersonalNotification(event2));
+    types.clear();
+    types << event1.type();
 
     // 1st time to remove NotificationGroup, return true
-    QVERIFY(nm->removeNotificationGroup(event1.type()) == true);
+    QVERIFY(nm->removeNotificationGroups(types).contains(true));
     // 2nd time to remove the same NotificationGroup, return false
-    QVERIFY(nm->removeNotificationGroup(event1.type()) == false);
+    QVERIFY(nm->removeNotificationGroups(types).contains(false));
 }
 
 void Ut_NotificationManager::testSaveAndLoadNotificationState()
@@ -287,11 +303,13 @@ void Ut_NotificationManager::testSaveAndLoadNotificationState()
     nm->loadState();
 
     NotificationGroup group = nm->notificationGroup(event1.type());
+    QList<int> types;
+    types << event1.type();
 
     QVERIFY(nm->countContacts(group) == 2);
     QVERIFY(nm->countNotifications(group) == 4);
 
-    QVERIFY(nm->removeNotificationGroup(event1.type()) == true);
+    QVERIFY(nm->removeNotificationGroups(types).contains(true));
 
     QVERIFY(nm->countContacts(group) == 0);
     QVERIFY(nm->countNotifications(group) == 0);
@@ -306,8 +324,10 @@ void Ut_NotificationManager::testImNotification()
     CommHistory::Event event = createImEvent(CONTACT_1_REMOTE_ID, CONTACT_1_ID);
     // One notification from contact 1
     NotificationManager* nm = NotificationManager::instance();
+    QList<int> types;
+    types << event.type();
     nm->m_NotificationTimer.stop();
-    nm->removeNotificationGroup(event.type());
+    nm->removeNotificationGroups(types);
     removeGroup(event.type());
 
     QVERIFY(getGroup(event.type(), 10) == 0);
@@ -359,8 +379,10 @@ void Ut_NotificationManager::testVoicemail()
 {
     // One notification from contact 1
     NotificationManager* nm = NotificationManager::instance();
+    QList<int> types;
+    types << CommHistory::Event::VoicemailEvent;
     nm->m_NotificationTimer.stop();
-    nm->removeNotificationGroup(CommHistory::Event::VoicemailEvent);
+    nm->removeNotificationGroups(types);
     removeGroup(CommHistory::Event::VoicemailEvent);
 
     QVERIFY(getGroup(CommHistory::Event::VoicemailEvent, 10) == 0);
@@ -406,8 +428,10 @@ void Ut_NotificationManager::testMissedCallNotification()
     CommHistory::Event event = createMissedCallEvent(CONTACT_1_REMOTE_ID, CONTACT_1_ID);
     // One notification from contact 1
     NotificationManager* nm = NotificationManager::instance();
+    QList<int> types;
+    types << event.type();
     nm->m_NotificationTimer.stop();
-    nm->removeNotificationGroup(event.type());
+    nm->removeNotificationGroups(types);
     removeGroup(event.type());
 
     QVERIFY(getGroup(event.type(), 10) == 0);

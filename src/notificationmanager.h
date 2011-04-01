@@ -87,11 +87,11 @@ public:
                           CommHistory::Group::ChatType chatType = CommHistory::Group::ChatTypeP2P);
 
     /*!
-     * \brief removes notification
-     * \param event type of the group to be removed
-     * \returns whether NotificationGroup with event type existed
+     * \brief removes notification(s)
+     * \param event type(s) of the group(s) to be removed
+     * \returns whether NotificationGroup(s) with event type(s) existed
      */
-    bool removeNotificationGroup(int type);
+    QList<bool> removeNotificationGroups(QList<int> types);
 
     /*!
      * \brief return group model with all conversations
