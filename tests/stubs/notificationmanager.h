@@ -16,7 +16,6 @@ class QContactManager;
 QTM_END_NAMESPACE
 
 namespace RTComLogger {
-class ChannelListener;
 
 class NotificationManager : public QObject
 {
@@ -25,8 +24,7 @@ public:
     explicit NotificationManager(QObject *parent = 0);
 
     static NotificationManager* instance();
-    void showNotification(ChannelListener *channelListener,
-                          const CommHistory::Event& event,
+    void showNotification(const CommHistory::Event& event,
                           const QString &channelTargetId = QString(),
                           CommHistory::Group::ChatType chatType = CommHistory::Group::ChatTypeP2P);
 

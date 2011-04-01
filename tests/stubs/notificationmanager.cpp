@@ -1,7 +1,6 @@
 #include <QContactManager>
 #include <CommHistory/GroupModel>
-
-#include "channellistener.h"
+#include <QCoreApplication>
 
 #include "notificationmanager.h"
 
@@ -32,12 +31,11 @@ NotificationManager* NotificationManager::instance()
     return m_pInstance;
 }
 
-void NotificationManager::showNotification(ChannelListener *channelListener,
-                      const CommHistory::Event& event,
+void NotificationManager::showNotification(const CommHistory::Event& event,
                       const QString &channelTargetId,
                       CommHistory::Group::ChatType chatType)
 {
-    qDebug() << channelListener << event.toString() << channelTargetId << chatType;
+    qDebug() << event.toString() << channelTargetId << chatType;
     Notification n;
     n.event = event;
     n.channelTargetId = channelTargetId;

@@ -388,12 +388,12 @@ void NotificationManager::slotObservedInboxChanged()
             bool inbox = value.toBool();
             qDebug() << Q_FUNC_INFO << "inbox? " << inbox;
             if (inbox) {
-                // remove sms and im notification groups and save state
+                // remove sms, mms and im notification groups and save state
                 // remove meegotouch groups
-                if (removeNotificationGroup(CommHistory::Event::IMEvent)
-                    || removeNotificationGroup(CommHistory::Event::SMSEvent)
-                    || removeNotificationGroup(CommHistory::Event::MMSEvent))
-                    saveState();
+                removeNotificationGroup(CommHistory::Event::IMEvent);
+                removeNotificationGroup(CommHistory::Event::SMSEvent);
+                removeNotificationGroup(CommHistory::Event::MMSEvent);
+                saveState();
             }
         }
     }
