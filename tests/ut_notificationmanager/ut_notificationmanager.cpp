@@ -171,7 +171,7 @@ void Ut_NotificationManager::testAddImNotification()
 
     QVERIFY(nm->countContacts(group) == 1);
     QVERIFY(nm->countNotifications(group) == 1);
-    QVERIFY(nm->removeNotificationGroup(event.type()) == true);
+    QVERIFY(nm->removeNotificationGroup(event.type()));
     QVERIFY(nm->countContacts(group) == 0);
     QVERIFY(nm->countNotifications(group) == 0);
 
@@ -182,7 +182,7 @@ void Ut_NotificationManager::testAddImNotification()
     nm->addNotification(createPersonalNotification(event2));
     QVERIFY(nm->countContacts(group) == 1);
     QVERIFY(nm->countNotifications(group) == 2);
-    QVERIFY(nm->removeNotificationGroup(event1.type()) == true);
+    QVERIFY(nm->removeNotificationGroup(event1.type()));
     QVERIFY(nm->countContacts(group) == 0);
     QVERIFY(nm->countNotifications(group) == 0);
 }
@@ -198,7 +198,7 @@ void Ut_NotificationManager::testAddGroupImNotification()
 
     QVERIFY(nm->countContacts(group) == 2);
     QVERIFY(nm->countNotifications(group) == 2);
-    QVERIFY(nm->removeNotificationGroup(event1.type()) == true);
+    QVERIFY(nm->removeNotificationGroup(event1.type()));
     QVERIFY(nm->countContacts(group) == 0);
     QVERIFY(nm->countNotifications(group) == 0);
 }
@@ -213,7 +213,7 @@ void Ut_NotificationManager::testAddMissedCallNotification()
 
     QVERIFY(nm->countNotifications(group) == 1);
     QVERIFY(nm->countContacts(group) == 1);
-    QVERIFY(nm->removeNotificationGroup(event.type()) == true);
+    QVERIFY(nm->removeNotificationGroup(event.type()));
     QVERIFY(nm->countNotifications(group) == 0);
     QVERIFY(nm->countContacts(group) == 0);
 
@@ -224,7 +224,7 @@ void Ut_NotificationManager::testAddMissedCallNotification()
     nm->addNotification(createPersonalNotification(event2));
     QVERIFY(nm->countNotifications(group) == 2);
     QVERIFY(nm->countContacts(group) == 1);
-    QVERIFY(nm->removeNotificationGroup(event1.type()) == true);
+    QVERIFY(nm->removeNotificationGroup(event1.type()));
     QVERIFY(nm->countNotifications(group) == 0);
     QVERIFY(nm->countContacts(group) == 0);
 }
@@ -240,7 +240,7 @@ void Ut_NotificationManager::testAddGroupMissedCallNotification()
 
     QVERIFY(nm->countNotifications(group) == 2);
     QVERIFY(nm->countContacts(group) == 2);
-    QVERIFY(nm->removeNotificationGroup(event1.type()) == true);
+    QVERIFY(nm->removeNotificationGroup(event1.type()));
     QVERIFY(nm->countNotifications(group) == 0);
     QVERIFY(nm->countContacts(group) == 0);
 
@@ -255,9 +255,9 @@ void Ut_NotificationManager::testRemoveNotificationGrouop()
     nm->addNotification(createPersonalNotification(event));
 
     // 1st time to remove NotificationGroup, return true
-    QVERIFY(nm->removeNotificationGroup(event.type()) == true);
+    QVERIFY(nm->removeNotificationGroup(event.type()));
     // 2nd time to remove the same NotificationGroup, return false
-    QVERIFY(nm->removeNotificationGroup(event.type()) == false);
+    QVERIFY(!nm->removeNotificationGroup(event.type()));
 
     //Mutile IM notifications from contact 1
     CommHistory::Event event1 = createMissedCallEvent(CONTACT_1_REMOTE_ID, CONTACT_1_ID);
@@ -266,9 +266,9 @@ void Ut_NotificationManager::testRemoveNotificationGrouop()
     nm->addNotification(createPersonalNotification(event2));
 
     // 1st time to remove NotificationGroup, return true
-    QVERIFY(nm->removeNotificationGroup(event1.type()) == true);
+    QVERIFY(nm->removeNotificationGroup(event1.type()));
     // 2nd time to remove the same NotificationGroup, return false
-    QVERIFY(nm->removeNotificationGroup(event1.type()) == false);
+    QVERIFY(!nm->removeNotificationGroup(event1.type()));
 }
 
 void Ut_NotificationManager::testSaveAndLoadNotificationState()
@@ -291,7 +291,7 @@ void Ut_NotificationManager::testSaveAndLoadNotificationState()
     QVERIFY(nm->countContacts(group) == 2);
     QVERIFY(nm->countNotifications(group) == 4);
 
-    QVERIFY(nm->removeNotificationGroup(event1.type()) == true);
+    QVERIFY(nm->removeNotificationGroup(event1.type()));
 
     QVERIFY(nm->countContacts(group) == 0);
     QVERIFY(nm->countNotifications(group) == 0);

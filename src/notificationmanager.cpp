@@ -383,10 +383,12 @@ void NotificationManager::slotObservedInboxChanged()
             if (inbox) {
                 // remove sms, mms and im notification groups and save state
                 // remove meegotouch groups
-                removeNotificationGroup(CommHistory::Event::IMEvent);
-                removeNotificationGroup(CommHistory::Event::SMSEvent);
-                removeNotificationGroup(CommHistory::Event::MMSEvent);
-                saveState();
+                bool save = false;
+                save = removeNotificationGroup(CommHistory::Event::IMEvent) || save;
+                save = removeNotificationGroup(CommHistory::Event::SMSEvent) || save;
+                save = removeNotificationGroup(CommHistory::Event::MMSEvent) || save;
+                if (save)
+                    saveState();
             }
         }
     }
@@ -650,7 +652,8 @@ void NotificationManager::updateNotificationGroup(const NotificationGroup &group
     } else {
         // m_Notifications doesnt have any personal notification of the given group
         // remove the group type completly
-        removeNotificationGroup(group.type());
+        if (removeNotificationGroup(group.type()))
+            saveState();
     }
 }
 
@@ -982,6 +985,8 @@ void NotificationManager::updateGroup(int eventType,
 
 void NotificationManager::saveState()
 {
+    qDebug() << Q_FUNC_INFO;
+
     if( !openStorageFile(QIODevice::WriteOnly) ) {
         qDebug() << "Cant open storage for saving";
         return;
