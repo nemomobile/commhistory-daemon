@@ -1064,6 +1064,8 @@ void NotificationManager::slotContactsAdded(const QList<QContactLocalId> &contac
     if (contactIds.isEmpty())
         return;
 
+    qDebug() << Q_FUNC_INFO;
+
     // we can't match contactIds with local unknown contacts
     // therefore request all unknown contacts from notification contacts
     QMutableHashIterator<TpContactUid, QContact> i(m_contacts);
@@ -1084,6 +1086,8 @@ void NotificationManager::slotContactsRemoved(const QList<QContactLocalId> &cont
     if (contactIds.isEmpty())
         return;
 
+    qDebug() << Q_FUNC_INFO;
+
     // update contact cache for notifications
     QList<QContactLocalId> updatedContactIds;
     QMutableHashIterator<TpContactUid, QContact> i(m_contacts);
@@ -1102,6 +1106,8 @@ void NotificationManager::slotContactsChanged(const QList<QContactLocalId> &cont
 {
     if (contactIds.isEmpty())
         return;
+
+    qDebug() << Q_FUNC_INFO;
 
     if (!m_contacts.isEmpty() || !m_Notifications.isEmpty()) {
         QContactLocalIdFilter filter;
@@ -1153,6 +1159,8 @@ void NotificationManager::fireUnknownContactsRequest()
         connect(m_GroupModel, SIGNAL(modelReady(bool)), SLOT(slotOnModelReady(bool)));
         return;
     }
+
+    qDebug() << Q_FUNC_INFO;
 
     if (m_ContactFilter != QContactFilter()) {
         startContactRequest(m_ContactFilter,
