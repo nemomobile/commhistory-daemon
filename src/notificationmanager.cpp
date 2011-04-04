@@ -144,9 +144,7 @@ NotificationManager::NotificationManager(QObject* parent)
 
 NotificationManager::~NotificationManager()
 {
-    QList<int> types;
-    types << CommHistory::Event::VoicemailEvent;
-    if (removeNotificationGroups(types).contains(true))
+    if (removeNotificationGroup(CommHistory::Event::VoicemailEvent))
         saveState();
 
     foreach (MNotificationGroup *group, m_MgtGroups) {
@@ -322,6 +320,8 @@ void NotificationManager::removeConversationNotifications(const QString &localId
                                                           const QString &remoteId,
                                                           CommHistory::Group::ChatType chatType)
 {
+    qDebug() << Q_FUNC_INFO << "START";
+
     NotificationGroup updatedGroup;
 
     // remove matched notifications and udpate group
@@ -350,10 +350,13 @@ void NotificationManager::removeConversationNotifications(const QString &localId
         updateNotificationGroup(updatedGroup);
         saveState();
     }
+    qDebug() << Q_FUNC_INFO << "END";
 }
 
 void NotificationManager::slotObservedConversationChanged()
 {
+    qDebug() << Q_FUNC_INFO << "START";
+
     if (m_ObservedConversation) {
         QVariant value = m_ObservedConversation->value(QVariant());
         if (!value.isNull()) {
@@ -373,6 +376,8 @@ void NotificationManager::slotObservedConversationChanged()
             m_ObservedChannelChatType = CommHistory::Group::ChatTypeP2P;
         }
     }
+
+    qDebug() << Q_FUNC_INFO << "END";
 }
 
 void NotificationManager::slotObservedInboxChanged()
@@ -385,12 +390,10 @@ void NotificationManager::slotObservedInboxChanged()
             if (inbox) {
                 // remove sms, mms and im notification groups and save state
                 // remove meegotouch groups
-                QList<int> types;
-                types << CommHistory::Event::IMEvent;
-                types << CommHistory::Event::SMSEvent;
-                types << CommHistory::Event::MMSEvent;
-                if (removeNotificationGroups(types).contains(true))
-                    saveState();
+                removeNotificationGroup(CommHistory::Event::IMEvent);
+                removeNotificationGroup(CommHistory::Event::SMSEvent);
+                removeNotificationGroup(CommHistory::Event::MMSEvent);
+                saveState();
             }
         }
     }
@@ -404,9 +407,7 @@ void NotificationManager::slotObservedCallHistoryChanged()
             bool inbox = value.toBool();
             qDebug() << Q_FUNC_INFO << " call history inbox? " << inbox;
             if (inbox) {
-                QList<int> types;
-                types << CommHistory::Event::CallEvent;
-                if (removeNotificationGroups(types).contains(true))
+                if (removeNotificationGroup(CommHistory::Event::CallEvent))
                     saveState();
             }
         }
@@ -415,8 +416,13 @@ void NotificationManager::slotObservedCallHistoryChanged()
 
 void NotificationManager::clearContactsCache()
 {
+    qDebug() << Q_FUNC_INFO << "START";
+
     QList<TpContactUid> tpContactUids;
     QList<NotificationGroup> keys = m_Notifications.uniqueKeys();
+
+    qDebug() << Q_FUNC_INFO << "Number of notification groups existing: " << keys.count();
+    qDebug() << Q_FUNC_INFO << "Number of contacts in cache: " << m_contacts.count();
 
     foreach(NotificationGroup ng,keys) {
         QList<PersonalNotification> notifications = m_Notifications.values(ng);
@@ -431,31 +437,33 @@ void NotificationManager::clearContactsCache()
     while (contactIt.hasNext()) {
         contactIt.next();
         if (!tpContactUids.contains(contactIt.key())) {
-            qDebug() << Q_FUNC_INFO << "Removing contact " << contactIt.key().second << " from contacts cache";
+            qDebug() << Q_FUNC_INFO << "Removing contact " << contactIt.key().second;
             contactIt.remove();
         }
     }
+
+    qDebug() << Q_FUNC_INFO << "END";
 }
 
-QList<bool> NotificationManager::removeNotificationGroups(QList<int> types)
+bool NotificationManager::removeNotificationGroup(int type)
 {
-    QList<bool> successes;
+    qDebug() << Q_FUNC_INFO << "** START **";
 
-    foreach(int type,types) {
-        NotificationGroup group(type);
-        removeGroup(type);
-        bool success = m_Notifications.remove(group) > 0;
-        qDebug() << Q_FUNC_INFO << "Notification group type: " << type << " removing success: " << success;
-        successes.append(success);
-    }
+    NotificationGroup group(type);
+    removeGroup(type);
+    bool success = m_Notifications.remove(group) > 0;
+
+    qDebug() << Q_FUNC_INFO << "Success of removing group from internal list of notification groups: " << success;
 
     /* We need to iterate here through the still existing notification groups and if our contact cache contains
        a contact not belonging to any of those existing notification groups anymore then we can delete that contact
        from the contact cache. */
-    if (successes.contains(true))
+    if (success)
         clearContactsCache();
 
-    return successes;
+    qDebug() << Q_FUNC_INFO << "** END **";
+
+    return success;
 }
 
 NotificationGroup NotificationManager::notificationGroup(int type)
@@ -567,35 +575,52 @@ QString NotificationManager::eventType(int type)
 
 void NotificationManager::clearPendingEvents(const NotificationGroup &group)
 {
+    qDebug() << Q_FUNC_INFO << "START";
+
     QList<PersonalNotification> notifications = m_Notifications.values(group);
     m_Notifications.remove(group);
     foreach (PersonalNotification p, notifications) {
         p.setHasPendingEvents(false);
         m_Notifications.insertMulti(group, p);
     }
+
+    qDebug() << Q_FUNC_INFO << "END";
 }
 
 void NotificationManager::removeNotPendingEvents(const NotificationGroup &group)
 {
+    qDebug() << Q_FUNC_INFO << "START";
+
     QList<PersonalNotification> notifications = m_Notifications.values(group);
+    qDebug() << Q_FUNC_INFO << "original number of notifications in group is: " << m_Notifications.count(group);
     m_Notifications.remove(group);
+    qDebug() << Q_FUNC_INFO << "removed notification group " << group.type();
     foreach (PersonalNotification p, notifications) {
         if (p.hasPendingEvents()) {
+            qDebug() << Q_FUNC_INFO << "notification for " << p.remoteUid() << " has pending events";
             m_Notifications.insertMulti(group, p);
         }
     }
 
+    qDebug() << Q_FUNC_INFO << "new number of notifications in group is: " << m_Notifications.count(group);
+
     clearContactsCache();
+
+    qDebug() << Q_FUNC_INFO << "END";
 }
 
 void NotificationManager::showLatestNotification(const NotificationGroup &group,
                                                  PersonalNotification &notification)
 {
+    qDebug() << Q_FUNC_INFO << "START";
+
     MNotificationGroup *mgroup = m_MgtGroups.value(group.type());
     if (mgroup) {
         // reset counters if the group has been cleared
-        if (mgroup->notificationCount() == 0)
+        if (mgroup->notificationCount() == 0) {
+            qDebug() << Q_FUNC_INFO << "No MNotificationGroups existing.";
             removeNotPendingEvents(group);
+        }
     } else {
         qWarning() << Q_FUNC_INFO << "NULL group for " << group.type();
     }
@@ -637,7 +662,10 @@ void NotificationManager::showLatestNotification(const NotificationGroup &group,
 
 void NotificationManager::updateNotificationGroup(const NotificationGroup &group)
 {
+    qDebug() << Q_FUNC_INFO << "START";
+
     if (m_Notifications.contains(group)) {
+        qDebug() << Q_FUNC_INFO << "Group exists having notifications";
         const PersonalNotification notification = m_Notifications.value(group);
 
         QString name;
@@ -660,12 +688,13 @@ void NotificationManager::updateNotificationGroup(const NotificationGroup &group
         }
         updateGroup(group.type(), countNotifications(group), name, message, groupAction);
     } else {
+        qDebug() << Q_FUNC_INFO << "Group does not have any notifications";
         // m_Notifications doesnt have any personal notification of the given group
         // remove the group type completly
-        QList<int> types;
-        types << group.type();
-        removeNotificationGroups(types);
+        removeNotificationGroup(group.type());
     }
+
+    qDebug() << Q_FUNC_INFO << "END";
 }
 
 QString NotificationManager::createActionInbox()
@@ -1290,9 +1319,7 @@ void NotificationManager::slotMWICountChanged(int count)
     }
 
     if (count == 0) {
-        QList<int> types;
-        types << CommHistory::Event::VoicemailEvent;
-        if (removeNotificationGroups(types).contains(true))
+        if (removeNotificationGroup(CommHistory::Event::VoicemailEvent))
             saveState();
         return;
     }
