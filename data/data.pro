@@ -37,7 +37,4 @@ service.files = org.freedesktop.Telepathy.Client.CommHistory.service \
 script.path = /etc/init.d
 script.files = commhistoryd.sh
 
-cud.files = commhistoryd-cud.sh
-cud.path  = /etc/osso-cud-scripts
-
-INSTALLS += client service script cud
+INSTALLS += client service script
