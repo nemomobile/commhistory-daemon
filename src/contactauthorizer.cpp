@@ -165,7 +165,7 @@ void ContactAuthorizer::slotPresencePublicationRequested(const Tp::Contacts &con
     if(!pendingContacts.isEmpty()){
         if(m_pContactManager
            && m_pContactManager->supportedFeatures().contains(Tp::Contact::FeatureAvatarData)){
-            qDebug() << Q_FUNC_INFO << "Adding auth. requests to pending queue";
+            qDebug() << Q_FUNC_INFO << "Adding auth. requests to pending queue to wait for avatar";
             upgradeContacts(pendingContacts);
             queueAuthorization(pendingContacts, m_authRequestWaitingForAvatar);
         } else {
@@ -208,8 +208,7 @@ void ContactAuthorizer::queueAuthorization(const Tp::ContactPtr& contact,
     if(m_authRequestWaitingForAvatar.contains(tmpRequest)) {
         // If this is a request that didn't already get an avatar, let's put it the list of
         // the pending requests and fire it.
-
-        qDebug() << Q_FUNC_INFO << "adding request to pending requests";
+        qDebug() << Q_FUNC_INFO << "adding request to pending requests queue to wait for an avatar";
 
         Request r = m_authRequestWaitingForAvatar.value
             (m_authRequestWaitingForAvatar.indexOf(tmpRequest));
@@ -223,14 +222,54 @@ void ContactAuthorizer::queueAuthorization(const Tp::ContactPtr& contact,
     } else if(m_authRequests.contains(tmpRequest)) {
         // This is a pending request that already got an avatar (someway or another) but has
         // not been published yet. Let's simply update it.
-        Request r = m_authRequests.value(m_authRequests.indexOf(tmpRequest));
+        qDebug() << Q_FUNC_INFO << "pending request already having avatar, not published yet, updating avatar to it";
+        int index = m_authRequests.indexOf(tmpRequest);
+        Request r = m_authRequests.value(index);
         r.filename = avatarFile;
+        m_authRequests.replace(index,r);
     } else if(m_publishedAuthRequests.contains(tmpRequest)) {
         // This is a request that was already published. Let's change the avatar, update the
         // and hope the notification and hope the user hasn't tapped it yet :)
-        Request r = m_publishedAuthRequests.value(m_publishedAuthRequests.indexOf(tmpRequest));
+        qDebug() << Q_FUNC_INFO << "Already published request, but did not contain avatar.";
+        int index = m_publishedAuthRequests.indexOf(tmpRequest);
+        Request r = m_publishedAuthRequests.value(index);
+        if (r.filename != avatarFile) {
+            qDebug() << Q_FUNC_INFO << "Avatar file has really changed. Updating notification.";
         r.filename = avatarFile;
-        // TODO: update existing notification.
+            m_publishedAuthRequests.replace(index,r);
+
+            QList<MNotification*> notifications = MNotification::notifications();
+            MNotification *notificationFromList = 0;
+            foreach (MNotification *n, notifications) {
+               if (r.notificationId == n->identifier()) {
+                   notificationFromList = n;
+                   break;
+                }
+            }
+
+            if (notificationFromList && notificationFromList->isPublished()) {
+                QList<QVariant> args;
+                args.append(QVariant(r.contact->id()));
+                args.append(QVariant(m_account->objectPath()));
+                args.append(QVariant(r.filename));
+                args.append(QVariant(r.message));
+                args.append(QVariant(r.transactionId));
+                args.append(QVariant(m_account->uniqueIdentifier()));
+
+                MRemoteAction remoteAction(COMM_HISTORY_SERVICE_NAME,
+                                           COMM_HISTORY_OBJECT_PATH,
+                                           COMM_HISTORY_INTERFACE,
+                                           ACTIVATE_AUTHIRIZATION_METHOD,
+                                           args);
+
+                notificationFromList->setAction(remoteAction);
+                notificationFromList->publish();
+                qDebug() << Q_FUNC_INFO << "Notification updated and re-published.";
+            }
+
+            qDeleteAll(notifications);
+            notifications.clear();
+        } // if (r.filename != avatarFile) {
     }
 }
 
@@ -367,8 +406,10 @@ void ContactAuthorizer::fireAuthorisationRequest()
         notification.setIdentifier(id + m_account->objectPath());
         notification.publish();
         request.notificationId = id + m_account->objectPath();
+        qDebug() << Q_FUNC_INFO << "MNotification published with notification id: " << request.notificationId;
         m_authRequests.removeOne(request);
         if(!m_publishedAuthRequests.contains(request)){
+            qDebug() << Q_FUNC_INFO << "Appending request to published auth requests queue";
             m_publishedAuthRequests.append(request);
         }
     }
@@ -384,7 +425,9 @@ void ContactAuthorizer::slotShowAuthorizationDialog(const QString& contactId,
     Q_UNUSED(unused)
 
     qDebug() << Q_FUNC_INFO;
-    qDebug() << m_account->objectPath() << "   " << accountPath;
+    qDebug() << Q_FUNC_INFO << m_account->objectPath() << "   " << accountPath;
+    qDebug() << Q_FUNC_INFO << "contact id: " << contactId;
+    qDebug() << Q_FUNC_INFO << "Avatar filename: " << filename;
 
     if(m_account && m_account->objectPath() != accountPath)
         return;
@@ -403,6 +446,10 @@ void ContactAuthorizer::slotShowAuthorizationDialog(const QString& contactId,
             // generating during the same session (not before a reboot).
             // This means we can start the UI right away.
             requestFound = true;
+            qDebug() << Q_FUNC_INFO << "Found published auth request with values:";
+            qDebug() << Q_FUNC_INFO << "notification id: " << request.notificationId;
+            qDebug() << Q_FUNC_INFO << "contact id: " << request.contact->id();
+            qDebug() << Q_FUNC_INFO << "avatar filename: " << request.filename;
             startBuddyAuthorizerUI(request);
             break;
         }
