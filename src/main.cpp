@@ -31,6 +31,7 @@
 #include "notificationmanager.h"
 #include "commhistoryservice.h"
 #include "commhistoryifadaptor.h"
+#include "messagereviver.h"
 #include "contactauthorizationlistener.h"
 #include "connectionutils.h"
 
@@ -144,6 +145,9 @@ int main(int argc, char **argv)
 
     NotificationManager::instance();
     qDebug() << "NotificationManager created";
+
+    new MessageReviver(utils, &app);
+    qDebug() << "Message reviver created, starting main loop";
 
     int result = app.exec();
 

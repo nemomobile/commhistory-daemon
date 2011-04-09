@@ -130,6 +130,7 @@ private:
     QString fetchContactLabelFromVCard(const QString &vcard);
     QString fetchVCardFromMessage(const Tp::MessagePartList &parts);
     bool storeVCard (const QString &vcard, QString &name);
+    bool checkStoredMessagesIf();
     void expungeMessage(const QString &token);
     void updateGroupChatName(ChangedChannelProperty changedChannelProperty);
 

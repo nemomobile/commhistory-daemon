@@ -45,7 +45,9 @@ QT += sql \
 PKGCONFIG += TelepathyQt4 \
              commhistory \
              contextsubscriber-1.0 \
-             meegotouch
+             meegotouch \
+             MNgfClient \
+             RTComTelepathyQt4
 
 # -----------------------------------------------------------------------------
 # input
@@ -63,6 +65,7 @@ HEADERS += logger.h \
            commhistoryifadaptor.h \
            commhistoryservice.h \
            locstrings.h \
+           messagereviver.h \
            connectionutils.h \
            contactauthorizationlistener.h \
            contactauthorizer.h \
@@ -81,6 +84,7 @@ SOURCES += main.cpp \
            reportnotification.cpp \
            commhistoryifadaptor.cpp \
            commhistoryservice.cpp \
+           messagereviver.cpp \
            connectionutils.cpp \
            contactauthorizationlistener.cpp \
            contactauthorizer.cpp \

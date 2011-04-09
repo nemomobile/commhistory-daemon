@@ -227,6 +227,8 @@ private:
 
     MWIListener *m_pMWIListener;
 
+    MNGFClient *m_pNgf;
+
 #ifdef UNIT_TEST
     friend class Ut_NotificationManager;
 #endif

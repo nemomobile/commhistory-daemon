@@ -48,6 +48,9 @@
 #include <TelepathyQt4/Presence>
 #include <TelepathyQt4/types.h>
 
+#include <RTComTelepathyQt4/Connection> // stored messages if
+#include <RTComTelepathyQt4/Constants> // Flash sms
+
 // Contacts
 #include <qmobilityglobal.h>
 #include <qtcontacts.h>
@@ -213,11 +216,43 @@ void TextChannelListener::channelListenerReady()
                  SLOT( slotMessageSent(const Tp::Message&, Tp::MessageSendingFlags, const QString&) ),
                  Qt::UniqueConnection );
 
+        // check if channel is meant to be used for class 0 sms messages
+        QVariantMap properties = textChannel->immutableProperties();
+
+        QVariant property = properties.value(QLatin1String(RTCOM_TP_INTERFACE_CHANNEL_INTERFACE_SMS ".Flash"), QVariant());
+        if(property.isValid() && property.value<bool>() == true) {
+            qDebug() << __FUNCTION__ << "Channel contains class 0 property";
+            m_isClassZeroSMS = true;
+            connect(classZeroSMSModel(),
+                    SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
+                    SLOT(slotClassZeroSMSRemoved(const QModelIndex&, int, int)),
+                    Qt::UniqueConnection);
+        }
+
         handleMessages();
     } else {
         qCritical() << Q_FUNC_INFO << "Wrong channel - Null";
     }
     invocationContextFinished();
+}
+
+bool TextChannelListener::checkStoredMessagesIf()
+{
+    bool result = false;
+
+    if (m_Connection.isNull() || !m_Connection->isReady()) {
+        qCritical() << Q_FUNC_INFO << "Connection is not ready when it should be";
+        return result;
+    }
+
+    if (m_Connection->hasInterface(RTComTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName())) {
+        connect(&eventModel(), SIGNAL(eventsCommitted(QList<CommHistory::Event>,bool)),
+                SLOT(slotEventsCommitted(QList<CommHistory::Event>,bool)),
+                Qt::UniqueConnection);
+        eventModel().setSyncMode(true);
+        result = true;
+    }
+    return result;
 }
 
 void TextChannelListener::requestConversationId()
@@ -1373,6 +1408,17 @@ void TextChannelListener::slotExpungeMessages()
     if (m_expungeTokens.isEmpty()
         || (m_Connection && !m_Connection->isReady()))
         return;
+
+    RTComTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
+            m_Connection->interface<RTComTp::Client::ConnectionInterfaceStoredMessagesInterface>();
+
+    if (storedMessages) {
+        qDebug() << Q_FUNC_INFO << m_expungeTokens;
+        storedMessages->ExpungeMessages(m_expungeTokens);
+        m_expungeTokens.clear();
+    } else {
+        qCritical() << Q_FUNC_INFO << "No stored messages interface present";
+    }
 }
 
 QString TextChannelListener::fetchContactLabelFromVCard(const QString &vcard)
@@ -1643,6 +1689,7 @@ void TextChannelListener::channelReady()
                                                      const Tp::UIntList &)));
             }
         }
+        checkStoredMessagesIf();
         // call this last as it may start handle pending messages
         requestConversationId();
     } else {

@@ -33,6 +33,9 @@
 #include <MNotification>
 #include <MNotificationGroup>
 
+// MNGFClient
+#include <MNGFClient>
+
 // contacts
 #include <QContactManager>
 #include <QContactFetchRequest>
@@ -136,6 +139,7 @@ NotificationManager::NotificationManager(QObject* parent)
         , m_Initialised(false)
         , m_pContactManager(0)
         , m_GroupModel(0)
+        , m_pNgf(0)
 {
     qRegisterMetaType<RTComLogger::NotificationGroup>("RTComLogger::NotificationGroup");
     qRegisterMetaTypeStreamOperators<RTComLogger::NotificationGroup>("RTComLogger::NotificationGroup");
@@ -292,6 +296,14 @@ void NotificationManager::showNotification(ChannelListener * channelListener,
         default:
             //ignore
             break;
+        }
+
+        if (!ngfEvent.isEmpty()) {
+            if (m_pNgf == 0) {
+                m_pNgf = new MNGFClient(this);
+            }
+
+            m_pNgf->playEvent(ngfEvent);
         }
     }
 }
