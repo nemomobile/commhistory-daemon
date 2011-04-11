@@ -147,7 +147,7 @@ void ContactAuthorizer::slotPresencePublicationRequested(const Tp::Contacts &con
             bool notificationExists = false;
             // Invitation requests should not be shown if they already exist as notifications
             foreach (MNotification *n, notifications) {
-               if (notificationIdentifier == n->identifier()) {
+               if (n && notificationIdentifier == n->identifier()) {
                    qDebug() << Q_FUNC_INFO << "Invitation request is already being shown as a notification.";
                    notificationExists = true;
                    break;
@@ -241,7 +241,7 @@ void ContactAuthorizer::queueAuthorization(const Tp::ContactPtr& contact,
             QList<MNotification*> notifications = MNotification::notifications();
             MNotification *notificationFromList = 0;
             foreach (MNotification *n, notifications) {
-               if (r.notificationId == n->identifier()) {
+               if (n && r.notificationId == n->identifier()) {
                    notificationFromList = n;
                    break;
                 }
@@ -616,7 +616,7 @@ void ContactAuthorizer::removeNotificationForOngoingRequest()
 
     QList<MNotification*> notifications = MNotification::notifications();
     foreach (MNotification *n, notifications) {
-       if (m_ongoingRequest.notificationId == n->identifier()) {
+       if (n && m_ongoingRequest.notificationId == n->identifier()) {
            if (!n->remove()) {
                qWarning() << "Failed to remove notification.";
                return;
