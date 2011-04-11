@@ -320,7 +320,7 @@ void NotificationManager::removeConversationNotifications(const QString &localId
                                                           const QString &remoteId,
                                                           CommHistory::Group::ChatType chatType)
 {
-    NotificationGroup updatedGroup;
+    QSet<NotificationGroup> updatedGroups;
 
     // remove matched notifications and udpate group
     QMutableHashIterator<NotificationGroup,PersonalNotification> i(m_Notifications);
@@ -331,21 +331,20 @@ void NotificationManager::removeConversationNotifications(const QString &localId
             if ((eventType == CommHistory::Event::IMEvent
                  || eventType == CommHistory::Event::SMSEvent
                  || eventType == CommHistory::Event::MMSEvent)
-                && i.value().account() == localId
+                && MAP_MMS_TO_RING(i.value().account()) == localId
                 && CommHistory::remoteAddressMatch(i.value().remoteUid(),
                                                    remoteId)
                 && (CommHistory::Group::ChatType)(i.value().chatType()) == chatType) {
-                if (!updatedGroup.isValid())
-                    updatedGroup = i.key();
-
+                updatedGroups.insert(i.key());
                 i.remove();
             }
         }
     }
 
-    if (updatedGroup.isValid()) {
+    if (!updatedGroups.isEmpty()) {
         clearContactsCache();
-        updateNotificationGroup(updatedGroup);
+        foreach(NotificationGroup group, updatedGroups)
+            updateNotificationGroup(group);
         saveState();
     }
 }
