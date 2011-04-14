@@ -23,8 +23,8 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <syslog.h>
 
-#include <MApplication>
 #include <MLocale>
 
 #include "logger.h"
@@ -35,11 +35,7 @@
 #include "contactauthorizationlistener.h"
 #include "connectionutils.h"
 
-QString applicationName("commhistoryd");
-
 using namespace RTComLogger;
-
-#include <syslog.h>
 
 namespace {
 
@@ -102,7 +98,7 @@ void setupSigtermHandler()
 
 int main(int argc, char **argv)
 {
-    MApplication app(argc, argv, applicationName);
+    QCoreApplication app(argc, argv);
 
 #ifdef QT_DEBUG
     int logOption = LOG_NDELAY;
@@ -122,8 +118,6 @@ int main(int argc, char **argv)
     QObject::connect(snTerm, SIGNAL(activated(int)), &app, SLOT(quit()));
     setupSigtermHandler();
 
-    app.setQuitOnLastWindowClosed(false);
-
     MLocale locale;
     locale.installTrCatalog("messaging");
     locale.installTrCatalog("telephony");
@@ -134,6 +128,10 @@ int main(int argc, char **argv)
     qDebug() << "Translation catalogs loaded";
 
     CommHistoryService *service = new CommHistoryService(&app);
+    if (!service->isRegistered()) {
+        qDebug() << "Already running, exiting";
+        return 0;
+    }
     new CommHistoryIfAdaptor(service);
     qDebug() << "Service created";
 
