@@ -328,11 +328,19 @@ void NotificationManager::removeConversationNotifications(const QString &localId
         i.next();
         if (i.key().isValid()) {
             int eventType = i.key().type();
+
+            QString notificationRemoteUidStr;
+            // For p-to-p chat we use remote uid for comparison and for MUC we use target (channel) id:
+            if (chatType == CommHistory::Group::ChatTypeP2P)
+                notificationRemoteUidStr = i.value().remoteUid();
+            else
+                notificationRemoteUidStr = i.value().targetId();
+
             if ((eventType == CommHistory::Event::IMEvent
                  || eventType == CommHistory::Event::SMSEvent
                  || eventType == CommHistory::Event::MMSEvent)
                 && MAP_MMS_TO_RING(i.value().account()) == localId
-                && CommHistory::remoteAddressMatch(i.value().remoteUid(),
+                && CommHistory::remoteAddressMatch(notificationRemoteUidStr,
                                                    remoteId)
                 && (CommHistory::Group::ChatType)(i.value().chatType()) == chatType) {
                 updatedGroups.insert(i.key());
