@@ -25,11 +25,8 @@
 
 #include <MLocale>
 
-//workaround for using %L1 instead of %Ln
-#define CHD_PL_TR(LID, NUM) ((NUM) == 1 ? qtTrId(LID, NUM) : qtTrId(LID, NUM).arg(NUM))
-
 //% "%L1 new message(s)"
-#define txt_qtn_msg_notification_new_message(NUM) CHD_PL_TR("qtn_msg_notification_new_message", NUM)
+#define txt_qtn_msg_notification_new_message(NUM) qtTrId("qtn_msg_notification_new_message", NUM)
 //% "Contact card"
 #define txt_qtn_msg_contact_card_label qtTrId("qtn_msg_contact_card_label")
 
