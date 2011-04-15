@@ -43,7 +43,7 @@ SUBDIRS  =
 CONFIG   = warn_on
 
 # "unarm" the primary target generation by disabling linking
-QMAKE_LFLAGS = -c
+QMAKE_LFLAGS = --version
 
 # translation input/output
 TS_FILENAME = $${_PRO_FILE_PWD_}/$${CATALOGNAME}.ts

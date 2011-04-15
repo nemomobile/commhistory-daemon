@@ -35,6 +35,9 @@
 #include <QModelIndex>
 #include <QWeakPointer>
 
+//QmSystem2
+#include <qmsystem2/qmdisplaystate.h>
+
 #include <CommHistory/Event>
 #include <CommHistory/Group>
 #include <qcontact.h>
@@ -134,6 +137,7 @@ private:
 
     NotificationManager( QObject* parent = 0);
     ~NotificationManager();
+    void undimScreen();
     bool isCurrentlyObservedByUI(const CommHistory::Event& event,
                                  const QString &channelTargetId,
                                  CommHistory::Group::ChatType chatType);
@@ -229,6 +233,7 @@ private:
     QTimer m_ContactsTimer;
 
     MWIListener *m_pMWIListener;
+    MeeGo::QmDisplayState *m_pDisplayState;
 
 #ifdef UNIT_TEST
     friend class Ut_NotificationManager;

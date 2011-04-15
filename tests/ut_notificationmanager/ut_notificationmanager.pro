@@ -40,7 +40,8 @@ CONFIG += link_pkgconfig \
           mobility
 PKGCONFIG += contextsubscriber-1.0 \
              meegotouch \
-             TelepathyQt4
+             TelepathyQt4 \
+             qmsystem2
 
 TEST_SOURCES += $$COMMHISTORYDSRCDIR/notificationmanager.cpp \
                 $$COMMHISTORYDSRCDIR/notificationgroup.cpp \
