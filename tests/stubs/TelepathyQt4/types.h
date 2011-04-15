@@ -266,7 +266,7 @@ namespace Tp
     class MethodInvocationContext : public RefCounted
     {
         public:
-        MethodInvocationContext():m_isFinished(false){}
+        MethodInvocationContext():m_isFinished(false), m_isError(false){}
         bool isFinished() const { return m_isFinished; }
         bool isError() const { return m_isError; }
         QString errorName() const { return ""; }
