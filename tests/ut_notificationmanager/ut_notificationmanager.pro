@@ -39,8 +39,6 @@ TARGET = ut_notificationmanager
 CONFIG += link_pkgconfig \
           mobility
 PKGCONFIG += contextsubscriber-1.0 \
-             CellularQt \
-             MNgfClient \
              meegotouch \
              TelepathyQt4
 
