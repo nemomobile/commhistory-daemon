@@ -45,7 +45,8 @@ QT += sql \
 PKGCONFIG += TelepathyQt4 \
              commhistory \
              contextsubscriber-1.0 \
-             meegotouch
+             meegotouch \
+             qmsystem2
 
 # -----------------------------------------------------------------------------
 # input

@@ -135,6 +135,7 @@ NotificationManager::NotificationManager(QObject* parent)
         , m_Initialised(false)
         , m_pContactManager(0)
         , m_GroupModel(0)
+        , m_pDisplayState(0)
 {
     qRegisterMetaType<RTComLogger::NotificationGroup>("RTComLogger::NotificationGroup");
     qRegisterMetaTypeStreamOperators<RTComLogger::NotificationGroup>("RTComLogger::NotificationGroup");
@@ -162,6 +163,7 @@ void NotificationManager::init()
     if (m_Initialised) {
         return;
     }
+
     // creates data directory
     createDataDir();
     // Loads old state
@@ -202,6 +204,8 @@ void NotificationManager::init()
             SIGNAL(MWICountChanged(int)),
             this,
             SLOT(slotMWICountChanged(int)));
+
+    m_pDisplayState = new MeeGo::QmDisplayState(this);
 
     m_Initialised = true;
 }
@@ -248,6 +252,11 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
                                            CommHistory::Group::ChatType chatType)
 {
     qDebug() << Q_FUNC_INFO << event.id() << channelTargetId << chatType;
+
+    if (event.type() == CommHistory::Event::SMSEvent ||
+       event.type() == CommHistory::Event::MMSEvent) {
+        undimScreen();
+    }
 
     bool observed = isCurrentlyObservedByUI(event, channelTargetId, chatType);
     if (!event.isRead() && !observed) {
@@ -1325,4 +1334,12 @@ bool NotificationManager::hasMessageNotification() const
     }
 
     return false;
+}
+
+void NotificationManager::undimScreen()
+{
+    if (m_pDisplayState
+       && m_pDisplayState->get() == MeeGo::QmDisplayState::Off) {
+       m_pDisplayState->set(MeeGo::QmDisplayState::On);
+    }
 }
