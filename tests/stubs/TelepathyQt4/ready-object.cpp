@@ -12,12 +12,16 @@ Tp::ReadyObject::ReadyObject():
 
 Tp::ReadyObject::~ReadyObject()
 {
+    delete m_pPendingReady;
 }
 
 Tp::PendingReady* Tp::ReadyObject::becomeReady(const Features &requestedFeatures)
 {
     Q_UNUSED( requestedFeatures );
     m_isReady = true;
+    if (m_pPendingReady)
+        delete m_pPendingReady;
+
     m_pPendingReady = new PendingReady();
     QTimer::singleShot(m_pendingDelay, m_pPendingReady, SLOT(fakeAsyncFinish()) );
     return m_pPendingReady;
