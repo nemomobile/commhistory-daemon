@@ -162,6 +162,8 @@ private:
 
     CommHistory::Group getGroupById(int groupId) const;
 
+    bool pendingCommit(const QString &messageToken);
+
 private:
 
     // TODO: only for 1-1 chat, should be fixed later
@@ -208,6 +210,9 @@ private:
     bool m_channelClosed;
     // groups that have added events but have not yet emitted updated signal
     QList<int> m_pendingGroups;
+    // added events but not committed yet, delivery report will
+    // not be handled unitl the event committed
+    QSet<QString> m_commitingEvents;
 
 #ifdef UNIT_TEST
     friend class Ut_TextChannelListener;

@@ -845,6 +845,11 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
         qDebug() << "[DELIVERY] Mms-id is: " << mmsId;
     }
 
+    if (pendingCommit(deliveryToken)) {
+        qDebug() << "[DELIVERY] Original message is not committed yet, wait for it";
+        return DeliveryHandlingPending;
+    }
+
     bool messageFound = false;
     if (!deliveryToken.isEmpty() || !mmsId.isEmpty()) {
         result = getEventForToken(deliveryToken, mmsId, m_Group.id(), event);
@@ -1306,6 +1311,8 @@ void TextChannelListener::saveNewMessage(CommHistory::Event &event)
 
     if (eventModel().addEvent(event)) {
         m_pendingGroups.append(event.groupId());
+        if (!event.messageToken().isEmpty())
+            m_commitingEvents.insert(event.messageToken());
     } else {
         qWarning() << "failed to add event";
     }
@@ -1395,6 +1402,7 @@ void TextChannelListener::slotEventsCommitted(QList<CommHistory::Event> events, 
 {
     qDebug() << Q_FUNC_INFO << status;
 
+    bool removed = false;
     foreach (CommHistory::Event e, events) {
         if (m_EventTokens.contains(e.id())) {
             QString token = m_EventTokens.values(e.id()).last();
@@ -1402,7 +1410,13 @@ void TextChannelListener::slotEventsCommitted(QList<CommHistory::Event> events, 
                 expungeMessage(token);
             m_EventTokens.remove(e.id(), token);
         }
+        if (m_commitingEvents.remove(e.messageToken()))
+            removed = true;
     }
+
+    // handle delivery reports pending for event commits
+    if (removed)
+        handleMessages();
 
     tryToClose();
 }
@@ -1894,4 +1908,14 @@ CommHistory::Group TextChannelListener::getGroupById(int groupId) const
 
     qWarning() << Q_FUNC_INFO << "Didn't find matching group";
     return CommHistory::Group();
+}
+
+bool TextChannelListener::pendingCommit(const QString &messageToken)
+{
+    foreach (QString token, m_commitingEvents) {
+        if (token == messageToken)
+            return true;
+    }
+
+    return false;
 }
