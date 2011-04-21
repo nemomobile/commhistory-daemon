@@ -898,6 +898,7 @@ void NotificationManager::slotContactRequestTimeout()
     QTimer *timer = qobject_cast<QTimer*>(sender());
     QContactFetchRequest *request = m_contactRequestsTimers.key(timer);
 
+    Q_ASSERT(timer);
     Q_ASSERT(request);
 
     m_contactRequestsTimers.remove(request);
