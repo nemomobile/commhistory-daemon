@@ -36,7 +36,7 @@
 #define CURRENT_SERVICE_POINT_PROPERTY_NAME ("CurrentServicePoint")
 #define INITIAL_SERVICE_POINT_PROPERTY QLatin1String(TELEPATHY_INTERFACE_CHANNEL_INTERFACE_SERVICE_POINT ".InitialServicePoint")
 
-#define SAVING_INTERVAL 60000 // 1 minute
+#define SAVING_INTERVAL 5*60000 // 5 minute
 
 using namespace RTComLogger;
 
