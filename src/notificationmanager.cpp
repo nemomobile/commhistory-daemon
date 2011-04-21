@@ -883,7 +883,31 @@ QContactFetchRequest* NotificationManager::startContactRequest(QContactFilter &f
 
     request->start();
 
+    // setup timeout for request
+    QTimer *timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()),
+            this, SLOT(slotContactRequestTimeout()));
+    timer->start(CONTACT_REQUEST_TIMEROUT);
+    m_contactRequestsTimers.insert(request, timer);
+
     return request;
+}
+
+void NotificationManager::slotContactRequestTimeout()
+{
+    QTimer *timer = qobject_cast<QTimer*>(sender());
+    QContactFetchRequest *request = m_contactRequestsTimers.key(timer);
+
+    Q_ASSERT(request);
+
+    m_contactRequestsTimers.remove(request);
+    TpContactUid cuid = m_requests.take(request);
+    if (!m_contacts.contains(cuid))
+        m_contacts.insert(cuid, QContact());
+    resolveEvents();
+
+    delete request;
+    timer->deleteLater();
 }
 
 void NotificationManager::slotResultsAvailable()
@@ -893,6 +917,8 @@ void NotificationManager::slotResultsAvailable()
     if(!request || !request->isFinished()) {
         return;
     }
+
+    delete m_contactRequestsTimers.take(request);
 
     qDebug() << Q_FUNC_INFO << request->contacts().size() << "contacts";
 

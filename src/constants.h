@@ -82,6 +82,8 @@ namespace RTComLogger {
 #define NOTIFICATION_THRESHOLD 3000
 // threshold to trigger contact request after added/modified contacts signals
 #define CONTACT_REQUEST_THRESHOLD 5000
+// give up on contact fetch request
+#define CONTACT_REQUEST_TIMEROUT 3000
 
 // events
 struct EventTypes {
