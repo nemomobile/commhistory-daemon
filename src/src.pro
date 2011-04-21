@@ -92,7 +92,7 @@ SOURCES += main.cpp \
 # Telepathy extensions.
 # -----------------------------------------------------------------------------
 EXTENSIONS_DIR = $$IN_PWD/TpExtensions
-EXTENSIONS_GENERATED_DIR = TpExtensions/.gen
+EXTENSIONS_GENERATED_DIR = $$EXTENSIONS_DIR/.gen
 TOOLS_DIR = $$IN_PWD/../tools
 PYTHON = $$TOOLS_DIR/python.sh 2.6
 MOC = moc
