@@ -234,8 +234,6 @@ private:
 
     MWIListener *m_pMWIListener;
     MeeGo::QmDisplayState *m_pDisplayState;
-    // detect timeouted contact requests
-    QHash<QContactFetchRequest*, QTimer*> m_contactRequestsTimers;
 
 #ifdef UNIT_TEST
     friend class Ut_NotificationManager;
