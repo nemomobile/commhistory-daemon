@@ -352,6 +352,7 @@ void Ut_NotificationManager::testImNotification()
     QVERIFY(mgtGroup->isPublished());
     QVERIFY(mgtGroup->summary().contains(CONTACT_1_REMOTE_ID));
     QVERIFY(mgtGroup->summary().contains(CONTACT_2_REMOTE_ID));
+    QVERIFY(mgtGroup->summary().indexOf(CONTACT_2_REMOTE_ID) < mgtGroup->summary().indexOf(CONTACT_1_REMOTE_ID));
     QCOMPARE(mgtGroup->body(), txt_qtn_msg_notification_new_message(3));
 }
 
