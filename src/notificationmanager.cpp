@@ -1208,35 +1208,45 @@ void NotificationManager::slotResultsAvailableForUnknown()
 {
     QContactFetchRequest *request = qobject_cast<QContactFetchRequest *>(sender());
 
-    if(!request || !request->isFinished()) {
+    if (!request || !request->isFinished()) {
         return;
     }
 
     qDebug() << Q_FUNC_INFO << request->contacts().size() << "contacts";
 
-    QList<QContactLocalId> updatedContactIds;
+    QSet<QContactLocalId> updatedContactIds;
 
-    foreach (QContact contact, request->contacts()) {
-        QList<QContactOnlineAccount> accounts = contact.details<QContactOnlineAccount>();
-        QList<QContactPhoneNumber> phones = contact.details<QContactPhoneNumber>();
+    // check notifications contact
+    QMutableHashIterator<TpContactUid, QContact> i(m_contacts);
+    while (i.hasNext()) {
+        i.next();
+        TpContactUid cuid = i.key();
+        QContact cacheContact = i.value();
+        QList<QContact> matchedContacts;
+        bool matchedLocalId = false;
 
-        // check notifications contact
-        QMutableHashIterator<TpContactUid, QContact> i(m_contacts);
-        while (i.hasNext()) {
-            i.next();
-            TpContactUid cuid = i.key();
-            QContact cacheContact = i.value();
-            if (matchContact(accounts, phones, cuid.first, cuid.second)) {
-                i.setValue(contact);
-                updatedContactIds << contact.localId();
-            } else if (cacheContact.localId() == contact.localId()) {
-                i.setValue(QContact());
-                updatedContactIds << contact.localId();
-            }
+        foreach (QContact contact, request->contacts()) {
+            QList<QContactOnlineAccount> accounts = contact.details<QContactOnlineAccount>();
+            QList<QContactPhoneNumber> phones = contact.details<QContactPhoneNumber>();
+
+            if (matchContact(accounts, phones, cuid.first, cuid.second))
+                matchedContacts << contact;
+            if (cacheContact.localId() == contact.localId())
+                matchedLocalId = true;
         }
+
+        if (matchedContacts.size() == 1)
+            i.setValue(matchedContacts.first());
+
+        if (matchedContacts.size() > 1
+            || (matchedContacts.isEmpty() && matchedLocalId))
+            i.setValue(QContact());
+
+        foreach (QContact c, matchedContacts)
+            updatedContactIds << c.localId();
     }
 
-    updateNotifcationContacts(updatedContactIds);
+    updateNotifcationContacts(updatedContactIds.toList());
 
     request->deleteLater();
 }
