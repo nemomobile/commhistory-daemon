@@ -575,7 +575,11 @@ void NotificationManager::clearPendingEvents(const NotificationGroup &group)
 {
     QList<PersonalNotification> notifications = m_Notifications.values(group);
     m_Notifications.remove(group);
-    foreach (PersonalNotification p, notifications) {
+
+    // clear HasPendingEvents() for each notification
+    // and keep the order of notifications intact
+    while (!notifications.isEmpty()) {
+        PersonalNotification p = notifications.takeLast();
         p.setHasPendingEvents(false);
         m_Notifications.insertMulti(group, p);
     }
@@ -585,7 +589,9 @@ void NotificationManager::removeNotPendingEvents(const NotificationGroup &group)
 {
     QList<PersonalNotification> notifications = m_Notifications.values(group);
     m_Notifications.remove(group);
-    foreach (PersonalNotification p, notifications) {
+
+    while (!notifications.isEmpty()) {
+        PersonalNotification p = notifications.takeLast();
         if (p.hasPendingEvents()) {
             m_Notifications.insertMulti(group, p);
         }
@@ -656,14 +662,9 @@ void NotificationManager::updateNotificationGroup(const NotificationGroup &group
         QString groupAction = action(group, notification, grouped);
 
         // update group
-        // if there are more than 1 contact, name is empty
-        // if event is voicemail, name is already empty
-        if (!grouped && group.type() != CommHistory::Event::VoicemailEvent) {
-            name = contactName(notification.account(),
-                               notification.remoteUid());
-        } else if (grouped && group.type() != CommHistory::Event::VoicemailEvent) {
+        if (group.type() != CommHistory::Event::VoicemailEvent)
             name = contactNames(group).join(CONTACT_SEPARATOR_IN_NOTIFICATION_GROUP);
-        }
+
         updateGroup(group.type(), countNotifications(group), name, message, groupAction);
     } else {
         // m_Notifications doesnt have any personal notification of the given group
