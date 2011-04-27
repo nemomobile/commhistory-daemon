@@ -924,22 +924,11 @@ void NotificationManager::slotResultsAvailable()
     QContact contact;  // insert empty contact to indicate
                        // there is no contact for the remote id
 
-    if (request->contacts().size() > 1) {
-        // in case there are several contacts, probably in cellular over voip case
-        // prefer contacts from account
-        foreach (QContact c, request->contacts()) {
-            QContactOnlineAccount account = c.detail(QContactOnlineAccount::DefinitionName);
-            if (account.value("AccountPath") == cuid.first) {
-                contact = c;
-                break;
-            }
-        }
-    }
-
-    if (!request->contacts().empty() && contact.isEmpty())
+    // show remote id in case of multiple contacts match
+    if (request->contacts().size() == 1) {
         contact = request->contacts().first();
-
-    qDebug() << Q_FUNC_INFO << "Using" << contact.displayLabel();
+        qDebug() << Q_FUNC_INFO << "Using" << contact.displayLabel();
+    }
 
     m_contacts.insert(cuid, contact);
 
