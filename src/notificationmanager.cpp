@@ -1291,8 +1291,7 @@ void NotificationManager::updateNotifcationContacts(const QList<QContactLocalId>
         saveState();
 
     foreach (NotificationGroup group, updatedGroups.toList()) {
-        if (countContacts(group) == 1)
-            updateNotificationGroup(group);
+        updateNotificationGroup(group);
     }
 }
 
