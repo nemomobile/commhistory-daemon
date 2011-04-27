@@ -103,4 +103,8 @@ static const EventTypes _eventTypes[] =
 static const int _eventTypesCount = sizeof(_eventTypes) / sizeof(EventTypes);
 }
 
+// Custom system info banner types for commhistoryd:
+typedef QString BannerType;
+const BannerType ErrorBanner = "x-nokia.messaging.error";
+
 #endif //#define CONSTANTS_H

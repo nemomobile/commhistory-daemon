@@ -1076,8 +1076,7 @@ void TextChannelListener::handleMessageFailed(const Tp::ReceivedMessage &message
 void TextChannelListener::showErrorNote(const QString &errorMsg)
 {
     if (!errorMsg.isEmpty()) {
-
-        MNotification notification(MNotification::DeviceEvent);
+        MNotification notification(ErrorBanner);
         notification.setBody(errorMsg);
         notification.publish();
     }
