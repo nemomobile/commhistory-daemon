@@ -34,7 +34,4 @@ service.path = $${INSTALL_PREFIX}/share/dbus-1/services
 service.files = org.freedesktop.Telepathy.Client.CommHistory.service \
     com.nokia.CommHistory.service
 
-script.path = /etc/init.d
-script.files = commhistoryd.sh
-
-INSTALLS += client service script
+INSTALLS += client service
