@@ -1781,40 +1781,69 @@ void TextChannelListener::slotPropertiesChanged(const Tp::PropertyValueList &pro
 }
 
 void TextChannelListener::slotGroupMembersChanged(
-    const Tp::Contacts &groupMembersAdded,
-    const Tp::Contacts &groupLocalPendingMembersAdded,
-    const Tp::Contacts &groupRemotePendingMembersAdded,
-    const Tp::Contacts &groupMembersRemoved,
-    const Tp::Channel::GroupMemberChangeDetails &details)
+        const Tp::Contacts &groupMembersAdded,
+        const Tp::Contacts &groupLocalPendingMembersAdded,
+        const Tp::Contacts &groupRemotePendingMembersAdded,
+        const Tp::Contacts &groupMembersRemoved,
+        const Tp::Channel::GroupMemberChangeDetails &details)
 {
     Q_UNUSED(groupLocalPendingMembersAdded);
     Q_UNUSED(groupRemotePendingMembersAdded);
-    Q_UNUSED(details);
 
     if (!groupMembersRemoved.isEmpty()) {
-        foreach (Tp::ContactPtr contact, groupMembersRemoved)
-        {
-            qDebug() << contact->id() << " left";
-            sendGroupChatEvent(txt_qtn_msg_group_chat_remote_left(contact->id()));
+
+        foreach (Tp::ContactPtr contact, groupMembersRemoved) {
+
+            // if there is valid originatior for the change
+            // but the originator is not the same as the person removed
+            // and the reason is kick/ban
+            if (/*details.isValid() &&*/
+                !details.actor().isNull() &&
+                details.actor() != contact &&
+                (details.reason() == Tp::ChannelGroupChangeReasonKicked ||
+                 details.reason() == Tp::ChannelGroupChangeReasonBanned)) {
+
+                if (contact == m_Channel->groupSelfContact()) {
+
+                    qDebug() << "YOU've' been banned/kicked by" << details.actor()->id();
+                    sendGroupChatEvent(txt_qtn_msg_group_chat_you_removed(details.actor()->id()));
+                }
+                else {
+
+                    qDebug() << contact->id() << "has been banned/kicked by" << details.actor()->id();
+                    sendGroupChatEvent(txt_qtn_msg_group_chat_person_removed(contact->id(), details.actor()->id()));
+                }
+            }
+
+            // otherwise fall back to normal _leave_
+            else {
+
+                qDebug() << contact->id() << "has left the channel";
+                sendGroupChatEvent(txt_qtn_msg_group_chat_remote_left(contact->id()));
+            }
         }
     }
 
     if (!groupMembersAdded.isEmpty()) {
+
         Tp::Features features;
         features << Tp::Contact::FeatureSimplePresence;
 
         Tp::PendingContacts *pc = m_Channel->connection()->contactManager()->upgradeContacts(
             QList<Tp::ContactPtr>::fromSet(groupMembersAdded), features);
 
-        connect(pc, SIGNAL(finished(Tp::PendingOperation *)),
-                this, SLOT(slotContactsReady(Tp::PendingOperation *)));
+        connect(pc,
+                SIGNAL(finished(Tp::PendingOperation *)),
+                this,
+                SLOT(slotContactsReady(Tp::PendingOperation *)));
 
-        foreach (Tp::ContactPtr contact, groupMembersAdded)
-        {
+        foreach (Tp::ContactPtr contact, groupMembersAdded) {
+
             // Ignore self contact. In that case "You have joined..." message
             // should be shown instead (by messaging-ui)
             if (contact != m_Channel->groupSelfContact()) {
-                qDebug() << contact->id() << " joined";
+
+                qDebug() << contact->id() << "joined";
                 sendGroupChatEvent(txt_qtn_msg_group_chat_remote_joined(contact->id()));
             }
         }

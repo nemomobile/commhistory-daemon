@@ -29,7 +29,6 @@
 #define txt_qtn_msg_notification_new_message(NUM) qtTrId("qtn_msg_notification_new_message", NUM)
 //% "Contact card"
 #define txt_qtn_msg_contact_card_label qtTrId("qtn_msg_contact_card_label")
-
 //% "%1 | %2"
 #define txt_qtn_msg_notification_new_vcard(STR) qtTrId("qtn_msg_received_contact_card").arg(txt_qtn_msg_contact_card_label).arg(STR)
 
@@ -41,16 +40,22 @@
 #define txt_qtn_call_type_private qtTrId("qtn_call_type_private")
 //% "Voicemail"
 #define txt_qtn_call_type_voicemail qtTrId("qtn_call_type_voicemail")
+
 //% "Multimedia message was delivered to %1"
 #define txt_qtn_msg_notification_delivered(STR) qtTrId("qtn_mms_info_delivered").arg(STR)
 //% "Multimedia message was read by %1"
 #define txt_qtn_msg_notification_read(STR) qtTrId("qtn_mms_info_msg_read").arg(STR)
 //% "Multimedia message was deleted without reading by %1"
 #define txt_qtn_msg_notification_deleted(STR) qtTrId("qtn_mms_info_delete_wo_reading").arg(STR)
+
 //% "%1 has joined"
 #define txt_qtn_msg_group_chat_remote_joined(STR) qtTrId("qtn_msg_group_chat_remote_joined").arg(STR)
 //% "%1 has left"
 #define txt_qtn_msg_group_chat_remote_left(STR) qtTrId("qtn_msg_group_chat_remote_left").arg(STR)
+//% "%1 removed you from this chat"
+#define txt_qtn_msg_group_chat_you_removed(STR) qtTrId("qtn_msg_group_chat_you_removed").arg(STR)
+//% "%1 removed %2 from this chat"
+#define txt_qtn_msg_group_chat_person_removed(STR1,STR2) qtTrId("qtn_msg_group_chat_person_removed").arg(STR1).arg(STR2)
 //% "%1 changed room topic to %2"
 #define txt_qtn_msg_group_chat_topic_changed(STR1,STR2) qtTrId("qtn_msg_group_chat_topic_changed").arg(STR1).arg(STR2)
 
