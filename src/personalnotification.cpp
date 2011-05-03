@@ -29,7 +29,7 @@ PersonalNotification::PersonalNotification(QObject* parent) : QObject(parent),
     m_eventType(CommHistory::Event::UnknownType),
     m_targetId(QString()), m_chatType(CommHistory::Group::ChatTypeP2P),
     m_contactId(0), m_notificationText(QString()),
-    m_hasPendingEvents(false)
+    m_hasPendingEvents(false), m_chatName(QString())
 {
 }
 
@@ -44,7 +44,7 @@ PersonalNotification::PersonalNotification(const QString& remoteUid,
     QObject(parent), m_remoteUid(remoteUid), m_account(account),
     m_eventType(eventType), m_targetId(channelTargetId), m_chatType(chatType),
     m_contactId(contactId), m_notificationText(lastNotification),
-    m_hasPendingEvents(false)
+    m_hasPendingEvents(false), m_chatName(QString())
 {
 }
 
@@ -65,6 +65,7 @@ PersonalNotification& PersonalNotification::operator=(const PersonalNotification
     setContactId(other.contactId());
     setNotificationText(other.notificationText());
     setHasPendingEvents(other.hasPendingEvents());
+    setChatName(other.chatName());
     return *this;
 }
 
@@ -109,6 +110,11 @@ bool PersonalNotification::hasPendingEvents() const
     return m_hasPendingEvents;
 }
 
+QString PersonalNotification::chatName() const
+{
+    return m_chatName;
+}
+
 
 void PersonalNotification::setRemoteUid(const QString& remoteUid)
 {
@@ -150,13 +156,19 @@ void PersonalNotification::setHasPendingEvents(bool hasPendingEvents)
     m_hasPendingEvents = hasPendingEvents;
 }
 
+void PersonalNotification::setChatName(const QString& chatName)
+{
+    m_chatName = chatName;
+}
+
 bool PersonalNotification::operator == (const PersonalNotification& other) const
 {
     if(remoteUid() == other.remoteUid()
        && eventType() == other.eventType()
        && targetId() == other.targetId()
        && chatType() == other.chatType()
-       && account() == other.account()) {
+       && account() == other.account()
+       && chatName() == other.chatName()) {
         return true;
     }
     return false;

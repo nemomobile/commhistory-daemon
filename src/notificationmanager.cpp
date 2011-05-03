@@ -260,19 +260,39 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
 
     bool observed = isCurrentlyObservedByUI(event, channelTargetId, chatType);
     if (!event.isRead() && !observed) {
+        // Get MUC topic from group
+        QString chatName;
+        if (m_GroupModel && (chatType == CommHistory::Group::ChatTypeUnnamed ||
+            chatType == CommHistory::Group::ChatTypeRoom)) {
+            for (int i = 0; i < m_GroupModel->rowCount(); i++) {
+                QModelIndex row = m_GroupModel->index(i, 0);
+                CommHistory::Group group = m_GroupModel->group(row);
+                if (group.isValid() && group.id() == event.groupId()) {
+                    chatName = group.chatName();
+                    if (chatName.isEmpty())
+                        chatName = txt_qtn_msg_group_chat;
+                    qDebug() << Q_FUNC_INFO << "Using chatName:" << chatName;
+                    break;
+                }
+            }
+        }
+
         PersonalNotification notification(event.remoteUid(),
                                           event.localUid(),
                                           event.type(),
                                           channelTargetId,
                                           chatType);
         notification.setNotificationText(notificationText(event));
+        if (!chatName.isEmpty())
+            notification.setChatName(chatName);
 
         m_unresolvedEvents.enqueue(notification);
 
         TpContactUid cuid(event.localUid(),
                           event.remoteUid());
         if (!event.remoteUid().isEmpty() // private number
-            && !m_contacts.contains(cuid))
+            && !m_contacts.contains(cuid)
+            && chatName.isEmpty())
             requestContact(cuid);
         else
             resolveEvents();
@@ -498,7 +518,7 @@ void NotificationManager::resolveEvents()
 
         TpContactUid cuid(notification.account(), notification.remoteUid());
 
-        if (notification.remoteUid().isEmpty()) {
+        if (notification.remoteUid().isEmpty() || !notification.chatName().isEmpty()) {
             addNotification(m_unresolvedEvents.dequeue());
         } else if (m_contacts.contains(cuid)) {
             QContact contact = m_contacts.value(cuid);
@@ -618,8 +638,7 @@ void NotificationManager::showLatestNotification(const NotificationGroup &group,
 
     // voicemail notification shouldn't have contact name
     if (type != CommHistory::Event::VoicemailEvent) {
-        name = contactName(notification.account(),
-                           notification.remoteUid());
+        name = notificationName(notification);
     }
 
     QString activateAction = action(group, notification, false);
@@ -973,7 +992,7 @@ QStringList NotificationManager::contactNames(const NotificationGroup& group)
     }
 
     for (int i=0; i<contacts.size();i++)
-        names.append(contactName(contacts[i].account(), contacts[i].remoteUid()));
+        names.append(notificationName(contacts[i]));
 
     return names;
 }
@@ -1162,7 +1181,10 @@ CommHistory::GroupModel* NotificationManager::groupModel()
                 SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
                 this,
                 SLOT(slotGroupRemoved(const QModelIndex&, int, int)));
-
+        connect(m_GroupModel,
+                SIGNAL(dataChanged(const QModelIndex&, const QModelIndex&)),
+                this,
+                SLOT(slotGroupDataChanged(const QModelIndex&, const QModelIndex&)));
         if (!m_GroupModel->getGroups()) {
             qCritical() << "Failed to request group ";
             delete m_GroupModel;
@@ -1364,5 +1386,63 @@ void NotificationManager::undimScreen()
     if (m_pDisplayState
        && m_pDisplayState->get() == MeeGo::QmDisplayState::Off) {
        m_pDisplayState->set(MeeGo::QmDisplayState::On);
+    }
+}
+
+QString NotificationManager::notificationName(const PersonalNotification &notification)
+{
+    qDebug() << Q_FUNC_INFO;
+
+    if (!notification.chatName().isEmpty())
+        return notification.chatName();
+    else
+        return contactName(notification.account(), notification.remoteUid());
+}
+
+void NotificationManager::slotGroupDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
+{
+    qDebug() << Q_FUNC_INFO;
+
+    QSet<NotificationGroup> updatedGroups;
+
+    // Update MUC notifications if MUC topic has changed
+    for (int i = topLeft.row(); i <= bottomRight.row(); i++) {
+        QModelIndex row = m_GroupModel->index(i, 0);
+        CommHistory::Group group = m_GroupModel->group(row);
+        if (group.isValid()) {
+            QString remoteUid = group.remoteUids().first();
+            bool changed = false;
+            QMutableHashIterator<NotificationGroup,PersonalNotification> i(m_Notifications);
+
+            while (i.hasNext()) {
+                i.next();
+                if (i.key().isValid()) {
+                    PersonalNotification pn = i.value();
+
+                    // If notification is for MUC and matches to changed group...
+                    if (!pn.chatName().isEmpty() && pn.targetId() == remoteUid) {
+                        QString newChatName;
+                        if (group.chatName().isEmpty() && pn.chatName() != txt_qtn_msg_group_chat)
+                            newChatName = txt_qtn_msg_group_chat;
+                        else if (group.chatName() != pn.chatName())
+                            newChatName = group.chatName();
+
+                        if (!newChatName.isEmpty()) {
+                            qDebug() << Q_FUNC_INFO << "Changing chat name to" << newChatName;
+                            pn.setChatName(newChatName);
+                            changed = true;
+                            i.setValue(pn);
+                            updatedGroups << i.key();
+                        }
+                    }
+                }
+            }
+
+            if (changed)
+                saveState();
+
+            foreach (NotificationGroup ng, updatedGroups.toList())
+                updateNotificationGroup(ng);
+        }
     }
 }

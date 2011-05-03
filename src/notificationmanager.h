@@ -133,6 +133,8 @@ private Q_SLOTS:
     void slotGroupRemoved(const QModelIndex &index, int start, int end);
     void slotMWICountChanged(int count);
     void slotContactRequestTimeout();
+    void slotGroupDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
+
 private:
 
     NotificationManager( QObject* parent = 0);
@@ -205,6 +207,8 @@ private:
     void removeNotPendingEvents(const NotificationGroup &group);
 
     void clearContactsCache();
+
+    QString notificationName(const PersonalNotification &notification);
 
 private:
     static NotificationManager* m_pInstance;

@@ -76,4 +76,7 @@
 //% "You need to be online to perform this operation"
 #define txt_qtn_pers_offline qtTrId("qtn_pers_offline")
 
+//% "Group chat"
+#define txt_qtn_msg_group_chat qtTrId("qtn_msg_group_chat")
+
 #endif // LOCSTRINGS_H
