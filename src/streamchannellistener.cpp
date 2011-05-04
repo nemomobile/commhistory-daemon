@@ -265,7 +265,7 @@ void StreamChannelListener::invalidated(Tp::DBusProxy *proxy,
         m_Event.setStartTime(QDateTime::currentDateTime());
 
     if (!m_CallEnded)
-        m_Event.setEndTime(m_Event.startTime());
+        m_Event.setEndTime(QDateTime::currentDateTime());
 
     // catch connection manager crashes and other weird events
     // FIXME: this may not cover all cases(?). Error.Cancelled usually

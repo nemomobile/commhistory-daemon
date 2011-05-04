@@ -109,14 +109,16 @@ void Ut_StreamChannelListener::cleanup()
 void Ut_StreamChannelListener::invalidated_data()
 {
     QTest::addColumn<bool>("waitReady");
-    //TODO: invalidate in call
-    QTest::newRow("waitReady") << true;
-    QTest::newRow("invalidateBeforeReady") << false;
+    QTest::addColumn<bool>("startCall");
+    QTest::newRow("waitReady") << true << false;
+    QTest::newRow("invalidateBeforeReady") << false << false;
+    QTest::newRow("invalidateAfterCallStart") << true << true;
 }
 
 void Ut_StreamChannelListener::invalidated()
 {
     QFETCH(bool, waitReady);
+    QFETCH(bool, startCall);
 
     NotificationManager *nm = NotificationManager::instance();
     QVERIFY(nm);
@@ -148,6 +150,21 @@ void Ut_StreamChannelListener::invalidated()
     if (waitReady)
         QCoreApplication::processEvents();
 
+    if (startCall) {
+        // add contact
+        Tp::ContactPtr self(new Tp::Contact());
+        self->ut_setHandle(1);
+        Tp::Channel::GroupMemberChangeDetails details(self,
+                                                      Tp::ChannelGroupChangeReasonNone);
+
+        ch->ut_emitGroupMembersChanged(Tp::Contacts() << self,
+                                       Tp::Contacts(),
+                                       Tp::Contacts(),
+                                       Tp::Contacts(),
+                                       details);
+        justWait(2000);
+    }
+
     QSignalSpy closed(&scl, SIGNAL(channelClosed(ChannelListener*)));
     ch->ut_invalidate(TELEPATHY_ERROR_TERMINATED, QString());
 
@@ -163,7 +180,11 @@ void Ut_StreamChannelListener::invalidated()
     CommHistory::Event e = model.event(model.index(0,0));
     QCOMPARE(e.localUid(), ACCOUNT_PATH);
     QCOMPARE(e.remoteUid(), NUMBER);
-    QVERIFY(startTime.toTime_t() <= e.startTime().toTime_t());
+    if (startCall) {
+        QVERIFY(startTime.toTime_t() < e.endTime().toTime_t());
+    } else {
+        QVERIFY(startTime.toTime_t() <= e.startTime().toTime_t());
+    }
     QVERIFY(e.isMissedCall());
     QCOMPARE(e.direction(), CommHistory::Event::Inbound);
 
