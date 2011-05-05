@@ -1805,21 +1805,21 @@ void TextChannelListener::slotGroupMembersChanged(
 
                 if (contact == m_Channel->groupSelfContact()) {
 
-                    qDebug() << "YOU've' been banned/kicked by" << details.actor()->id();
-                    sendGroupChatEvent(txt_qtn_msg_group_chat_you_removed(details.actor()->id()));
+                    qDebug() << "YOU've' been banned/kicked by" << details.actor()->alias();
+                    sendGroupChatEvent(txt_qtn_msg_group_chat_you_removed(details.actor()->alias()));
                 }
                 else {
 
-                    qDebug() << contact->id() << "has been banned/kicked by" << details.actor()->id();
-                    sendGroupChatEvent(txt_qtn_msg_group_chat_person_removed(contact->id(), details.actor()->id()));
+                    qDebug() << contact->alias() << "has been banned/kicked by" << details.actor()->alias();
+                    sendGroupChatEvent(txt_qtn_msg_group_chat_person_removed(contact->alias(), details.actor()->alias()));
                 }
             }
 
             // otherwise fall back to normal _leave_
             else {
 
-                qDebug() << contact->id() << "has left the channel";
-                sendGroupChatEvent(txt_qtn_msg_group_chat_remote_left(contact->id()));
+                qDebug() << contact->alias() << "has left the channel";
+                sendGroupChatEvent(txt_qtn_msg_group_chat_remote_left(contact->alias()));
             }
         }
     }
@@ -1843,8 +1843,8 @@ void TextChannelListener::slotGroupMembersChanged(
             // should be shown instead (by messaging-ui)
             if (contact != m_Channel->groupSelfContact()) {
 
-                qDebug() << contact->id() << "joined";
-                sendGroupChatEvent(txt_qtn_msg_group_chat_remote_joined(contact->id()));
+                qDebug() << contact->alias() << "joined";
+                sendGroupChatEvent(txt_qtn_msg_group_chat_remote_joined(contact->alias()));
             }
         }
     }
