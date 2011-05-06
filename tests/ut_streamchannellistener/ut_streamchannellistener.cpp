@@ -151,17 +151,30 @@ void Ut_StreamChannelListener::invalidated()
         QCoreApplication::processEvents();
 
     if (startCall) {
+        // add streams
+        Tp::StreamedMediaChannelPtr::dynamicCast(ch)->ut_addStream();
+        Tp::StreamedMediaChannelPtr::dynamicCast(ch)->ut_streams().first()->ut_setLocalPendingState(Tp::StreamedMediaStream::SendingStateSending);
+
+        // add contact
         // add contact
         Tp::ContactPtr self(new Tp::Contact());
         self->ut_setHandle(1);
-        Tp::Channel::GroupMemberChangeDetails details(self,
+        Tp::ContactPtr target(new Tp::Contact());
+        target->ut_setHandle(TARGET_HANDLE);
+        target->ut_setId(NUMBER);
+
+        ch->ut_setGroupSelfContact(self);
+        ch->ut_setGroupContacts(Tp::Contacts() << target << self);
+
+        Tp::Channel::GroupMemberChangeDetails details(target,
                                                       Tp::ChannelGroupChangeReasonNone);
 
-        ch->ut_emitGroupMembersChanged(Tp::Contacts() << self,
+        ch->ut_emitGroupMembersChanged(Tp::Contacts() << target,
                                        Tp::Contacts(),
                                        Tp::Contacts(),
                                        Tp::Contacts(),
                                        details);
+
         justWait(2000);
     }
 
@@ -180,15 +193,19 @@ void Ut_StreamChannelListener::invalidated()
     CommHistory::Event e = model.event(model.index(0,0));
     QCOMPARE(e.localUid(), ACCOUNT_PATH);
     QCOMPARE(e.remoteUid(), NUMBER);
+
     if (startCall) {
         QVERIFY(startTime.toTime_t() < e.endTime().toTime_t());
     } else {
-        QVERIFY(startTime.toTime_t() <= e.startTime().toTime_t());
+        QVERIFY(startTime.toTime_t() == e.startTime().toTime_t());
     }
-    QVERIFY(e.isMissedCall());
+    if (startCall)
+        QVERIFY(!e.isMissedCall());
+    else {
+        QVERIFY(e.isMissedCall());
+        QCOMPARE(nm->postedNotifications.size(), 1);
+    }
     QCOMPARE(e.direction(), CommHistory::Event::Inbound);
-
-    QCOMPARE(nm->postedNotifications.size(), 1);
 }
 
 void Ut_StreamChannelListener::normalCall_data()
@@ -339,6 +356,8 @@ void Ut_StreamChannelListener::normalCall()
 
     if (accept)
         QVERIFY(e.endTime().toTime_t() > e.startTime().toTime_t());
+    else
+        QCOMPARE(e.endTime().toTime_t(), e.startTime().toTime_t());
 
     if (incoming)
         QCOMPARE(e.direction(), CommHistory::Event::Inbound);

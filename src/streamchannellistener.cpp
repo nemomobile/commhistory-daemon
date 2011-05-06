@@ -266,8 +266,14 @@ void StreamChannelListener::invalidated(Tp::DBusProxy *proxy,
     if (!m_Event.startTime().isValid())
         m_Event.setStartTime(currentTime);
 
-    if (!m_CallEnded)
-        m_Event.setEndTime(currentTime);
+    if (!m_CallEnded) {
+        if (m_CallStarted)
+            // call started but aborted in the middle
+            m_Event.setEndTime(currentTime);
+        else
+            // not started (and ended) call should have 0 duration
+            m_Event.setEndTime(m_Event.startTime());
+    }
 
     // catch connection manager crashes and other weird events
     // FIXME: this may not cover all cases(?). Error.Cancelled usually
