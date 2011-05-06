@@ -60,6 +60,7 @@ public:
 
     ReferencedHandles handle() const;
     QString id() const;
+    QString alias() const;
 
     Presence presence() const;
 
@@ -68,6 +69,7 @@ Q_SIGNALS:
 
 public: // ut
     void ut_setId(const QString& id);
+    void ut_setAlias(const QString& alias);
     void ut_setHandle(const ReferencedHandles& handles);
     void ut_setHandle(uint handle);
     void ut_setPresence(const Presence& presence);

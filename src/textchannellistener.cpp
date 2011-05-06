@@ -1657,6 +1657,7 @@ void TextChannelListener::channelReady()
 
             Tp::Features features;
             features << Tp::Contact::FeatureSimplePresence;
+            features << Tp::Contact::FeatureAlias;
 
             Tp::PendingContacts* pendingContacts = contactManager->contactsForHandles(handles,
                                                                                       features);
@@ -1811,7 +1812,7 @@ void TextChannelListener::slotGroupMembersChanged(
                 else {
 
                     qDebug() << contact->alias() << "has been banned/kicked by" << details.actor()->alias();
-                    sendGroupChatEvent(txt_qtn_msg_group_chat_person_removed(contact->alias(), details.actor()->alias()));
+                    sendGroupChatEvent(txt_qtn_msg_group_chat_person_removed(details.actor()->alias(), contact->alias()));
                 }
             }
 
@@ -1828,6 +1829,7 @@ void TextChannelListener::slotGroupMembersChanged(
 
         Tp::Features features;
         features << Tp::Contact::FeatureSimplePresence;
+        features << Tp::Contact::FeatureAlias;
 
         Tp::PendingContacts *pc = m_Channel->connection()->contactManager()->upgradeContacts(
             QList<Tp::ContactPtr>::fromSet(groupMembersAdded), features);

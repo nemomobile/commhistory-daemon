@@ -17,6 +17,7 @@ namespace Tp
 struct Contact::Private
 {
     QString m_id;
+    QString m_alias;
     ReferencedHandles m_referencedHandles;
     Presence m_presence;
 };
@@ -40,6 +41,14 @@ QString Contact::id() const
     return mPriv->m_id;
 }
 
+QString Contact::alias() const
+{
+    if (mPriv->m_alias.isEmpty())
+        return mPriv->m_id;
+    else
+        return mPriv->m_alias;
+}
+
 
 Presence Contact::presence() const
 {
@@ -49,6 +58,11 @@ Presence Contact::presence() const
 void Contact::ut_setId(const QString& id)
 {
     mPriv->m_id = id;
+}
+
+void Contact::ut_setAlias(const QString& alias)
+{
+    mPriv->m_alias = alias;
 }
 
 void Contact::ut_setHandle(const ReferencedHandles& handles)
