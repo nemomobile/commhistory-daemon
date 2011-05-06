@@ -1366,7 +1366,7 @@ void TextChannelListener::updateGroupChatName(ChangedChannelProperty changedChan
                             // TODO: can contact have more than one handle in this case???
                             QList<uint> handles = contact->handle().toList();
                             if ( handles.first() == m_ChannelSubjectContactHandle )
-                                remoteId = contact->id();
+                                remoteId = contact->alias();
                         }
                     }
                 }
