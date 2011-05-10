@@ -1447,7 +1447,7 @@ QString TextChannelListener::fetchContactLabelFromVCard(const QString &vcard)
 
     QBuffer input;
     input.open(QBuffer::ReadWrite);
-    input.write(vcard.toAscii());
+    input.write(vcard.toUtf8().data());
     input.seek(0);
 
     // Parse the input into QVersitDocument(s)
@@ -1499,7 +1499,7 @@ bool TextChannelListener::storeVCard(const QString & vcard, QString & name)
     QDir dir(dir_name);
 
     if (!dir.exists()) {
-        if (!dir.mkpath(COMMHISTORYD_VCARDSDIR)) {
+        if (!dir.mkpath(dir_name)) {
             qWarning() << "Could not create vcard directory.";
             return false;
         }
