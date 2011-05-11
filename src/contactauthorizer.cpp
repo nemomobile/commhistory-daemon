@@ -60,7 +60,7 @@ using namespace RTComLogger;
 ContactAuthorizer::ContactAuthorizer(const Tp::ConnectionPtr& connection,
                                      const Tp::AccountPtr& account,
                                      QObject *parent) :
-    QObject(parent), m_connection(connection), m_account(account)
+    QObject(parent), m_connection(connection), m_account(account), m_requestTapped(false)
 {
     qDebug() << Q_FUNC_INFO;
 
@@ -424,6 +424,11 @@ void ContactAuthorizer::slotShowAuthorizationDialog(const QString& contactId,
 {
     Q_UNUSED(unused)
 
+    if (!m_requestTapped)
+        m_requestTapped = true;
+    else
+        return;
+
     qDebug() << Q_FUNC_INFO;
     qDebug() << Q_FUNC_INFO << m_account->objectPath() << "   " << accountPath;
     qDebug() << Q_FUNC_INFO << "contact id: " << contactId;
@@ -505,6 +510,8 @@ void ContactAuthorizer::slotDialogDismissed(const QString& dialogId, int result)
         default:
             m_ongoingRequest = Request();
         }
+
+        m_requestTapped = false;
     }
 }
 

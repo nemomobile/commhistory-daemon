@@ -129,6 +129,8 @@ private:
     AuthRequests m_authRequestWaitingForAvatar;
     // request that is handled at the moment
     Request m_ongoingRequest;
+
+    bool m_requestTapped;
 };
 
 } // namespace RTComLogger
