@@ -23,21 +23,19 @@ AccountOperationsObserver::AccountOperationsObserver(Tp::AccountManagerPtr accou
                 SIGNAL(finished(Tp::PendingOperation *)),
                 SLOT(slotAccountManagerReady(Tp::PendingOperation *)));
         } else {
-            qDebug() << Q_FUNC_INFO << "Account manager is ready.";
+            qDebug() << Q_FUNC_INFO << "Account manager is already ready.";
+            connectToAccounts();
         }
+    } else {
+        qWarning() << "Account manager is null!";
     }
 
     qDebug() << Q_FUNC_INFO << "END";
 }
 
-void AccountOperationsObserver::slotAccountManagerReady(Tp::PendingOperation *op)
+void AccountOperationsObserver::connectToAccounts()
 {
     qDebug() << Q_FUNC_INFO << "START";
-
-    if (op->isError()) {
-        qWarning() << "Account manager cannot become ready:" << op->errorName() << "-" << op->errorMessage();
-        return;
-    }
 
     // First of all we must connect to listen removed()-signals of the accounts created in the future:
     connect(m_AccountManager.data(),
@@ -49,6 +47,22 @@ void AccountOperationsObserver::slotAccountManagerReady(Tp::PendingOperation *op
     foreach(const Tp::AccountPtr &account, m_AccountManager->allAccounts()) {
         slotConnectToRemovalSignal(account);
     }
+
+    qDebug() << Q_FUNC_INFO << "END";
+}
+
+// S L O T S
+
+void AccountOperationsObserver::slotAccountManagerReady(Tp::PendingOperation *op)
+{
+    qDebug() << Q_FUNC_INFO << "START";
+
+    if (op->isError()) {
+        qWarning() << "Account manager cannot become ready:" << op->errorName() << "-" << op->errorMessage();
+        return;
+    }
+
+    connectToAccounts();
 
     qDebug() << Q_FUNC_INFO << "END";
 }
@@ -168,6 +182,7 @@ void AccountOperationsObserver::slotDeleteCalls()
      }
 
     foreach(int callId, callsToBeDeleted) {
+        // No deleteEvents implemented, so calling deleteEvent for every event to be removed:
         if (!m_pCallModel->deleteEvent(callId)) {
             qWarning() << "Error while deleting call " << callId;
         }
