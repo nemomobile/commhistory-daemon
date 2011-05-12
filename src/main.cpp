@@ -34,6 +34,7 @@
 #include "messagereviver.h"
 #include "contactauthorizationlistener.h"
 #include "connectionutils.h"
+#include "accountoperationsobserver.h"
 
 using namespace RTComLogger;
 
@@ -136,6 +137,7 @@ int main(int argc, char **argv)
     qDebug() << "Service created";
 
     ConnectionUtils *utils = new ConnectionUtils(&app);
+
     new ContactAuthorizationListener(utils, service);
 
     new Logger(utils->accountManager(), &app);
@@ -143,6 +145,9 @@ int main(int argc, char **argv)
 
     NotificationManager::instance();
     qDebug() << "NotificationManager created";
+
+    // Init account operations observer to monitor account removals and to react to them.
+    new AccountOperationsObserver(utils->accountManager(), &app);
 
     new MessageReviver(utils, &app);
     qDebug() << "Message reviver created, starting main loop";
