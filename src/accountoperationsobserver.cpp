@@ -101,6 +101,8 @@ void AccountOperationsObserver::slotAccountRemoved()
 
         if (!m_pCallModel) {
             m_pCallModel = new CommHistory::CallModel(this);
+            m_pCallModel->enableContactChanges(false);
+            m_pCallModel->setPropertyMask(CommHistory::Event::PropertySet() << CommHistory::Event::LocalUid);
             m_pCallModel->getEvents();
         }
 
@@ -164,27 +166,26 @@ void AccountOperationsObserver::slotDeleteCalls()
 {
     qDebug() << Q_FUNC_INFO << "START";
 
-    QList<int> callsToBeDeleted;
+    QList<CommHistory::Event> callsToBeDeleted;
 
     foreach (QString accountPath, m_accountPathsForCalls) {
         for (int i=0;i<m_pCallModel->rowCount();i++) {
             QModelIndex index = m_pCallModel->index(i,0);
             if (index.isValid()) {
                 CommHistory::Event callEvent = m_pCallModel->event(index);
-                int callEventId = callEvent.id();
                 QString localId = callEvent.localUid();
                 if (localId == accountPath) {
-                    qDebug() << Q_FUNC_INFO << "Call " << callEventId << " to be deleted";
-                    callsToBeDeleted.append(callEventId);
+                    qDebug() << Q_FUNC_INFO << "Call " << callEvent.id() << " to be deleted";
+                    callsToBeDeleted.append(callEvent);
                 }
             }
         }
      }
 
-    foreach(int callId, callsToBeDeleted) {
+    foreach(CommHistory::Event callEvent, callsToBeDeleted) {
         // No deleteEvents implemented, so calling deleteEvent for every event to be removed:
-        if (!m_pCallModel->deleteEvent(callId)) {
-            qWarning() << "Error while deleting call " << callId;
+        if (!m_pCallModel->deleteEvent(callEvent)) {
+            qWarning() << "Error while deleting call " << callEvent.id();
         }
      }
 
