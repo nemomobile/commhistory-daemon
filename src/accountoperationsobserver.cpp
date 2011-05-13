@@ -102,7 +102,9 @@ void AccountOperationsObserver::slotAccountRemoved()
         if (!m_pCallModel) {
             m_pCallModel = new CommHistory::CallModel(this);
             m_pCallModel->enableContactChanges(false);
-            m_pCallModel->setPropertyMask(CommHistory::Event::PropertySet() << CommHistory::Event::LocalUid);
+            m_pCallModel->setPropertyMask(CommHistory::Event::PropertySet()
+                                          << CommHistory::Event::Type
+                                          << CommHistory::Event::LocalUid);
             m_pCallModel->getEvents();
         }
 
