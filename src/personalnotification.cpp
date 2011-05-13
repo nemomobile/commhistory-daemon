@@ -163,13 +163,18 @@ void PersonalNotification::setChatName(const QString& chatName)
 
 bool PersonalNotification::operator == (const PersonalNotification& other) const
 {
-    if(remoteUid() == other.remoteUid()
-       && eventType() == other.eventType()
+    if(eventType() == other.eventType()
        && targetId() == other.targetId()
        && chatType() == other.chatType()
-       && account() == other.account()
-       && chatName() == other.chatName()) {
-        return true;
+       && account() == other.account()) {
+
+        // With MUC notifications compare chatNames, with other type of
+        // notifications compare remoteUids.
+        if ((!chatName().isEmpty() && chatName() == other.chatName())
+            || (chatName().isEmpty() && remoteUid() == other.remoteUid())) {
+
+            return true;
+        }
     }
     return false;
 }
