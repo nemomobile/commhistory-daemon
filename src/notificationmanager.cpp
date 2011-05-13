@@ -514,7 +514,7 @@ void NotificationManager::addNotification(PersonalNotification notification)
 void NotificationManager::resolveEvents()
 {
     while(!m_unresolvedEvents.isEmpty()) {
-        PersonalNotification notification = m_unresolvedEvents.head();
+        PersonalNotification &notification = m_unresolvedEvents.head();
 
         TpContactUid cuid(notification.account(), notification.remoteUid());
 
