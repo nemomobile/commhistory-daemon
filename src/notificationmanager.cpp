@@ -730,10 +730,9 @@ QString NotificationManager::createActionCallHistory()
 
 QString NotificationManager::createActionVoicemail()
 {
-    // todo: implement when sapi for voicemail calling is ready
-    return MRemoteAction(CALL_SERVICE_NAME,
-                         CALL_OBJECT_PATH,
-                         CALL_INTERFACE,
+    return MRemoteAction(CALL_HISTORY_SERVICE_NAME,
+                         VOICEMAIL_OBJECT_PATH,
+                         VOICEMAIL_INTERFACE,
                          VOICEMAIL_METHOD).toString();
 }
 

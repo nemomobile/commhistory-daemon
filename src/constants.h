@@ -37,7 +37,6 @@ namespace RTComLogger {
 #define COMM_HISTORY_SERVICE_NAME    QLatin1String("com.nokia.CommHistory")
 #define COMM_HISTORY_OBJECT_PATH     QLatin1String("/com/nokia/CommHistory")
 #define COMM_HISTORY_INTERFACE       QLatin1String("com.nokia.CommHistoryIf")
-#define ACTIVATE_NOTIFICATION_METHOD QLatin1String("activateNotification")
 
 #define MESSAGING_SERVICE_NAME    QLatin1String("com.nokia.Messaging")
 #define MESSAGING_INTERFACE       QLatin1String("com.nokia.MessagingIf")
@@ -50,11 +49,9 @@ namespace RTComLogger {
 #define CALL_HISTORY_METHOD       QLatin1String("launch")
 #define CALL_HISTORY_PARAMETER    QLatin1String("callHistory")
 
-#define CALL_SERVICE_NAME QLatin1String("Com.Nokia.Telephony.CallUi")
-#define CALL_INTERFACE    QLatin1String("Com.Nokia.Telephony.CallUi")
-#define CALL_OBJECT_PATH  QLatin1String("/Call")
-#define CALL_METHOD       QLatin1String("RequestCall")
-#define VOICEMAIL_METHOD  QLatin1String("CallVoicemail")
+#define VOICEMAIL_INTERFACE    QLatin1String("com.nokia.telephony.callhistory")
+#define VOICEMAIL_OBJECT_PATH  QLatin1String("/callhistory")
+#define VOICEMAIL_METHOD  QLatin1String("voicemail")
 
 #define CSD_SIM_SERVICE_NAME       QLatin1String("com.nokia.csd.SIM")
 #define CSD_SIM_OBJECT_PATH        QLatin1String("/com/nokia/csd/sim")
