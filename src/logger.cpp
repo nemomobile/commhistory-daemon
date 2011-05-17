@@ -51,31 +51,13 @@ Logger::Logger(const Tp::AccountManagerPtr &accountManager,
 
     m_Registrar = ClientRegistrar::create(accountManager);
 
-    ChannelClassList channelFilters;
-    QMap<QString, QDBusVariant> textFilter, mediaFilter;
-    // Registering Text channel observer
-    textFilter.insert(QLatin1String(TELEPATHY_INTERFACE_CHANNEL ".ChannelType"),
-                  QDBusVariant(TELEPATHY_INTERFACE_CHANNEL_TYPE_TEXT));
-    textFilter.insert(QLatin1String(TELEPATHY_INTERFACE_CHANNEL ".TargetHandleType"),
-                  QDBusVariant(Tp::HandleTypeNone));
-    textFilter.insert(QLatin1String(TELEPATHY_INTERFACE_CHANNEL ".ChannelType"),
-                  QDBusVariant(TELEPATHY_INTERFACE_CHANNEL_TYPE_TEXT));
-    textFilter.insert(QLatin1String(TELEPATHY_INTERFACE_CHANNEL ".TargetHandleType"),
-                  QDBusVariant(Tp::HandleTypeContact));
-    textFilter.insert(QLatin1String(TELEPATHY_INTERFACE_CHANNEL ".ChannelType"),
-                  QDBusVariant(TELEPATHY_INTERFACE_CHANNEL_TYPE_TEXT));
-    textFilter.insert(QLatin1String(TELEPATHY_INTERFACE_CHANNEL ".TargetHandleType"),
-                  QDBusVariant(Tp::HandleTypeRoom));
-    channelFilters.append(textFilter);
+    ChannelClassSpecList channelFilters;
+    channelFilters << ChannelClassSpec::textChat()
+                   << ChannelClassSpec::textChatroom()
+                   << ChannelClassSpec::unnamedTextChat()
+                   << ChannelClassSpec::streamedMediaCall();
 
-    // Registering Media channel observer
-    mediaFilter.insert(QLatin1String(TELEPATHY_INTERFACE_CHANNEL ".ChannelType"),
-                  QDBusVariant(TELEPATHY_INTERFACE_CHANNEL_TYPE_STREAMED_MEDIA));
-    mediaFilter.insert(QLatin1String(TELEPATHY_INTERFACE_CHANNEL ".TargetHandleType"),
-                  QDBusVariant(Tp::HandleTypeContact));
-    channelFilters.append(mediaFilter);
-
-    LoggerClientObserver* observer = new LoggerClientObserver( ChannelClassSpecList(channelFilters), this );
+    LoggerClientObserver* observer = new LoggerClientObserver(channelFilters, this );
     bool registered = m_Registrar->registerClient(
       AbstractClientPtr::dynamicCast(SharedPtr<LoggerClientObserver>(observer)),
       COMMHISTORY_CHANNEL_OBSERVER);
