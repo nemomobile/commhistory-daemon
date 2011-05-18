@@ -838,6 +838,8 @@ void Ut_TextChannelListener::groups()
         QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
         QVERIFY(waitSignal(eventCommitted, 5000));
 
+        QTest::qWait(100); //let group model in tcl to handle eventsAdded
+
         QVERIFY(tcl.m_Group.isValid());
         QCOMPARE(tcl.m_Group.localUid(), SMS_ACCOUNT_PATH);
         QCOMPARE(tcl.m_Group.remoteUids().first(), SMS_NUMBER);
@@ -881,6 +883,8 @@ void Ut_TextChannelListener::groups()
 
         QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
         QVERIFY(waitSignal(eventCommitted, 5000));
+
+        QTest::qWait(100); //let group model in tcl to handle eventsAdded
 
         QVERIFY(tcl.m_Group.isValid());
         QCOMPARE(tcl.m_Group.localUid(), SMS_ACCOUNT_PATH);
