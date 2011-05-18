@@ -69,7 +69,9 @@ HEADERS += logger.h \
            contactauthorizer.h \
            mwilistener.h \
            constants.h \
-           accountoperationsobserver.h
+           accountoperationsobserver.h \
+           accountspecificcallmodel_p.h \
+           accountspecificcallmodel.h
 
 SOURCES += main.cpp \
            logger.cpp \
@@ -88,7 +90,8 @@ SOURCES += main.cpp \
            contactauthorizationlistener.cpp \
            contactauthorizer.cpp \
            mwilistener.cpp \
-           accountoperationsobserver.cpp
+           accountoperationsobserver.cpp \
+           accountspecificcallmodel.cpp
 
 # -----------------------------------------------------------------------------
 # Telepathy extensions.
