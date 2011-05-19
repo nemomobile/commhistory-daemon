@@ -78,11 +78,8 @@ private Q_SLOTS:
      * Deletes all calls of the account added into the list of removed accounts
      * in slotAccountRemoved().
      *
-     * \param accountPath Path of the account that was removed. If this is empty then it indicates
-     *                    that this slot was called as a result for AccountSpecificCallModel being
-     *                    ready,
      */
-    void slotDeleteCalls(QString accountPath = QString());
+    void slotDeleteCalls();
     /*!
      * \brief Slot getting called when a row is deleted from AccountSpecificCallModel.
      *

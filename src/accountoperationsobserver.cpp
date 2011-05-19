@@ -92,19 +92,27 @@ void AccountOperationsObserver::slotAccountRemoved()
         /* Store paths of removed accounts into lists so that if call and/or group models are not
            yet ready while more accounts are being removed then all of those removed accounts
            are really handled. */
-        if (!m_accountPathsForConvs.contains(accountPath))
-            m_accountPathsForConvs.append(accountPath);
+        m_accountPathsForConvs.append(accountPath);
 
-        AccountSpecificCallModel *callModel = 0;
+        AccountSpecificCallModel *callModel = new AccountSpecificCallModel(this);
+        callModel->setPropertyMask(CommHistory::Event::PropertySet()
+                                   << CommHistory::Event::Type
+                                   << CommHistory::Event::LocalUid);
 
-        if (!m_accountPathsForCalls.contains(accountPath)) {
-            callModel = new AccountSpecificCallModel(this);
-            callModel->setPropertyMask(CommHistory::Event::PropertySet()
-                                       << CommHistory::Event::Type
-                                       << CommHistory::Event::LocalUid);
-            callModel->getEvents(accountPath);
-            m_accountPathsForCalls.insert(accountPath, callModel);
-        }
+        connect(callModel,
+                SIGNAL(modelReady(bool)),
+                this,
+                SLOT(slotDeleteCalls()),
+                Qt::UniqueConnection);
+
+        connect(callModel,
+                SIGNAL(rowsRemoved(const QModelIndex&,int,int)),
+                this,
+                SLOT(slotRowsRemoved(const QModelIndex&,int,int)),
+                Qt::UniqueConnection);
+
+        callModel->getEvents(accountPath);
+        m_accountPathsForCalls.insert(accountPath, callModel);
 
         if (!m_pGroupModel) {
             // Notification manager already has a group model so using that instead of creating a separate one:
@@ -119,20 +127,6 @@ void AccountOperationsObserver::slotAccountRemoved()
                     Qt::UniqueConnection);
         } else {
             slotDeleteConversations();
-        }
-
-        if (callModel && !callModel->isReady()) {
-            connect(callModel,
-                    SIGNAL(modelReady(bool)),
-                    this,
-                    SLOT(slotDeleteCalls()),
-                    Qt::UniqueConnection);
-            connect(callModel,
-                    SIGNAL(rowsRemoved(const QModelIndex&,int,int)),
-                    this,
-                    SLOT(slotRowsRemoved(const QModelIndex&,int,int)));
-        } else {
-            slotDeleteCalls(accountPath);
         }
     }
 
@@ -174,30 +168,16 @@ void AccountOperationsObserver::slotDeleteConversations()
     qDebug() << Q_FUNC_INFO << "END";
 }
 
-void AccountOperationsObserver::slotDeleteCalls(QString accountPath)
+void AccountOperationsObserver::slotDeleteCalls()
 {
     qDebug() << Q_FUNC_INFO << "START";
 
-    QString keyAccountPath = accountPath;
-
-    AccountSpecificCallModel *callModel = 0;
-
-    if (keyAccountPath.isEmpty()) {
-        // This is the case when model got ready and signaled it:
-        callModel = qobject_cast<AccountSpecificCallModel *>(sender());
-        keyAccountPath = m_accountPathsForCalls.key(callModel);
-    } else {
-        // This is the case when model was ready in the first place and this slot was called
-        // as a usual method call. In that case we need to get the model out from QHash using account path key.
-        callModel = m_accountPathsForCalls.value(accountPath);
-    }
+    AccountSpecificCallModel *callModel = qobject_cast<AccountSpecificCallModel *>(sender());
 
     if (!callModel) {
         qWarning() << "Null AccountSpecificCallModel!";
         return;
     }
-
-    qDebug() << Q_FUNC_INFO << "Deleting calls of account " << accountPath;
 
     QList<CommHistory::Event> callsToBeDeleted;
 
@@ -218,8 +198,9 @@ void AccountOperationsObserver::slotDeleteCalls(QString accountPath)
      }
 
     if (callsToBeDeleted.isEmpty()) {
-        qDebug() << Q_FUNC_INFO << "No calls to be deleted for this account. We can delete the AccountSpecificCallModel.";
-        delete m_accountPathsForCalls.take(accountPath);
+        QString accountPath = m_accountPathsForCalls.key(callModel);
+        qDebug() << Q_FUNC_INFO << "No calls to be deleted for " << accountPath << ". We can delete the AccountSpecificCallModel.";
+        m_accountPathsForCalls.take(accountPath)->deleteLater();
     }
 
     qDebug() << Q_FUNC_INFO << "END";
@@ -241,7 +222,7 @@ void AccountOperationsObserver::slotRowsRemoved(const QModelIndex& index, int st
     if (callModel->rowCount() == 0) {
         qDebug() << Q_FUNC_INFO << "Last event in AccountSpecificCallModel deleted. We can delete the model.";
         QString accountPath = m_accountPathsForCalls.key(callModel);
-        delete m_accountPathsForCalls.take(accountPath);
+        m_accountPathsForCalls.take(accountPath)->deleteLater();
     }
 
     qDebug() << Q_FUNC_INFO << "END";
