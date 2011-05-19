@@ -197,7 +197,7 @@ void Ut_StreamChannelListener::invalidated()
     if (startCall) {
         QVERIFY(startTime.toTime_t() < e.endTime().toTime_t());
     } else {
-        QVERIFY(startTime.toTime_t() == e.startTime().toTime_t());
+        QVERIFY(e.startTime().toTime_t() - startTime.toTime_t() <= 1);
     }
     if (startCall)
         QVERIFY(!e.isMissedCall());
