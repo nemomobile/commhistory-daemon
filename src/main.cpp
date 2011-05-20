@@ -35,6 +35,7 @@
 #include "contactauthorizationlistener.h"
 #include "connectionutils.h"
 #include "accountoperationsobserver.h"
+#include "olddatadeleter.h"
 
 using namespace RTComLogger;
 
@@ -148,6 +149,8 @@ int main(int argc, char **argv)
 
     // Init account operations observer to monitor account removals and to react to them.
     new AccountOperationsObserver(utils->accountManager(), &app);
+
+    new OldDataDeleter(&app);
 
     new MessageReviver(utils, &app);
     qDebug() << "Message reviver created, starting main loop";

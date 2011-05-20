@@ -62,6 +62,13 @@ public:
      */
     bool getEvents(QString accountPath);
 
+    /*!
+     * \brief Resets model and fetch call events created earlier than given date.
+     *
+     * \param date Model is populated with calls created before this date.
+     * \return true if successful; false, otherwise.
+     */
+    bool getEvents(QDateTime date);
 
 private:
     Q_DECLARE_PRIVATE(AccountSpecificCallModel);

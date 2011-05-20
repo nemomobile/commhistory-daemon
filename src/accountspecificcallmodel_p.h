@@ -44,6 +44,7 @@ public:
 
 public:
     QString filterAccountPath;
+    QDateTime filterReferenceDate;
 };
 
 }

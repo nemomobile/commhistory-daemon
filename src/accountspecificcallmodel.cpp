@@ -35,6 +35,7 @@ using namespace CommHistory;
 AccountSpecificCallModelPrivate::AccountSpecificCallModelPrivate(EventModel *model)
         : EventModelPrivate(model)
         , filterAccountPath(QString())
+        , filterReferenceDate(QDateTime())
 {
 }
 
@@ -47,6 +48,9 @@ bool AccountSpecificCallModelPrivate::acceptsEvent(const Event &event) const
         return false;
 
     if (!filterAccountPath.isEmpty() && event.localUid() != filterAccountPath)
+        return false;
+
+    if (!filterReferenceDate.isNull() && event.startTime() < filterReferenceDate)
         return false;
 
     return true;
@@ -84,6 +88,28 @@ bool AccountSpecificCallModel::getEvents(QString accountPath)
                                            "UNION "
                                            "{%2 nmo:from [nco:hasContactMedium <telepathy:%1>]}"))
                      .arg(accountPath))
+                     .variable(Event::Id);
+
+    return d->executeQuery(query);
+}
+
+bool AccountSpecificCallModel::getEvents(QDateTime date)
+{
+    Q_D(AccountSpecificCallModel);
+
+    qDebug() << __PRETTY_FUNCTION__ << "Getting call events older than: " << date.toString("hh:mm:ss dd-MM-yyyy");
+
+    d->filterReferenceDate = date;
+
+    reset();
+    d->clearEvents();
+
+    qDebug() << __PRETTY_FUNCTION__ << "Date to compare in database: " << date.toUTC().toString(Qt::ISODate);
+
+    EventsQuery query(d->propertyMask);
+    query.addPattern(QLatin1String("%1 a nmo:Call .")).variable(Event::Id);
+    query.addPattern(QString(QLatin1String("FILTER (nmo:sentDate(%2) <= \"%1Z\"^^xsd:dateTime)"))
+                     .arg(date.toUTC().toString(Qt::ISODate)))
                      .variable(Event::Id);
 
     return d->executeQuery(query);

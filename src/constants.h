@@ -81,6 +81,14 @@ namespace RTComLogger {
 #define CONTACT_REQUEST_THRESHOLD 5000
 // give up on contact fetch request
 #define CONTACT_REQUEST_TIMEROUT 3000
+/* Clean up check -period for old calls as DAYS.
+   Note: this cannot be > 24 days, because then the int value given for QTimer::setInterval(int)
+   will go out of int range. */
+#define CLEANUP_PERIOD_DAYS 7
+// First clean up after boot in ms.
+#define BOOT_CLEANUP_MS 3600000
+// This amount of days is counted back to determine how old calls should be deleted.
+#define REMOVAL_TARGET_DAYS -90
 
 // events
 struct EventTypes {

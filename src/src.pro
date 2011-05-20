@@ -71,7 +71,8 @@ HEADERS += logger.h \
            constants.h \
            accountoperationsobserver.h \
            accountspecificcallmodel_p.h \
-           accountspecificcallmodel.h
+           accountspecificcallmodel.h \
+           olddatadeleter.h
 
 SOURCES += main.cpp \
            logger.cpp \
@@ -91,7 +92,8 @@ SOURCES += main.cpp \
            contactauthorizer.cpp \
            mwilistener.cpp \
            accountoperationsobserver.cpp \
-           accountspecificcallmodel.cpp
+           accountspecificcallmodel.cpp \
+           olddatadeleter.cpp
 
 # -----------------------------------------------------------------------------
 # Telepathy extensions.
