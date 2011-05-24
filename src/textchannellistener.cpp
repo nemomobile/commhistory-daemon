@@ -125,14 +125,28 @@ namespace {
 
 static CommHistory::Event::PropertySet deliveryHandlingProperties = CommHistory::Event::PropertySet()
                                                  << CommHistory::Event::Id
+                                                 << CommHistory::Event::Type
+                                                 << CommHistory::Event::StartTime
+                                                 << CommHistory::Event::EndTime
                                                  << CommHistory::Event::Direction
+                                                 << CommHistory::Event::IsRead
                                                  << CommHistory::Event::Status
                                                  << CommHistory::Event::LocalUid
                                                  << CommHistory::Event::RemoteUid
                                                  << CommHistory::Event::GroupId
                                                  << CommHistory::Event::MessageToken
+                                                 << CommHistory::Event::Subject
+                                                 << CommHistory::Event::FreeText
+                                                 << CommHistory::Event::FromVCardFileName
+                                                 << CommHistory::Event::FromVCardLabel
+                                                 << CommHistory::Event::ContentLocation
+                                                 << CommHistory::Event::MessageParts
                                                  << CommHistory::Event::ReportDelivery
-                                                 << CommHistory::Event::MmsId;
+                                                 << CommHistory::Event::ReadStatus
+                                                 << CommHistory::Event::ReportReadRequested
+                                                 << CommHistory::Event::MmsId
+                                                 << CommHistory::Event::ReportRead;
+
 
 bool isVoicemail(const Tp::MessagePart &header)
 {
