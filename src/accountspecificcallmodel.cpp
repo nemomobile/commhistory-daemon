@@ -50,7 +50,7 @@ bool AccountSpecificCallModelPrivate::acceptsEvent(const Event &event) const
     if (!filterAccountPath.isEmpty() && event.localUid() != filterAccountPath)
         return false;
 
-    if (!filterReferenceDate.isNull() && event.startTime() < filterReferenceDate)
+    if (!filterReferenceDate.isNull() && event.startTime() > filterReferenceDate)
         return false;
 
     return true;
@@ -108,7 +108,7 @@ bool AccountSpecificCallModel::getEvents(QDateTime date)
 
     EventsQuery query(d->propertyMask);
     query.addPattern(QLatin1String("%1 a nmo:Call .")).variable(Event::Id);
-    query.addPattern(QString(QLatin1String("FILTER (nmo:sentDate(%2) <= \"%1Z\"^^xsd:dateTime)"))
+    query.addPattern(QString(QLatin1String("FILTER (nmo:sentDate(%2) <= \"%1\"^^xsd:dateTime)"))
                      .arg(date.toUTC().toString(Qt::ISODate)))
                      .variable(Event::Id);
 

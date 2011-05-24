@@ -44,9 +44,7 @@ OldDataDeleter::OldDataDeleter(QObject *parent)
 
 OldDataDeleter::~OldDataDeleter()
 {
-    qDebug() << Q_FUNC_INFO << "START";
-    m_pCleanUpTimer->stop();
-    qDebug() << Q_FUNC_INFO << "END";
+    qDebug() << Q_FUNC_INFO;
 }
 
 void OldDataDeleter::slotCleanUp()
