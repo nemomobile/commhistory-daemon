@@ -30,6 +30,13 @@ void TextChannel::acknowledge(const QList<ReceivedMessage> &messages)
     }
 }
 
+void TextChannel::forget(const QList<ReceivedMessage> &messages)
+{
+    foreach(ReceivedMessage msg, messages) {
+        mPriv->m_messageQueue.removeOne(msg);
+    }
+}
+
 void TextChannel::ut_setMessageQueue(const QList<ReceivedMessage>& receivedMessages)
 {
     mPriv->m_messageQueue = receivedMessages;

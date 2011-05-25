@@ -201,6 +201,8 @@ private:
     uint m_ChannelSubjectContactHandle;
     QString m_PersistentId;
 
+    // internal copy of message queue
+    QList<Tp::ReceivedMessage> m_messageQueue;
     // messageToken -> messageRequest map
     // used when looking up event when handling delivery report
     QHash<QString, CommHistory::SingleEventModel*> m_pendingEvents;

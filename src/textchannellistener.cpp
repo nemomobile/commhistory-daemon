@@ -575,7 +575,7 @@ void TextChannelListener::handleMessages()
     QList<CommHistory::Event> scrollbackEvents;
     QList<CommHistory::Event> addEvents;
     QHash<int, QList<CommHistory::Event> > modifyEvents; // separate list for each group
-    QList<Tp::ReceivedMessage> ackMessages;
+    QList<Tp::ReceivedMessage> processedMessages;
     QList<Tp::ReceivedMessage> addMessages;
     QHash<int, QList<Tp::ReceivedMessage> > modifyMessages;
     // expunge tokens for committing events
@@ -589,7 +589,13 @@ void TextChannelListener::handleMessages()
         return;
     }
 
-    foreach(Tp::ReceivedMessage message, textChannel->messageQueue()) {
+    m_messageQueue << textChannel->messageQueue();
+    Tp::TextChannelPtr textChannelPtr = Tp::TextChannelPtr::dynamicCast(m_Channel);
+    if(!textChannelPtr.isNull()) {
+        textChannelPtr->forget(textChannel->messageQueue());
+    }
+
+    foreach(Tp::ReceivedMessage message, m_messageQueue) {
         CommHistory::Event event;
         Tp::ChannelTextMessageType type = message.messageType();
         bool wait = false;
@@ -623,10 +629,11 @@ void TextChannelListener::handleMessages()
                     // and we don't need to expung this delivery report cause
                     // tp-ring do it automatically if the status is accepted
                 }
+
                 break;
             case DeliveryHandlingFailed:
                 expungeMessage(message.messageToken());
-                ackMessages << message;
+                processedMessages << message;
                 break;
             case DeliveryHandlingPending:
                 wait = true;
@@ -675,7 +682,7 @@ void TextChannelListener::handleMessages()
                 // just ack message, expunge would be called
                 // as soon as user reads message
                 qDebug() << __FUNCTION__ << "Adding class 0 sms";
-                ackMessages << message;
+                processedMessages << message;
                 classZeroSMSModel()->addEvent(event,true);
               // Normal sms
             } else {
@@ -714,7 +721,7 @@ void TextChannelListener::handleMessages()
                 // TODO skype voicemail support
             }
             expungeMessage(message.messageToken());
-            ackMessages << message;
+            processedMessages << message;
             break;
         }
         default:
@@ -728,7 +735,7 @@ void TextChannelListener::handleMessages()
 
     if (!scrollbackEvents.isEmpty()) {
         if (eventModel().addEvents(scrollbackEvents, true)) {
-            ackMessages << addMessages;
+            processedMessages << addMessages;
         } else {
             qWarning() << "Adding events failed";
         }
@@ -736,7 +743,7 @@ void TextChannelListener::handleMessages()
 
     if (!addEvents.isEmpty()) {
         if (eventModel().addEvents(addEvents)) {
-            ackMessages << addMessages;
+            processedMessages << addMessages;
             foreach (CommHistory::Event e, addEvents)
                 m_EventTokens.insertMulti(e.id(), e.messageToken());
         } else {
@@ -749,7 +756,7 @@ void TextChannelListener::handleMessages()
         for (i = modifyEvents.begin(); i != modifyEvents.end(); ++i) {
             CommHistory::Group group = getGroupById(i.key());
             if (group.isValid() && eventModel().modifyEventsInGroup(i.value(), group)) {
-                ackMessages << modifyMessages[i.key()];
+                processedMessages << modifyMessages[i.key()];
                 m_EventTokens += modifyTokens[i.key()];
             } else {
                 qWarning() << "Modify events failed for group" << i.key();
@@ -757,11 +764,8 @@ void TextChannelListener::handleMessages()
         }
     }
 
-    // TODO: only notifications and delivery reports should be acked,
-    // channel handler shoudl ack normal messages
-    Tp::TextChannelPtr textChannelPtr = Tp::TextChannelPtr::dynamicCast(m_Channel);
-    if(!textChannelPtr.isNull()) {
-        textChannelPtr->acknowledge(ackMessages);
+    foreach (Tp::ReceivedMessage message, processedMessages) {
+        m_messageQueue.removeOne(message);
     }
 }
 

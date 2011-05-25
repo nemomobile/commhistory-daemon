@@ -51,6 +51,7 @@ public:
 
 public Q_SLOTS:
     void acknowledge(const QList<ReceivedMessage> &messages);
+    void forget(const QList<ReceivedMessage> &messages);
 
 Q_SIGNALS:
     // FeatureMessageSentSignal
