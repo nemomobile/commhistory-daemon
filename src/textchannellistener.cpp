@@ -145,7 +145,8 @@ static CommHistory::Event::PropertySet deliveryHandlingProperties = CommHistory:
                                                  << CommHistory::Event::ReadStatus
                                                  << CommHistory::Event::ReportReadRequested
                                                  << CommHistory::Event::MmsId
-                                                 << CommHistory::Event::ReportRead;
+                                                 << CommHistory::Event::ReportRead
+                                                 << CommHistory::Event::ParentId;
 
 
 bool isVoicemail(const Tp::MessagePart &header)
