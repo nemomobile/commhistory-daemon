@@ -1503,7 +1503,8 @@ QString TextChannelListener::fetchVCardFromMessage(const Tp::MessagePartList &pa
     for (int i = 0; i < parts.size (); ++i) {
         Tp::MessagePart part = parts.at(i);
         if (part.value(PART_CONTENT_TYPE).variant() == VCARD_CONTENT_TYPE) {
-            return part.value(PART_CONTENT).variant().toString();
+            // very very important: vcard content is a UTF-8 encoded QByteArray
+            return QString::fromUtf8(part.value(PART_CONTENT).variant().toByteArray());
         }
     }
 
