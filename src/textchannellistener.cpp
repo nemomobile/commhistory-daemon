@@ -1366,7 +1366,10 @@ void TextChannelListener::updateGroupChatName(ChangedChannelProperty changedChan
             if ( m_GroupModel )
             {
                 // Group is already in tracker:
-                if(!m_GroupModel->modifyGroup(m_Group)) {
+                CommHistory::Group modGroup;
+                modGroup.setId(m_Group.id());
+                modGroup.setChatName(m_Group.chatName());
+                if(!m_GroupModel->modifyGroup(modGroup)) {
                     qCritical() << "failed to modify group into tracker";
                 }
 
