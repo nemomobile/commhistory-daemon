@@ -100,6 +100,9 @@ void StreamChannelListener::callStarted()
 {
     qDebug() << Q_FUNC_INFO;
 
+    if (m_CallStarted)
+        return;
+
     m_CallStarted = true;
     m_CallEnded = false;
     m_Event.setStartTime(QDateTime::currentDateTime());
