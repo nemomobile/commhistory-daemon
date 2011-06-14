@@ -69,7 +69,7 @@ namespace RTComLogger {
 #define MMS_ACCOUNT_PATH  QLatin1String("/org/freedesktop/Telepathy/Account/mmscm/mms/mms0")
 #define MAP_MMS_TO_RING(x) ((x) == MMS_ACCOUNT_PATH ? RING_ACCOUNT_PATH : (x))
 
-#define CONTACT_SEPARATOR_IN_NOTIFICATION_GROUP QLatin1String(",")
+#define CONTACT_SEPARATOR_IN_NOTIFICATION_GROUP QLatin1String(", ")
 
 #define TELEPATHY_CHANNEL_INTERFACE_PERSISTENT_ID QLatin1String("com.nokia.Telepathy.Channel.Interface.Persistent.PersistentID")
 
