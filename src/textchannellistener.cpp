@@ -1031,6 +1031,19 @@ void TextChannelListener::slotSingleModelReady(bool status)
     tryToClose();
 }
 
+bool TextChannelListener::areRemotePartiesOffline()
+{
+    bool offline = true;
+    QHashIterator<QString,Presence> presenceIt(m_PresenceStatuses);
+    while (presenceIt.hasNext()) {
+        if (presenceIt.next().value().first != Tp::Presence::offline().status()) {
+            offline = false;
+            break;
+        }
+    }
+    return offline;
+}
+
 void TextChannelListener::handleMessageFailed(const Tp::ReceivedMessage &message,
                                               const CommHistory::Event &event)
 {
@@ -1081,8 +1094,7 @@ void TextChannelListener::handleMessageFailed(const Tp::ReceivedMessage &message
             }
             // offline chatting
             else if (event.type() == CommHistory::Event::IMEvent
-                     && m_TpContactPresenceStatus == Tp::Presence::offline().status()) {
-
+                     && areRemotePartiesOffline()) {
                 errorMsgToUser = txt_qtn_msg_general_does_not_support_offline;
             }
 
@@ -1316,9 +1328,14 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
     }
 
     if (event.type() == CommHistory::Event::IMEvent
-        && m_TpContactPresenceStatus == Tp::Presence::offline().status()
+        && areRemotePartiesOffline()
         && m_ShowOfflineChatError) {
-        showErrorNote(txt_qtn_msg_general_supports_offline);
+        if (!m_IsGroupChat) {
+            showErrorNote(txt_qtn_msg_general_supports_offline);
+        } else {
+            // TODO: use logical id here when it is created!
+            showErrorNote("All participants are currently offline!");
+        }
         m_ShowOfflineChatError = false;
     }
 }
@@ -1558,24 +1575,26 @@ bool TextChannelListener::storeVCard(const QString & vcard, QString & name)
 
 void TextChannelListener::slotPresenceChanged(const Tp::Presence &presence)
 {
-    // if online status changed
-    if (m_TpContactPresenceStatus != presence.status()) {
-        // save new status
-        m_TpContactPresenceStatus = presence.status();
-        // re-enable showing offline chatting error messages
-        m_ShowOfflineChatError = true;
-    }
-
-    // if only presence status changed, but status message didnt => do nothing
-    if (m_TpContactStatusMessage == presence.statusMessage()) {
-        return;
-    }
+    qDebug() << Q_FUNC_INFO;
 
     Tp::Contact *contact = qobject_cast<Tp::Contact *>(sender());
     if (!contact) {
         qWarning() << Q_FUNC_INFO << ": invalid contact";
         return;
     }
+
+    Presence oldPresenceValues = m_PresenceStatuses.value(contact->id());
+    m_PresenceStatuses.insert(contact->id(),Presence(presence.status(), presence.statusMessage()));
+
+    /* If offline chat error has already been shown and presence status changed
+       and we have at least one participant online after this status change
+       then offline chat error is allowed to be shown next time: */
+    if (!m_ShowOfflineChatError && (oldPresenceValues.first != presence.status()) && !areRemotePartiesOffline())
+        m_ShowOfflineChatError = true;
+
+    // Status message did not change, do not send status message event.
+    if (oldPresenceValues.second == presence.statusMessage())
+        return;
 
     QString remoteId;
     uint handle = contact->handle().first();
@@ -1584,17 +1603,17 @@ void TextChannelListener::slotPresenceChanged(const Tp::Presence &presence)
     else
         remoteId = contact->id();
 
-    // otherwise save new status message and proceed...
-    m_TpContactStatusMessage = presence.statusMessage();
+    QString newStatusMessage = m_PresenceStatuses.value(contact->id()).second;
 
-    if (!m_TpContactStatusMessage.isEmpty() && groupId() != -1) {
+    if (!newStatusMessage.isEmpty() && groupId() != -1) {
+        qDebug() << Q_FUNC_INFO << "Preparing status message event.";
         CommHistory::Event event;
         event.setType(CommHistory::Event::StatusMessageEvent);
         event.setDirection(CommHistory::Event::Inbound);
         event.setRemoteUid(remoteId);
         event.setGroupId(groupId());
         event.setLocalUid(m_Account->objectPath());
-        event.setFreeText(m_TpContactStatusMessage);
+        event.setFreeText(newStatusMessage);
         event.setStartTime(QDateTime::currentDateTime());
         event.setEndTime(QDateTime::currentDateTime());
         event.setIsRead(true);
@@ -1758,9 +1777,10 @@ void TextChannelListener::slotContactsReady(Tp::PendingOperation* operation)
 
         for ( int i = 0; i < contacts.count(); i++ )
         {
-            // initialise presence value for p2p chat
-            if(!contacts.value(i).isNull() && !m_IsGroupChat) {
-                m_TpContactPresenceStatus = contacts.value(i)->presence().status();
+            // initialise presence values:
+            if(!contacts.value(i).isNull()) {
+                m_PresenceStatuses.insert(contacts.value(i)->id(),Presence(contacts.value(i)->presence().status(),
+                                          contacts.value(i)->presence().statusMessage()));
             }
 
             connect(contacts.value(i).data(),
@@ -1811,6 +1831,8 @@ void TextChannelListener::slotGroupMembersChanged(
         const Tp::Contacts &groupMembersRemoved,
         const Tp::Channel::GroupMemberChangeDetails &details)
 {
+    qDebug() << Q_FUNC_INFO;
+
     Q_UNUSED(groupLocalPendingMembersAdded);
     Q_UNUSED(groupRemotePendingMembersAdded);
 
@@ -1836,6 +1858,7 @@ void TextChannelListener::slotGroupMembersChanged(
 
                     qDebug() << contact->alias() << "has been banned/kicked by" << details.actor()->alias();
                     sendGroupChatEvent(txt_qtn_msg_group_chat_person_removed(details.actor()->alias(), contact->alias()));
+                    m_PresenceStatuses.remove(contact->id());
                 }
             }
 
@@ -1844,6 +1867,7 @@ void TextChannelListener::slotGroupMembersChanged(
 
                 qDebug() << contact->alias() << "has left the channel";
                 sendGroupChatEvent(txt_qtn_msg_group_chat_remote_left(contact->alias()));
+                m_PresenceStatuses.remove(contact->id());
             }
         }
     }

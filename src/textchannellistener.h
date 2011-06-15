@@ -164,7 +164,11 @@ private:
 
     bool pendingCommit(const QString &messageToken);
 
+    bool areRemotePartiesOffline();
+
 private:
+
+    typedef QPair<QString,QString> Presence;
 
     // TODO: only for 1-1 chat, should be fixed later
     Tp::ContactPtr m_TargetContact;
@@ -192,6 +196,7 @@ private:
     Tp::HandleIdentifierMap m_HandleOwnerNames;
     Tp::Client::PropertiesInterfaceInterface *m_PropertiesIf;
     QHash<QString, Tp::PropertySpec> m_Properties;
+    QHash<QString,Presence> m_PresenceStatuses;
 
     bool m_IsGroupChat;
     uint m_GroupHandleType;
