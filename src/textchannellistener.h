@@ -186,8 +186,6 @@ private:
     QMultiHash<int, QString> m_EventTokens;
 
     bool m_ShowOfflineChatError;
-    QString m_TpContactStatusMessage;
-    QString m_TpContactPresenceStatus;
 
     // indicates that channel contains class0 messages
     bool m_isClassZeroSMS;

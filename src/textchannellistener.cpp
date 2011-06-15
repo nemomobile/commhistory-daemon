@@ -1064,8 +1064,6 @@ void TextChannelListener::handleMessageFailed(const Tp::ReceivedMessage &message
                  << "dbus error:"    << dbusError
                  << "error message:" << errorMessage;
 
-        qDebug() << "contact presence status:" << m_TpContactPresenceStatus;
-
         // dont show notes for perm. failed mms messages
         if(event.type() == CommHistory::Event::MMSEvent &&
            status == Tp::DeliveryStatusPermanentlyFailed) {
