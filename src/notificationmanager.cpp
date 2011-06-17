@@ -253,11 +253,6 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
 {
     qDebug() << Q_FUNC_INFO << event.id() << channelTargetId << chatType;
 
-    if (event.type() == CommHistory::Event::SMSEvent ||
-       event.type() == CommHistory::Event::MMSEvent) {
-        undimScreen();
-    }
-
     bool observed = isCurrentlyObservedByUI(event, channelTargetId, chatType);
     if (!event.isRead() && !observed) {
         // Get MUC topic from group
@@ -296,9 +291,11 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
             requestContact(cuid);
         else
             resolveEvents();
-    } else if (observed
-               && event.direction() == Event::Inbound) {
 
+        if (event.type() == CommHistory::Event::SMSEvent ||
+            event.type() == CommHistory::Event::MMSEvent) {
+            undimScreen();
+        }
     }
 }
 
