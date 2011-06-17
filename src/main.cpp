@@ -43,6 +43,11 @@ namespace {
 
 void messageHandler(QtMsgType type, const char *msg)
 {
+#ifndef QT_DEBUG
+    if (!(type == QtCriticalMsg || type == QtFatalMsg))
+        return;
+#endif
+
     const char *logLevel = "";
     int priority = LOG_DEBUG;
 
@@ -102,15 +107,17 @@ int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
 
-#ifdef QT_DEBUG
     int logOption = LOG_NDELAY;
 
+#ifdef QT_DEBUG
     if (app.arguments().contains(QLatin1String("-log-console")))
         logOption |= LOG_PERROR;
+#endif
+
     openlog("COMMHISTORYD", logOption, 0);
 
     qInstallMsgHandler(messageHandler);
-#endif
+
     qDebug() << "MApplication created";
 
     if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sigtermFd))
