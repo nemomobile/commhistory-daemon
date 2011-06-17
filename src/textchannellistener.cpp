@@ -1437,6 +1437,11 @@ void TextChannelListener::slotEventsCommitted(QList<CommHistory::Event> events, 
 {
     qDebug() << Q_FUNC_INFO << status;
 
+    if (!status) {
+        qCritical() << "Failed to save message";
+        emit savingFailed(m_Connection);
+    }
+
     bool removed = false;
     foreach (CommHistory::Event e, events) {
         if (m_EventTokens.contains(e.id())) {

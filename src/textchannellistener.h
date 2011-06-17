@@ -68,6 +68,12 @@ public:
 
     virtual ~TextChannelListener();
 
+Q_SIGNALS:
+    /*!
+     * \brief emitted when message saving fails
+     */
+    void savingFailed(const Tp::ConnectionPtr& connection);
+
 private Q_SLOTS:
     void slotMessageReceived(const Tp::ReceivedMessage &message);
     void slotMessageSent(const Tp::Message &message,

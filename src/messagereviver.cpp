@@ -40,10 +40,10 @@ MessageReviver::MessageReviver(ConnectionUtils *connectionUtils,
 {
     connect(connectionUtils,
             SIGNAL(connectionReady(Tp::ConnectionPtr)),
-            SLOT(onConnectionReady(Tp::ConnectionPtr)));
+            SLOT(checkConnection(Tp::ConnectionPtr)));
 }
 
-void MessageReviver::onConnectionReady(const Tp::ConnectionPtr& connection)
+void MessageReviver::checkConnection(const Tp::ConnectionPtr& connection)
 {
     if (!connection.isNull()
         && connection->isValid()

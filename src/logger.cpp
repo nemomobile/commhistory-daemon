@@ -33,6 +33,7 @@
 #include "textchannellistener.h"
 #include "streamchannellistener.h"
 #include "loggerclientobserver.h"
+#include "messagereviver.h"
 
 #define COMMHISTORY_CHANNEL_OBSERVER QLatin1String("CommHistory")
 
@@ -40,8 +41,9 @@ using namespace RTComLogger;
 using namespace Tp;
 
 Logger::Logger(const Tp::AccountManagerPtr &accountManager,
+               MessageReviver *reviver,
                QObject *parent)
-    : QObject(parent)
+    : QObject(parent), m_Reviver(reviver)
 {
     Tp::registerTypes();
 #ifdef QT_DEBUG
@@ -94,6 +96,8 @@ void Logger::createChannelListener(const QString &channelType,
     ChannelListener* listener = 0;
     if( channelType == QLatin1String(TELEPATHY_INTERFACE_CHANNEL_TYPE_TEXT) ) {
         listener = new TextChannelListener(account, channel, context, this);
+        connect(listener, SIGNAL(savingFailed(const Tp::ConnectionPtr&)),
+                m_Reviver, SLOT(checkConnection(const Tp::ConnectionPtr&)));
     } else if ( channelType == QLatin1String(TELEPATHY_INTERFACE_CHANNEL_TYPE_STREAMED_MEDIA) ) {
         listener = new StreamChannelListener(account, channel, context, this);
     }

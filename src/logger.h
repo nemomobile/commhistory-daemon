@@ -29,6 +29,7 @@
 namespace RTComLogger {
 
 class ChannelListener;
+class MessageReviver;
 
 /*!
  * \class Logger
@@ -40,7 +41,9 @@ class Logger : public QObject
     Q_OBJECT
 
 public:
-    explicit Logger(const Tp::AccountManagerPtr &accountManager, QObject *parent = 0);
+    explicit Logger(const Tp::AccountManagerPtr &accountManager,
+                    MessageReviver *reviver,
+                    QObject *parent = 0);
     ~Logger();
 
     /*!
@@ -63,6 +66,7 @@ public Q_SLOTS:
 private:
     QStringList m_Channels;
     Tp::ClientRegistrarPtr m_Registrar;
+    MessageReviver *m_Reviver;
 };
 
 } // namespace RTComLogger

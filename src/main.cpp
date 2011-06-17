@@ -148,7 +148,12 @@ int main(int argc, char **argv)
 
     new ContactAuthorizationListener(utils, service);
 
-    new Logger(utils->accountManager(), &app);
+    MessageReviver *reviver = new MessageReviver(utils, &app);
+    qDebug() << "Message reviver created, starting main loop";
+
+    new Logger(utils->accountManager(),
+               reviver,
+               &app);
     qDebug() << "Logger created";
 
     NotificationManager::instance();
@@ -158,9 +163,6 @@ int main(int argc, char **argv)
     new AccountOperationsObserver(utils->accountManager(), &app);
 
     new OldDataDeleter(&app);
-
-    new MessageReviver(utils, &app);
-    qDebug() << "Message reviver created, starting main loop";
 
     int result = app.exec();
 

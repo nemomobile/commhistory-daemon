@@ -48,8 +48,10 @@ public:
     explicit MessageReviver(ConnectionUtils *connectionUtils,
                             QObject *parent = NULL);
 
+public Q_SLOTS:
+    void checkConnection(const Tp::ConnectionPtr& connection);
+
 private Q_SLOTS:
-    void onConnectionReady(const Tp::ConnectionPtr& connection);
     void onGetStoredMessages(QDBusPendingCallWatcher *call);
 private:
     void updateTokens(const QStringList &tokens, Tp::ConnectionPtr &connection);
