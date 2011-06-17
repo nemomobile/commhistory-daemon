@@ -33,6 +33,7 @@ using namespace RTComLogger;
 using namespace CommHistory;
 
 #define STORED_MESSAGES_CHECK_INTERVAL 30000 //msec
+#define MAX_RETRIES 10
 
 MessageReviver::MessageReviver(ConnectionUtils *connectionUtils,
                                QObject *parent) :
@@ -47,8 +48,10 @@ void MessageReviver::checkConnection(const Tp::ConnectionPtr& connection)
 {
     if (!connection.isNull()
         && connection->isValid()
-        && connection->hasInterface(CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName())) {
+        && connection->hasInterface(CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName())
+        && m_Retries[connection->objectPath()] < MAX_RETRIES) {
         fetchMessages(connection);
+        m_Retries[connection->objectPath()] = m_Retries[connection->objectPath()] + 1;
     }
 }
 

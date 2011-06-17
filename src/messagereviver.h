@@ -66,6 +66,8 @@ protected:
     QHash<int, Tp::ConnectionPtr> m_TimerConnections;
     QHash<QString, QSet<QString> > m_MessageTokens;
 
+    QHash<QString,int> m_Retries;
+
 #ifdef UNIT_TEST
     friend class Ut_MessageReviver;
 #endif
