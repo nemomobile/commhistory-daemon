@@ -70,6 +70,8 @@
 #define txt_qtn_msg_general_supports_offline qtTrId("qtn_msg_general_supports_offline")
 //% "Unable to send message. Contact is offline."
 #define txt_qtn_msg_general_does_not_support_offline qtTrId("qtn_msg_general_does_not_support_offline")
+//% "All participants are offline."
+#define txt_qtn_msg_all_participants_offline qtTrId("qtn_msg_all_participants_offline")
 
 //% "Authorization request %1"
 #define txt_qtn_pers_authorization_req qtTrId("qtn_pers_authorization_req")

@@ -1331,8 +1331,7 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
         if (!m_IsGroupChat) {
             showErrorNote(txt_qtn_msg_general_supports_offline);
         } else {
-            // TODO: use logical id here when it is created!
-            showErrorNote("All participants are currently offline!");
+            showErrorNote(txt_qtn_msg_all_participants_offline);
         }
         m_ShowOfflineChatError = false;
     }
