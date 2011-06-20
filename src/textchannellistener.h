@@ -101,6 +101,7 @@ private Q_SLOTS:
     void slotGetPropertiesFinished(QDBusPendingCallWatcher *watcher);
     void slotExpungeMessages();
     void slotSingleModelReady(bool status);
+    void slotSaveFailedEvents();
 
 private:
 
@@ -224,6 +225,10 @@ private:
     // added events but not committed yet, delivery report will
     // not be handled unitl the event committed
     QSet<QString> m_commitingEvents;
+
+    //handle failed save messages
+    uint m_FailedSaveCount;
+    QList<CommHistory::Event> m_failedSaveEvents;
 
 #ifdef UNIT_TEST
     friend class Ut_TextChannelListener;

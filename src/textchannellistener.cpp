@@ -118,6 +118,9 @@
 #define CHANNEL_PROPERTY_SUBJECT QLatin1String("subject")
 #define CHANNEL_PROPERTY_SUBJECT_CONTACT QLatin1String("subject-contact")
 
+#define MAX_SAVE_ATTEMPTS 3
+#define RESAVE_INTERVAL 5000 //ms
+
 using namespace RTComLogger;
 QTM_USE_NAMESPACE;
 
@@ -211,7 +214,8 @@ TextChannelListener::TextChannelListener(const Tp::AccountPtr &account,
       m_pClassZeroSMSModel(0),
       m_PropertiesIf(0),
       m_IsGroupChat(false),
-      m_channelClosed(false)
+      m_channelClosed(false),
+      m_FailedSaveCount(0)
 {
     qDebug() << __PRETTY_FUNCTION__;
     makeChannelReady(Tp::TextChannel::FeatureMessageQueue
@@ -1437,11 +1441,6 @@ void TextChannelListener::slotEventsCommitted(QList<CommHistory::Event> events, 
 {
     qDebug() << Q_FUNC_INFO << status;
 
-    if (!status) {
-        qCritical() << "Failed to save message";
-        emit savingFailed(m_Connection);
-    }
-
     bool removed = false;
     foreach (CommHistory::Event e, events) {
         if (m_EventTokens.contains(e.id())) {
@@ -1454,11 +1453,37 @@ void TextChannelListener::slotEventsCommitted(QList<CommHistory::Event> events, 
             removed = true;
     }
 
+    if (!status) {
+        qCritical() << "Failed to save message";
+        // try to redeliver incoming messages
+        if (!events.isEmpty()
+            && events.first().direction() == CommHistory::Event::Inbound) {
+            if (m_FailedSaveCount++ < MAX_SAVE_ATTEMPTS) {
+                m_failedSaveEvents << events;
+                QTimer::singleShot(m_FailedSaveCount*RESAVE_INTERVAL,
+                                   this,
+                                   SLOT(slotSaveFailedEvents()));
+            } else {
+               emit savingFailed(m_Connection);
+           }
+        }
+    }
+
     // handle delivery reports pending for event commits
     if (removed)
         handleMessages();
 
     tryToClose();
+}
+
+void TextChannelListener::slotSaveFailedEvents()
+{
+    qDebug() << Q_FUNC_INFO;
+    if (eventModel().addEvents(m_failedSaveEvents)) {
+        foreach (CommHistory::Event e, m_failedSaveEvents)
+            m_EventTokens.insertMulti(e.id(), e.messageToken());
+    }
+    m_failedSaveEvents.clear();
 }
 
 void TextChannelListener::slotExpungeMessages()
@@ -1944,7 +1969,8 @@ bool TextChannelListener::hasPendingOperations() const
              && m_pendingEvents.isEmpty()
              && m_expungeTokens.isEmpty()
              && m_EventTokens.isEmpty()
-             && m_pendingGroups.isEmpty());
+             && m_pendingGroups.isEmpty()
+             && m_failedSaveEvents.isEmpty());
 }
 
 void TextChannelListener::tryToClose()
