@@ -58,6 +58,7 @@ private:
     void fetchMessages(const Tp::ConnectionPtr &connection);
     void timerEvent(QTimerEvent *event);
     void handleMessages(Tp::ConnectionPtr &connection);
+    bool isConnectionHandled(const Tp::ConnectionPtr &connection);
 
 protected:
     // keep connections while fetching stored messages

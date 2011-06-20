@@ -49,10 +49,17 @@ void MessageReviver::checkConnection(const Tp::ConnectionPtr& connection)
     if (!connection.isNull()
         && connection->isValid()
         && connection->hasInterface(CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName())
+        && !isConnectionHandled(connection)
         && m_Retries[connection->objectPath()] < MAX_RETRIES) {
         fetchMessages(connection);
         m_Retries[connection->objectPath()] = m_Retries[connection->objectPath()] + 1;
     }
+}
+
+bool MessageReviver::isConnectionHandled(const Tp::ConnectionPtr &connection)
+{
+    return m_Connections.key(connection) != 0
+           || m_TimerConnections.key(connection) != 0;
 }
 
 void MessageReviver::fetchMessages(const Tp::ConnectionPtr &connection)
