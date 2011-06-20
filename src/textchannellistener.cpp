@@ -1164,7 +1164,7 @@ CommHistory::Event::EventType TextChannelListener::eventType() const
 void TextChannelListener::checkVCard(const Tp::MessagePartList &parts,
                                      CommHistory::Event &event)
 {
-    QString vcard = fetchVCardFromMessage(parts);
+    QByteArray vcard = fetchVCardFromMessage(parts);
     if (!vcard.isEmpty()) {
         QString filename;
         if (storeVCard(vcard, filename)) {
@@ -1476,19 +1476,13 @@ void TextChannelListener::slotExpungeMessages()
     tryToClose();
 }
 
-QString TextChannelListener::fetchContactLabelFromVCard(const QString &vcard)
+QString TextChannelListener::fetchContactLabelFromVCard(const QByteArray &vcard)
 {
     if (vcard.isEmpty())
         return QString();
 
-    QBuffer input;
-    input.open(QBuffer::ReadWrite);
-    input.write(vcard.toUtf8().data());
-    input.seek(0);
-
     // Parse the input into QVersitDocument(s)
-    QVersitReader reader;
-    reader.setDevice(&input);
+    QVersitReader reader(vcard);
     if (reader.startReading()) {
         reader.waitForFinished();
 
@@ -1516,20 +1510,20 @@ QString TextChannelListener::fetchContactLabelFromVCard(const QString &vcard)
     return QString();
 }
 
-QString TextChannelListener::fetchVCardFromMessage(const Tp::MessagePartList &parts)
+QByteArray TextChannelListener::fetchVCardFromMessage(const Tp::MessagePartList &parts)
 {
     for (int i = 0; i < parts.size (); ++i) {
         Tp::MessagePart part = parts.at(i);
         if (part.value(PART_CONTENT_TYPE).variant() == VCARD_CONTENT_TYPE) {
-            // very very important: vcard content is a UTF-8 encoded QByteArray
-            return QString::fromUtf8(part.value(PART_CONTENT).variant().toByteArray());
+            qDebug() << Q_FUNC_INFO << "VCard from message:" << part.value(PART_CONTENT).variant().toByteArray();
+            return part.value(PART_CONTENT).variant().toByteArray();
         }
     }
 
-    return QString();
+    return QByteArray();
 }
 
-bool TextChannelListener::storeVCard(const QString & vcard, QString & name)
+bool TextChannelListener::storeVCard(const QByteArray &vcard, QString &name)
 {
     QUuid uuid;
     QString dir_name = QDir::homePath() + "/"COMMHISTORYD_VCARDSDIR;
@@ -1558,13 +1552,18 @@ bool TextChannelListener::storeVCard(const QString & vcard, QString & name)
     }
 
     QFile file(name);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    if (!file.open(QIODevice::WriteOnly)) {
         qWarning() << "Could not create vcard file:" << name;
+        file.close();
         return false;
     }
 
-    QTextStream out(&file);
-    out << vcard;
+    if (file.write(vcard) < 0) {
+
+        qWarning() << "Could not write vcard data into file:" << name;
+        file.close();
+        return false;
+    }
     file.close();
 
     return true;

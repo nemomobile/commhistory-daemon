@@ -128,9 +128,9 @@ private:
                                CommHistory::Event &event);
 
     void handleMessages();
-    QString fetchContactLabelFromVCard(const QString &vcard);
-    QString fetchVCardFromMessage(const Tp::MessagePartList &parts);
-    bool storeVCard (const QString &vcard, QString &name);
+    QString fetchContactLabelFromVCard(const QByteArray &vcard);
+    QByteArray fetchVCardFromMessage(const Tp::MessagePartList &parts);
+    bool storeVCard (const QByteArray &vcard, QString &name);
     bool checkStoredMessagesIf();
     void expungeMessage(const QString &token);
     void updateGroupChatName(ChangedChannelProperty changedChannelProperty);
