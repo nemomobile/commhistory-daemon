@@ -103,6 +103,7 @@
 #define MMS_MESSAGE_BCC       QLatin1String("message-bcc")
 #define MMS_MESSAGE_TO        QLatin1String("message-to")
 #define MMS_ADDRESS_SEPARATOR QChar(';')
+#define MMS_DEFAULT_FROM      QLatin1String("MMS")
 
 // mms read report
 #define MMS_MESSAGE_ID      QLatin1String("x-mms-message-id")
@@ -670,7 +671,12 @@ void TextChannelListener::handleMessages()
                 event.setId(mmsNotification.id());
                 //notification may have "failed" status, so overwrite it with default value
                 event.setStatus(CommHistory::Event::UnknownStatus);
-                if (mmsNotification.groupId()!=event.groupId()) {
+                if (event.type() == CommHistory::Event::MMSEvent && event.remoteUid() == MMS_DEFAULT_FROM) {
+                    // MMS has no message-from so keep notification's From and group
+                    qDebug() << __FUNCTION__ << "MMS has no From. Copy From and groupId from notification";
+                    event.setRemoteUid(mmsNotification.remoteUid()); // keep
+                    event.setGroupId(mmsNotification.groupId());
+                } else if (mmsNotification.groupId()!=event.groupId()) {
                     //MMS notification and real MMS are from different groups, so we need to update From and move it
                     mmsNotification.setRemoteUid(event.remoteUid());
                     if (!eventModel().moveEvent(mmsNotification, event.groupId())) {
