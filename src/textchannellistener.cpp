@@ -688,6 +688,12 @@ void TextChannelListener::handleMessages()
                 modifyEvents[groupId] << event;
                 modifyMessages[groupId] << message;
 
+                QString token = message.messageToken();
+                if (token.isEmpty())
+                    token = event.messageToken();
+
+                modifyTokens[groupId].insertMulti(event.id(), token);
+
             // class 0 sms
             } else if(m_isClassZeroSMS){
                 // just ack message, expunge would be called
