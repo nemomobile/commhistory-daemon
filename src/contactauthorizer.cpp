@@ -555,6 +555,7 @@ void ContactAuthorizer::slotAuthoriserQueryFinished(QDBusPendingCallWatcher* wat
              watcher->deleteLater();
              Request empty;
              m_ongoingRequest = empty;
+             m_requestTapped = false;
          } else if(reply.isFinished()){
              QDBusConnection::sessionBus().connect(BUDDY_AUTHORIZER_SERVICE_NAME,
                                                    OBJECT_PATH,
