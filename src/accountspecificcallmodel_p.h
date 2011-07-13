@@ -1,9 +1,9 @@
 /******************************************************************************
 **
-** This file is part of libcommhistory.
+** This file is part of commhistory-daemon.
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: Alvi Hirvela <alvi.hirvela@nokia.com>
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
+** Contact: Reto Zingg <reto.zingg@nokia.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
