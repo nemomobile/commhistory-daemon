@@ -1382,53 +1382,77 @@ void TextChannelListener::updateGroupChatName(ChangedChannelProperty changedChan
 
     if (changedChannelProperty == ChannelName)
         m_GroupChatName = m_ChannelName;
+
     else if (changedChannelProperty == ChannelSubject)
         m_GroupChatName = m_ChannelSubject;
 
-    qDebug() << Q_FUNC_INFO << "new group chat name: " << m_GroupChatName;
+    qDebug() << Q_FUNC_INFO << "New group chat name is" << m_GroupChatName;
 
-    if ( m_Group.isValid() )
-    {
-        qDebug() << Q_FUNC_INFO << "current group chat name for this group is " << m_Group.chatName();
+    if (m_Group.isValid()) {
+
+        qDebug() << Q_FUNC_INFO << "Current group chat name for this group is" << m_Group.chatName();
+
         if (m_GroupChatName != m_Group.chatName()) {
+
             qDebug() << Q_FUNC_INFO << "updating group chat name...";
             m_Group.setChatName(m_GroupChatName);
-            if ( m_GroupModel )
-            {
-                // Group is already in tracker:
+
+            if (m_GroupModel) {
+
+                // Group is already in tracker
                 CommHistory::Group modGroup;
                 modGroup.setId(m_Group.id());
                 modGroup.setChatName(m_Group.chatName());
-                if(!m_GroupModel->modifyGroup(modGroup)) {
-                    qCritical() << "failed to modify group into tracker";
-                }
+                if (!m_GroupModel->modifyGroup(modGroup))
+                    qCritical() << "failed to modify group in tracker";
 
                 QString remoteId;
-                // Here we need to figure out who changed the topic:
+                // Here we need to figure out who changed the topic
                 if (m_HandleOwnerNames.contains(m_ChannelSubjectContactHandle))
-                {
                     remoteId = m_HandleOwnerNames.value(m_ChannelSubjectContactHandle);
-                }
+
                 else
-                {
                     foreach (Tp::ContactPtr contact, m_Channel->groupContacts())
-                    {
-                        if (contact != m_Channel->groupSelfContact())
-                        {
+                        if (contact != m_Channel->groupSelfContact()) {
+
                             // TODO: can contact have more than one handle in this case???
                             QList<uint> handles = contact->handle().toList();
-                            if ( handles.first() == m_ChannelSubjectContactHandle )
+                            if (handles.first() == m_ChannelSubjectContactHandle)
                                 remoteId = contact->alias();
                         }
-                    }
+
+
+                qDebug() << Q_FUNC_INFO << "Chat room topic was changed by" << remoteId;
+
+                // Create a temporary CommHistory::Event for showing chat room
+                // topic change to the user in MUI conversation thread
+                QString messageText;
+
+                // if remoteId is empty, then YOU changed the topic
+                if (remoteId.isEmpty()) {
+
+                    // if new chat name is empty, then the topic was removed
+                    if (m_GroupChatName.isEmpty())
+                        messageText = txt_qtn_msg_group_chat_topic_cleared_user;
+
+                    // otherwise a new topic was set
+                    else
+                        messageText = txt_qtn_msg_group_chat_topic_user_changed(m_GroupChatName);
                 }
-                qDebug() << Q_FUNC_INFO << "The participant that changed the chat room topic is " << remoteId;
-                // Create a temporary CommHistory::Event for showing chat room topic change to the user
-                // in MUI conversation thread:
-                sendGroupChatEvent(txt_qtn_msg_group_chat_topic_changed(remoteId, m_GroupChatName));
-            } // if ( m_GroupModel )
-        } // if (newName != m_Group.chatName())
-    } // if ( m_Group.isValid() )
+                // otherwise a remote party
+                else {
+
+                    if (m_GroupChatName.isEmpty())
+                        messageText = txt_qtn_msg_group_chat_topic_cleared(remoteId);
+
+                    else
+                        messageText = txt_qtn_msg_group_chat_topic_changed(remoteId, m_GroupChatName);
+                }
+
+                sendGroupChatEvent(messageText);
+            }
+        }
+    }
 }
 
 void TextChannelListener::sendGroupChatEvent(const QString &message)
@@ -1889,7 +1913,7 @@ void TextChannelListener::slotGroupMembersChanged(
 
                 if (contact == m_Channel->groupSelfContact()) {
 
-                    qDebug() << "YOU've' been banned/kicked by" << details.actor()->alias();
+                    qDebug() << "YOU've been banned/kicked by" << details.actor()->alias();
                     sendGroupChatEvent(txt_qtn_msg_group_chat_you_removed(details.actor()->alias()));
                 }
                 else {

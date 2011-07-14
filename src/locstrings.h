@@ -77,8 +77,16 @@
 #define txt_qtn_msg_group_chat_you_removed(STR) qtTrId("qtn_msg_group_chat_you_removed").arg(STR)
 //% "%1 removed %2 from this chat"
 #define txt_qtn_msg_group_chat_person_removed(STR1,STR2) qtTrId("qtn_msg_group_chat_person_removed").arg(STR1).arg(STR2)
+
 //% "%1 changed room topic to %2"
 #define txt_qtn_msg_group_chat_topic_changed(STR1,STR2) qtTrId("qtn_msg_group_chat_topic_changed").arg(STR1).arg(STR2)
+//% "%1 removed the topic"
+#define txt_qtn_msg_group_chat_topic_cleared(STR) qtTrId("qtn_msg_group_chat_topic_cleared").arg(STR)
+//% "You changed the room topic to %1"
+#define txt_qtn_msg_group_chat_topic_user_changed(STR) qtTrId("qtn_msg_group_chat_topic_user_changed").arg(STR)
+//% "You removed the topic"
+#define txt_qtn_msg_group_chat_topic_cleared_user qtTrId("qtn_msg_group_chat_topic_cleared_user")
+
 
 //% "SMS sending failed to %1"
 #define txt_qtn_msg_error_sms_sending_failed(STR) qtTrId("qtn_msg_error_sms_sending_failed").arg(STR)
