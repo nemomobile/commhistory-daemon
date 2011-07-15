@@ -102,6 +102,8 @@ private Q_SLOTS:
     void slotAuthorizationAccepted(Tp::PendingOperation* operation);
     void slotContactBlocked(Tp::PendingOperation* operation);
     void slotConnectionStatusChanged(Tp::ConnectionStatus connectionStatus);
+    void slotPublishStateChanged(Tp::Contact::PresenceState state,
+                                 const QString &message);
 
 private:
     void listenToAuthorization(const Tp::ConnectionPtr& connection);

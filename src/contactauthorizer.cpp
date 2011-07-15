@@ -144,6 +144,13 @@ void ContactAuthorizer::slotPresencePublicationRequested(const Tp::Contacts &con
         qDebug() << Q_FUNC_INFO << "Publish state for contact " << contact->id() << " is " << state;
         if (state == Tp::Contact::PresenceStateAsk) {
             qDebug() << Q_FUNC_INFO << "Contact " << contact->id() << " has requested an invitation.";
+
+            // listen to the changes in case they are done somewhere else
+            connect(contact.data(),
+                    SIGNAL(publishStateChanged(Tp::Contact::PresenceState,const QString &)),
+                    SLOT(slotPublishStateChanged(Tp::Contact::PresenceState,const QString &)),
+                    Qt::UniqueConnection);
+
             bool notificationExists = false;
             // Invitation requests should not be shown if they already exist as notifications
             foreach (MNotification *n, notifications) {
@@ -175,6 +182,43 @@ void ContactAuthorizer::slotPresencePublicationRequested(const Tp::Contacts &con
     }
 
     fireAuthorisationRequest();
+}
+
+void ContactAuthorizer::slotPublishStateChanged(Tp::Contact::PresenceState state,
+                                                const QString &message)
+{
+    Q_UNUSED(message);
+
+    Tp::Contact *contact = qobject_cast<Tp::Contact*>(sender());
+
+    if (state != Tp::Contact::PresenceStateAsk && contact) {
+        QList<MNotification*> notifications = MNotification::notifications();
+
+        //remove from requests list
+        Request r;
+        r.contact = Tp::ContactPtr(contact);
+
+        m_publishedAuthRequests.removeOne(r);
+        m_authRequests.removeOne(r);
+        m_authRequestWaitingForAvatar.removeOne(r);
+
+        // invalidate current request, does not matter what user select locally, the contact is in or out already
+        if (m_ongoingRequest ==  r)
+            m_ongoingRequest = Request();
+
+        //remove from notifications
+        QString notificationIdentifier = contact->id() + m_account->objectPath();
+        foreach (MNotification *n, notifications) {
+            if (n && notificationIdentifier == n->identifier()) {
+                if (!n->remove()) {
+                    qWarning() << "Failed to remove notification";
+                }
+                break;
+            }
+        }
+
+        qDeleteAll(notifications);
+    }
 }
 
 void ContactAuthorizer::queueAuthorization(const Tp::Contacts contacts,
