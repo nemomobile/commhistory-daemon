@@ -1018,11 +1018,17 @@ void NotificationManager::updateGroup(int eventType,
 {
     MNotificationGroup *group = m_MgtGroups.value(eventType);
     if (group) {
-        group->setSummary(contactName);
-        group->setBody(message);
-        group->setAction(MRemoteAction(action));
-        group->setCount(notificationCount);
-        group->publish();
+        if (group->summary() != contactName ||
+            group->body() != message) {
+
+            group->setSummary(contactName);
+            group->setBody(message);
+            group->setAction(MRemoteAction(action));
+            group->setCount(notificationCount);
+            group->publish();
+        } else {
+            qDebug() << Q_FUNC_INFO << "Suppressing unneccessary notification update";
+        }
     } else {
         qWarning() << Q_FUNC_INFO << "No group for event type" << eventType;
     }
