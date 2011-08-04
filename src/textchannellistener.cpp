@@ -885,9 +885,14 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
         return DeliveryHandlingPending;
     }
 
+    // get status
+    QVariant status = header.value(DELIVERY_STATUS).variant();
+
     bool messageFound = false;
     if (!deliveryToken.isEmpty() || !mmsId.isEmpty()) {
-        result = getEventForToken(deliveryToken, mmsId, m_Group.id(), event);
+        //use only delivery-token when status is "accepted"
+        QString mmsIdForRequest = (status.isValid() && status.value<int>() == Tp::DeliveryStatusAccepted) ? QString() : mmsId;
+        result = getEventForToken(deliveryToken, mmsIdForRequest, m_Group.id(), event);
         if (result != DeliveryHandlingResolved)
             return result;
         else
@@ -927,8 +932,6 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
 
     qDebug() << "[DELIVERY] Event match: id:" << event.id()
              << "token:" << event.messageToken() << "mmsId:" << event.mmsId();
-    // get status
-    QVariant status = header.value(DELIVERY_STATUS).variant();
 
     // If variant is not valid, then we cant update status
     if (!status.isValid())
