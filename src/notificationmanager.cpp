@@ -968,8 +968,14 @@ QString NotificationManager::contactName(const QString &localUid,
             result = contact.displayLabel();
         }
 
-        if (result.isEmpty())
-            result = remoteUid;
+        if (result.isEmpty()) {
+            if (normalizePhoneNumber(remoteUid).isEmpty()) {
+                result = remoteUid;
+            } else {
+                MLocale locale;
+                result = locale.toLocalizedNumbers(remoteUid);
+            }
+        }
     }
 
     qDebug() << Q_FUNC_INFO << localUid << remoteUid << result;
