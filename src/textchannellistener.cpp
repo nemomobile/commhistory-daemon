@@ -701,6 +701,7 @@ void TextChannelListener::handleMessages()
                 qDebug() << __FUNCTION__ << "Adding class 0 sms";
                 processedMessages << message;
                 classZeroSMSModel()->addEvent(event,true);
+                m_EventTokens.insertMulti(event.id(), event.messageToken());
               // Normal sms
             } else {
                 if (message.isScrollback()) {
@@ -1713,6 +1714,7 @@ void TextChannelListener::slotClassZeroSMSRemoved(const QModelIndex& index,
         if (event.isValid() && !event.messageToken().isEmpty()) {
             qDebug() << "Expunged message: " << event.messageToken();
             expungeMessage(event.messageToken());
+            m_EventTokens.remove(event.id(), event.messageToken());
         }
     }
 }
