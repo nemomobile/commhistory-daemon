@@ -354,7 +354,11 @@ void NotificationManager::removeNotifications(const QString &accountPath)
         if (i.key().isValid() &&
             MAP_MMS_TO_RING(i.value().account()) == accountPath) {
 
+            // record notification group id
             updatedGroups.insert(i.key());
+            // no need to resolve events anymore -> remove personal notification from queue
+            m_unresolvedEvents.removeAll(i.value());
+            // at last, delete _i_
             i.remove();
         }
     }
