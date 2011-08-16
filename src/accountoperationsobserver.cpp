@@ -52,6 +52,12 @@ AccountOperationsObserver::AccountOperationsObserver(Tp::AccountManagerPtr accou
         qWarning() << "Account manager is null!";
     }
 
+    connect(this,
+            SIGNAL(removeAccountNotifications(QString)),
+            NotificationManager::instance(),
+            SLOT(removeNotifications(QString)),
+            Qt::UniqueConnection);
+
     qDebug() << Q_FUNC_INFO << "END";
 }
 
@@ -62,12 +68,12 @@ void AccountOperationsObserver::connectToAccounts()
     // First of all we must connect to listen removed()-signals of the accounts created in the future:
     connect(m_AccountManager.data(),
         SIGNAL(newAccount(const Tp::AccountPtr &)),
-        SLOT(slotConnectToRemovalSignal(const Tp::AccountPtr &)),
+        SLOT(slotConnectToSignals(const Tp::AccountPtr &)),
         Qt::UniqueConnection);
 
     // Connect to listen removal of accounts that already exist:
     foreach(const Tp::AccountPtr &account, m_AccountManager->allAccounts()) {
-        slotConnectToRemovalSignal(account);
+        slotConnectToSignals(account);
     }
 
     qDebug() << Q_FUNC_INFO << "END";
@@ -89,16 +95,37 @@ void AccountOperationsObserver::slotAccountManagerReady(Tp::PendingOperation *op
     qDebug() << Q_FUNC_INFO << "END";
 }
 
-void AccountOperationsObserver::slotConnectToRemovalSignal(const Tp::AccountPtr &account)
+void AccountOperationsObserver::slotConnectToSignals(const Tp::AccountPtr &account)
 {
     qDebug() << Q_FUNC_INFO << "START";
 
-    connect(account.data(),
-            SIGNAL(removed()),
-            SLOT(slotAccountRemoved()),
-            Qt::UniqueConnection);
+    if (!account.isNull()) {
+
+        connect(account.data(),
+                SIGNAL(removed()),
+                SLOT(slotAccountRemoved()),
+                Qt::UniqueConnection);
+
+        connect(account.data(),
+                SIGNAL(stateChanged(bool)),
+                this,
+                SLOT(slotAccountStateChanged(bool)),
+                Qt::UniqueConnection);
+    }
 
     qDebug() << Q_FUNC_INFO << "END";
+}
+
+void AccountOperationsObserver::slotAccountStateChanged(bool isEnabled)
+{
+    qDebug() << Q_FUNC_INFO << isEnabled;
+
+    if (!isEnabled) {
+
+        Tp::Account *account = qobject_cast<Tp::Account *>(sender());
+        if (account)
+            emit removeAccountNotifications(account->objectPath());
+    }
 }
 
 void AccountOperationsObserver::slotAccountRemoved()
@@ -177,6 +204,9 @@ void AccountOperationsObserver::slotDeleteConversations()
                 }
             }
         }
+
+        // delete notifcations of this account
+        emit removeAccountNotifications(accountPath);
     }
 
     if (!groupsToBeDeleted.isEmpty()) {
@@ -223,6 +253,9 @@ void AccountOperationsObserver::slotDeleteCalls()
         QString accountPath = m_accountPathsForCalls.key(callModel);
         qDebug() << Q_FUNC_INFO << "No calls to be deleted for " << accountPath << ". We can delete the AccountSpecificCallModel.";
         m_accountPathsForCalls.take(accountPath)->deleteLater();
+
+        // delete notifcations of this account
+        emit removeAccountNotifications(accountPath);
     }
 
     qDebug() << Q_FUNC_INFO << "END";
@@ -245,6 +278,9 @@ void AccountOperationsObserver::slotRowsRemoved(const QModelIndex& index, int st
         qDebug() << Q_FUNC_INFO << "Last event in AccountSpecificCallModel deleted. We can delete the model.";
         QString accountPath = m_accountPathsForCalls.key(callModel);
         m_accountPathsForCalls.take(accountPath)->deleteLater();
+
+        // delete notifcations of this account
+        emit removeAccountNotifications(accountPath);
     }
 
     qDebug() << Q_FUNC_INFO << "END";

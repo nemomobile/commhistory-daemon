@@ -62,6 +62,9 @@ public:
      */
     AccountOperationsObserver(Tp::AccountManagerPtr accountManager, QObject* parent = 0);
 
+Q_SIGNALS:
+    void removeAccountNotifications(const QString &accountPath);
+
 private Q_SLOTS:
     /*!
      * \brief Slot getting called when Tp::AccountManager is ready.
@@ -75,14 +78,22 @@ private Q_SLOTS:
      *
      * \param account Tp::Account whose removed() signal is connected to be listened.
      */
-    void slotConnectToRemovalSignal(const Tp::AccountPtr &account);
+    void slotConnectToSignals(const Tp::AccountPtr &account);
+
+    /*!
+     * \brief Slot getting called when telepathy account changes state.
+     *
+     * Removes notifications of the account is disabled. Does nothing when account is enabled.
+     */
+    void slotAccountStateChanged(bool isEnabled);
     /*!
      * \brief Slot getting called when telepathy account is removed.
      *
      * Adds path of the removed account into a list used when calling methods to
      * remove conversations and calls either a) directly or b) via signal from models
      * indicating they are ready. Uses CommHistory::GroupModel from NotificationManager
-     * and creates and populates CommHistory::CallModel by itself.
+     * and creates and populates CommHistory::CallModel by itself. Additionally removes
+     * all notifications of the account.
      *
      */
     void slotAccountRemoved();

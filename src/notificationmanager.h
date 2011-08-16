@@ -114,6 +114,13 @@ public:
      */
     QContactManager* contactManager();
 
+public Q_SLOTS:
+    /*!
+     * \brief Removes notifications belong to a particular account.
+     * \param accountPath
+     */
+    void removeNotifications(const QString &accountPath);
+
 private Q_SLOTS:
     /*!
      * Initialises notification manager instance

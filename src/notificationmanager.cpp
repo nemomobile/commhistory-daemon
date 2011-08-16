@@ -342,6 +342,33 @@ bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& even
     return localIdMatch && remoteIdMatch && chatTypeMatch;
 }
 
+void NotificationManager::removeNotifications(const QString &accountPath)
+{
+    QSet<NotificationGroup> updatedGroups;
+
+    // remove matched notifications and udpate group
+    QMutableHashIterator<NotificationGroup, PersonalNotification> i(m_Notifications);
+    while (i.hasNext()) {
+
+        i.next();
+        if (i.key().isValid() &&
+            MAP_MMS_TO_RING(i.value().account()) == accountPath) {
+
+            updatedGroups.insert(i.key());
+            i.remove();
+        }
+    }
+
+    if (!updatedGroups.isEmpty()) {
+
+        clearContactsCache();
+        foreach(NotificationGroup group, updatedGroups)
+            updateNotificationGroup(group);
+
+        saveState();
+    }
+}
+
 void NotificationManager::removeConversationNotifications(const QString &localId,
                                                           const QString &remoteId,
                                                           CommHistory::Group::ChatType chatType)

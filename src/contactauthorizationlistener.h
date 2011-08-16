@@ -47,6 +47,7 @@ public:
 
 private Q_SLOTS:
     void slotConnectionReady(const Tp::ConnectionPtr& connection);
+    void slotAccountStateChanged(bool isEnabled);
     void slotAccountRemoved();
     void slotShowUnableToAuthorizeDialog(const QString&, const QString&, const QString&,
                                          const QString&, const QString&, const QString&);

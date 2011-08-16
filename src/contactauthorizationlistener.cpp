@@ -110,12 +110,21 @@ void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& 
                instantiate ContactAuthorizer again when account goes from offline (ContactAuthorizer destroyed then)
                state to online state: */
             connect(account.data(),
-                SIGNAL(connectionStatusChanged(Tp::ConnectionStatus)),
-                this,
-                SLOT(slotAccountConnectionStatusChanged(Tp::ConnectionStatus)),
-                Qt::UniqueConnection);
+                    SIGNAL(connectionStatusChanged(Tp::ConnectionStatus)),
+                    this,
+                    SLOT(slotAccountConnectionStatusChanged(Tp::ConnectionStatus)),
+                    Qt::UniqueConnection);
 
-            connect(account.data(), SIGNAL(removed()), this, SLOT(slotAccountRemoved()));
+            // body authorization notifications should be removed when account is disabled...
+            connect(account.data(),
+                    SIGNAL(stateChanged(bool)),
+                    this,
+                    SLOT(slotAccountStateChanged(bool)));
+            // ...or removed completely
+            connect(account.data(),
+                    SIGNAL(removed()),
+                    this,
+                    SLOT(slotAccountRemoved()));
 
             ContactAuthorizer *authorizer = new ContactAuthorizer(connection, account, this);
             connect(authorizer, SIGNAL(destroyed(QObject*)), this, SLOT(slotRemoveAuthorizer(QObject*)));
@@ -237,6 +246,17 @@ void ContactAuthorizationListener::slotShowUnableToAuthorizeDialog(const QString
         notification->setBody(txt_qtn_pers_offline);
         notification->publish();
     }
+}
+
+void ContactAuthorizationListener::slotAccountStateChanged(bool isEnabled)
+{
+    qDebug() << Q_FUNC_INFO << isEnabled;
+
+    // remove buddy authorization notifications when account is disabled
+    // sure we will lose them and not be able to see them when the account is
+    // re-enabled, but we can live with that...
+    if (!isEnabled)
+        slotAccountRemoved();
 }
 
 void ContactAuthorizationListener::slotAccountRemoved() {
