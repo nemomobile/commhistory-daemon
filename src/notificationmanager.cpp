@@ -396,7 +396,8 @@ void NotificationManager::removeConversationNotifications(const QString &localId
 
             if ((eventType == CommHistory::Event::IMEvent
                  || eventType == CommHistory::Event::SMSEvent
-                 || eventType == CommHistory::Event::MMSEvent)
+                 || eventType == CommHistory::Event::MMSEvent
+                 || eventType == VOICEMAIL_SMS_EVENT_TYPE)
                 && MAP_MMS_TO_RING(i.value().account()) == localId
                 && CommHistory::remoteAddressMatch(notificationRemoteUidStr,
                                                    remoteId)
