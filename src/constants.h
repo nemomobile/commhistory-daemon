@@ -90,6 +90,10 @@ namespace RTComLogger {
 // This amount of days is counted back to determine how old calls should be deleted.
 #define REMOVAL_TARGET_DAYS -90
 
+#define VOICEMAIL_CONTACT_GUID QLatin1String("9aeeea49-fab9-4d4e-b0cc-497f2aeac9a8")
+
+#define VOICEMAIL_SMS_EVENT_TYPE 8
+
 // events
 struct EventTypes {
     int type;
@@ -102,7 +106,8 @@ static const EventTypes _eventTypes[] =
     {CommHistory::Event::SMSEvent,      "x-nokia.messaging.sms"},
     {CommHistory::Event::MMSEvent,      "x-nokia.messaging.mms"},
     {CommHistory::Event::CallEvent,     "x-nokia.call.missed"},
-    {CommHistory::Event::VoicemailEvent,"x-nokia.messaging.voicemail"}
+    {CommHistory::Event::VoicemailEvent,"x-nokia.messaging.voicemail"},
+    {VOICEMAIL_SMS_EVENT_TYPE,          "x-nokia.messaging.voicemail-SMS"}
 };
 
 static const int _eventTypesCount = sizeof(_eventTypes) / sizeof(EventTypes);

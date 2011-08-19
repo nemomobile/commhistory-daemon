@@ -37,6 +37,7 @@
 #include "connectionutils.h"
 #include "accountoperationsobserver.h"
 #include "olddatadeleter.h"
+#include "voicemailhandler.h"
 
 using namespace RTComLogger;
 
@@ -166,6 +167,10 @@ int main(int argc, char **argv)
 
     NotificationManager::instance();
     qDebug() << "NotificationManager created";
+
+
+    VoiceMailHandler::instance();
+    qDebug() << "VoiceMailHandler created";
 
     // Init account operations observer to monitor account removals and to react to them.
     new AccountOperationsObserver(utils->accountManager(), &app);

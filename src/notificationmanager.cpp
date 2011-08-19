@@ -61,6 +61,7 @@
 #include "locstrings.h"
 #include "constants.h"
 #include "mwilistener.h"
+#include "voicemailhandler.h"
 
 using namespace RTComLogger;
 using namespace CommHistory;
@@ -451,6 +452,7 @@ void NotificationManager::slotObservedInboxChanged()
                 save = removeNotificationGroup(CommHistory::Event::IMEvent) || save;
                 save = removeNotificationGroup(CommHistory::Event::SMSEvent) || save;
                 save = removeNotificationGroup(CommHistory::Event::MMSEvent) || save;
+                save = removeNotificationGroup(VOICEMAIL_SMS_EVENT_TYPE) || save;
                 if (save)
                     saveState();
             }
@@ -522,10 +524,18 @@ NotificationGroup NotificationManager::notificationGroup(int type)
     return group;
 }
 
-
 void NotificationManager::addNotification(PersonalNotification notification)
 {
-    NotificationGroup notificationgroup = notificationGroup(notification.eventType());
+    qDebug() << Q_FUNC_INFO;
+
+    uint eventType;
+
+    if (VoiceMailHandler::instance()->isVoiceMailNumber(notification.remoteUid()))
+        eventType = VOICEMAIL_SMS_EVENT_TYPE;
+    else
+        eventType = notification.eventType();
+
+    NotificationGroup notificationgroup = notificationGroup(eventType);
 
     if(!notificationgroup.isValid()) {
         qWarning() << Q_FUNC_INFO << "Wrong notification group";
@@ -613,6 +623,7 @@ QString NotificationManager::eventType(int type)
     for(int i = 0; i < _eventTypesCount; i++) {
         if(_eventTypes[i].type == type) {
             event = QLatin1String(_eventTypes[i].event);
+            qDebug() << Q_FUNC_INFO << "event type string is " << event;
             break;
         }
     }
@@ -664,8 +675,8 @@ void NotificationManager::showLatestNotification(const NotificationGroup &group,
     int type = group.type(); // event type
     QString name;
 
-    // voicemail notification shouldn't have contact name
-    if (type != CommHistory::Event::VoicemailEvent) {
+    // voicemail notifications shouldn't have contact name
+    if (type != CommHistory::Event::VoicemailEvent && type != VOICEMAIL_SMS_EVENT_TYPE) {
         name = notificationName(notification);
     }
 
@@ -709,7 +720,7 @@ void NotificationManager::updateNotificationGroup(const NotificationGroup &group
         QString groupAction = action(group, notification, grouped);
 
         // update group
-        if (group.type() != CommHistory::Event::VoicemailEvent)
+        if (group.type() != CommHistory::Event::VoicemailEvent && group.type() != VOICEMAIL_SMS_EVENT_TYPE)
             name = contactNames(group).join(CONTACT_SEPARATOR_IN_NOTIFICATION_GROUP);
 
         updateGroup(group.type(), countNotifications(group), name, message, groupAction);
@@ -794,6 +805,12 @@ QString NotificationManager::action(const NotificationGroup& group,
             action = createActionVoicemail();
             break;
         }
+        case VOICEMAIL_SMS_EVENT_TYPE:
+        {
+            action = createActionConversation(notification.account(),
+                                              notification.targetId(),
+                                              (CommHistory::Group::ChatType)notification.chatType());
+        }
         default:
             break;
     }
@@ -863,6 +880,7 @@ QString NotificationManager::notificationGroupText(const NotificationGroup& grou
             break;
         }
         case CommHistory::Event::VoicemailEvent:
+        case VOICEMAIL_SMS_EVENT_TYPE:
         {
             // The amount of new / not listened voicemails
             groupmessage = notification.notificationText();
