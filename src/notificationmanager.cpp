@@ -1221,6 +1221,14 @@ void NotificationManager::slotContactsChanged(const QList<QContactLocalId> &cont
 
     qDebug() << Q_FUNC_INFO;
 
+    foreach (QContactLocalId localId, contactIds) {
+        // If changed contact is a voice mail one, then refresh its data in VoiceMailHandler:
+        if (VoiceMailHandler::instance()->isVoiceMailContact(localId)) {
+            qDebug() << Q_FUNC_INFO << "Voice mail contact changed!";
+            VoiceMailHandler::instance()->fetchVoiceMailContact();
+        }
+    }
+
     if (!m_contacts.isEmpty() || !m_Notifications.isEmpty()) {
         QContactLocalIdFilter filter;
         filter.setIds(contactIds);

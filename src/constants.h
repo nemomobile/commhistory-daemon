@@ -90,9 +90,16 @@ namespace RTComLogger {
 // This amount of days is counted back to determine how old calls should be deleted.
 #define REMOVAL_TARGET_DAYS -90
 
+// Voice mail contact's GUID, used by MeeGo Harmattan Contacts application.
 #define VOICEMAIL_CONTACT_GUID QLatin1String("9aeeea49-fab9-4d4e-b0cc-497f2aeac9a8")
 
-#define VOICEMAIL_SMS_EVENT_TYPE 8
+// This event type is used only locally (in NotificationManager) and is not defined in CommHistory::Event::EvenType enum.
+#define VOICEMAIL_SMS_EVENT_TYPE 100
+
+// Path and name of the vmid file used to contain local id of of a voice mail contact when such a contact is added.
+#define VOICEMAIL_CONTACT_VMID_MAIN QLatin1String("/dev/shm")
+#define VOICEMAIL_CONTACT_VMID_DIR  QLatin1String("contacts")
+#define VOICEMAIL_CONTACT_VMID_FILE QLatin1String("vmid")
 
 // events
 struct EventTypes {

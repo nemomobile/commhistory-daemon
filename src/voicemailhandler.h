@@ -23,6 +23,9 @@
 #ifndef VOICEMAILHANDLER_H
 #define VOICEMAILHANDLER_H
 
+#include <QWeakPointer>
+#include <QFileSystemWatcher>
+
 #include <qcontact.h>
 QTM_USE_NAMESPACE
 
@@ -55,27 +58,35 @@ public:
      * \returns true if given number is a voice mail number, false if it is not
      */
     bool isVoiceMailNumber(QString phoneNumber);
+    /*!
+     * \brief Tells if given QContactLocalId belongs to a voice mail contact or not.
+     * \param QContactLocalId to be checked
+     * \returns true if given id belongs to a voice mail contact, false if not
+     */
+    bool isVoiceMailContact(QContactLocalId localId);
+    /*!
+     * \brief Refreshes VoiceMailHandler by fetching possible voice mail contact from tracker based on GUID.
+     */
+    void fetchVoiceMailContact();
 
 private Q_SLOTS:
-    void slotContactsAdded(const QList<QContactLocalId> &contactIds);
-    void slotContactsRemoved(const QList<QContactLocalId> &contactIds);
-    void slotContactsChanged(const QList<QContactLocalId> &contactIds);
-    QContactFetchRequest* startContactRequest(QContactFilter &filter, QStringList &details, const char *resultSlot);
     void slotContactRequestTimeout();
     void slotVoiceMailContactsAvailable();
-    void slotContactsAvailable();
+    void slotVoiceMailDirectoryChanged();
 
 private:
     VoiceMailHandler(QObject* parent = 0);
     ~VoiceMailHandler();
-    void init();
-    void fetchVoiceMailContact();
+    void init();    
+    QContactFetchRequest* startContactRequest(QContactFilter &filter, QStringList &details, const char *resultSlot);
 
 private:
     static VoiceMailHandler* m_pInstance;
-    QContactManager *m_pContactManager;
+    QWeakPointer<QContactManager> m_pContactManager;
     QStringList m_voiceMailPhoneNumbers;
     QContactLocalId m_localContactId;
+    QFileSystemWatcher *m_pVoiceMailFileWatcher;
+    bool m_voiceMailFileExists;
 };
 
 } // namespace RTComLogger

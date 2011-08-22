@@ -23,6 +23,9 @@
 // Qt includes
 #include <QCoreApplication>
 #include <QDebug>
+#include <QDir>
+
+#include <CommHistory/commonutils.h>
 
 // contacts
 #include <QContactManager>
@@ -42,41 +45,7 @@ using namespace RTComLogger;
 
 VoiceMailHandler* VoiceMailHandler::m_pInstance = 0;
 
-// constructor
-//
-VoiceMailHandler::VoiceMailHandler(QObject* parent)
-        : QObject(parent)
-        , m_pContactManager(0)
-        , m_localContactId(0)
-{
-    qDebug() << Q_FUNC_INFO;
-}
-
-VoiceMailHandler::~VoiceMailHandler()
-{
-    qDebug() << Q_FUNC_INFO;
-}
-
-void VoiceMailHandler::init()
-{
-    qDebug() << Q_FUNC_INFO;
-
-    m_pContactManager = NotificationManager::instance()->contactManager();
-
-    if (m_pContactManager) {
-        connect(m_pContactManager,
-                SIGNAL(contactsAdded(const QList<QContactLocalId>&)),
-                SLOT(slotContactsAdded(const QList<QContactLocalId>&)));
-        connect(m_pContactManager,
-                SIGNAL(contactsRemoved(const QList<QContactLocalId>&)),
-                SLOT(slotContactsRemoved(const QList<QContactLocalId>&)));
-        connect(m_pContactManager,
-                SIGNAL(contactsChanged(const QList<QContactLocalId>&)),
-                SLOT(slotContactsChanged(const QList<QContactLocalId>&)));
-
-        fetchVoiceMailContact();
-    }
-}
+// P U B L I C  M E T H O D S
 
 VoiceMailHandler* VoiceMailHandler::instance()
 {
@@ -93,7 +62,23 @@ VoiceMailHandler* VoiceMailHandler::instance()
 bool VoiceMailHandler::isVoiceMailNumber(QString phoneNumber)
 {
     qDebug() << Q_FUNC_INFO << "Voice mail numbers are " << m_voiceMailPhoneNumbers << ", compared number is " << phoneNumber;
-    return m_voiceMailPhoneNumbers.contains(phoneNumber);
+
+    bool match = false;
+
+    foreach (QString numberInStore, m_voiceMailPhoneNumbers) {
+        if (CommHistory::remoteAddressMatch(numberInStore, phoneNumber)) {
+            qDebug() << Q_FUNC_INFO << "MATCH: " << numberInStore << " : " << phoneNumber;
+            match = true;
+            break;
+        }
+    }
+    return match;
+}
+
+bool VoiceMailHandler::isVoiceMailContact(QContactLocalId localId)
+{
+    qDebug() << Q_FUNC_INFO << "Voice mail contact's local id is " << m_localContactId << ", compared local id is " << localId;
+    return (m_localContactId = localId);
 }
 
 void VoiceMailHandler::fetchVoiceMailContact()
@@ -111,89 +96,89 @@ void VoiceMailHandler::fetchVoiceMailContact()
     startContactRequest(filter, details, SLOT(slotVoiceMailContactsAvailable()));
 }
 
-void VoiceMailHandler::slotContactsAdded(const QList<QContactLocalId> &contactIds)
-{    
-    if (contactIds.isEmpty())
-        return;
 
+// P R I V A T E  M E T H O D S
+
+// constructor
+//
+VoiceMailHandler::VoiceMailHandler(QObject* parent)
+        : QObject(parent)
+        , m_localContactId(0)
+        , m_pVoiceMailFileWatcher(0)
+        , m_voiceMailFileExists(false)
+{
     qDebug() << Q_FUNC_INFO;
-
-    qDebug() << Q_FUNC_INFO << "Contact(s) having local id(s) " << contactIds << " added.";
-
-    QContactLocalIdFilter filter;
-    filter.setIds(contactIds);
-
-    QStringList details;
-    details << QContactGuid::DefinitionName;
-    details << QContactPhoneNumber::DefinitionName;
-
-    startContactRequest(filter, details, SLOT(slotContactsAvailable()));
 }
 
-void VoiceMailHandler::slotContactsRemoved(const QList<QContactLocalId> &contactIds)
+// destructor
+//
+VoiceMailHandler::~VoiceMailHandler()
 {
-    if (contactIds.isEmpty())
-        return;
-
     qDebug() << Q_FUNC_INFO;
-
-    qDebug() << Q_FUNC_INFO << "Contact(s) having local id(s) " << contactIds << " removed.";
-
-    foreach (QContactLocalId id, contactIds) {
-        if (id == m_localContactId) {
-            qDebug() << Q_FUNC_INFO << "Removed contact is voice mail contact.";
-            m_voiceMailPhoneNumbers.clear();
-            m_localContactId = 0;
-        }
-    }
+    delete m_pVoiceMailFileWatcher;
 }
 
-void VoiceMailHandler::slotContactsChanged(const QList<QContactLocalId> &contactIds)
+void VoiceMailHandler::init()
 {
-    if (contactIds.isEmpty())
-        return;
-
     qDebug() << Q_FUNC_INFO;
 
-    qDebug() << Q_FUNC_INFO << "Contact(s) having local id(s) " << contactIds << " changed.";
-
-    foreach (QContactLocalId id, contactIds) {
-        if (id == m_localContactId) {
-            qDebug() << Q_FUNC_INFO << "Changed contact is voice mail contact.";
-            fetchVoiceMailContact();
-            break;
+    QDir mainDir = QDir(VOICEMAIL_CONTACT_VMID_MAIN);
+    if (!mainDir.exists(VOICEMAIL_CONTACT_VMID_DIR)) {
+        // If contacts directory does not exist then create it so that we can monitor its changes:
+        if (!mainDir.mkdir(VOICEMAIL_CONTACT_VMID_DIR)) {
+            qWarning() << "Creation of " << VOICEMAIL_CONTACT_VMID_MAIN << "/" << VOICEMAIL_CONTACT_VMID_DIR << " failed!";
         }
     }
+
+    if (QFile::exists(QString("%1/%2/%3").arg(VOICEMAIL_CONTACT_VMID_MAIN).arg(VOICEMAIL_CONTACT_VMID_DIR).arg(VOICEMAIL_CONTACT_VMID_FILE))) {
+        qDebug() << Q_FUNC_INFO << "Voice mail vmid file exists.";
+        m_voiceMailFileExists = true;
+    }
+
+    QStringList watchedPaths;
+    watchedPaths << QString("%1/%2").arg(VOICEMAIL_CONTACT_VMID_MAIN).arg(VOICEMAIL_CONTACT_VMID_DIR);
+    m_pVoiceMailFileWatcher = new QFileSystemWatcher(watchedPaths);
+    connect(m_pVoiceMailFileWatcher,SIGNAL(directoryChanged(QString)),SLOT(slotVoiceMailDirectoryChanged()));
+
+    m_pContactManager = NotificationManager::instance()->contactManager();
+
+    fetchVoiceMailContact();
 }
 
 QContactFetchRequest* VoiceMailHandler::startContactRequest(QContactFilter &filter, QStringList &details, const char *resultSlot)
 {
     qDebug() << Q_FUNC_INFO;
 
-    QContactFetchRequest* request = new QContactFetchRequest();
-    request->setManager(m_pContactManager);
-    request->setParent(this);
+    QContactFetchRequest* request = 0;
 
-    connect(request,
-            SIGNAL(resultsAvailable()),
-            resultSlot);
+    if (!m_pContactManager.isNull()) {
+        request = new QContactFetchRequest();
+        request->setManager(m_pContactManager.data());
+        request->setParent(this);
 
-    request->setFilter(filter);
+        connect(request,
+                SIGNAL(resultsAvailable()),
+                resultSlot);
 
-    QContactFetchHint hint;
-    hint.setDetailDefinitionsHint(details);
-    request->setFetchHint(hint);
+        request->setFilter(filter);
 
-    request->start();
+        QContactFetchHint hint;
+        hint.setDetailDefinitionsHint(details);
+        request->setFetchHint(hint);
 
-    // setup timeout for request
-    QTimer *timer = new QTimer(request);
-    connect(timer, SIGNAL(timeout()),
-            this, SLOT(slotContactRequestTimeout()));
-    timer->start(CONTACT_REQUEST_TIMEROUT);
+        request->start();
+
+        // setup timeout for request
+        QTimer *timer = new QTimer(request);
+        connect(timer, SIGNAL(timeout()),
+                this, SLOT(slotContactRequestTimeout()));
+        timer->start(CONTACT_REQUEST_TIMEROUT);
+    }
 
     return request;
 }
+
+// P R I V A T E  S L O T S
 
 void VoiceMailHandler::slotContactRequestTimeout()
 {
@@ -246,41 +231,21 @@ void VoiceMailHandler::slotVoiceMailContactsAvailable()
     request->deleteLater();
 }
 
-void VoiceMailHandler::slotContactsAvailable()
+void VoiceMailHandler::slotVoiceMailDirectoryChanged()
 {
     qDebug() << Q_FUNC_INFO;
 
-    QContactFetchRequest *request = qobject_cast<QContactFetchRequest *>(sender());
-
-    if(!request || !request->isFinished()) {
-        return;
+    bool vmIdFileFound = QFile::exists(QString("%1/%2/%3").arg(VOICEMAIL_CONTACT_VMID_MAIN).arg(VOICEMAIL_CONTACT_VMID_DIR).arg(VOICEMAIL_CONTACT_VMID_FILE));
+    if (m_voiceMailFileExists && !vmIdFileFound) {
+        qDebug() << Q_FUNC_INFO << "wmid file removed!";
+        m_localContactId = 0;
+        m_voiceMailPhoneNumbers.clear();
+    } else if (!m_voiceMailFileExists && vmIdFileFound) {
+        qDebug() << Q_FUNC_INFO << "vmid file created!";
+        m_voiceMailFileExists = true;
+        fetchVoiceMailContact();
+    } else {
+        qDebug() << Q_FUNC_INFO << "Some unimportant directory change happened.";
     }
 
-    QList<QContact> contacts = request->contacts();
-
-    qDebug() << __PRETTY_FUNCTION__ << "Number of contacts returned: " << contacts.size();
-
-    foreach (QContact contact, contacts) {
-        if (!contact.isEmpty()) {
-            qDebug() << __PRETTY_FUNCTION__ << "Contact " << contact.localId() << " was added.";
-            if (!(contact.details<QContactGuid>(QContactGuid::FieldGuid, VOICEMAIL_CONTACT_GUID)).isEmpty()) {
-                qDebug() << __PRETTY_FUNCTION__ << "Added contact is a voice mail contact";
-                m_localContactId = contact.localId();
-                QList<QContactPhoneNumber> phoneNumbers = contact.details<QContactPhoneNumber>();
-
-                m_voiceMailPhoneNumbers.clear();
-
-                foreach (QContactPhoneNumber phoneNumber, phoneNumbers) {
-                     m_voiceMailPhoneNumbers << phoneNumber.number();
-                 }
-                qDebug() << __PRETTY_FUNCTION__ << "Voice mail phone numbers added are: " << m_voiceMailPhoneNumbers;
-            } else {
-                qDebug() << __PRETTY_FUNCTION__ << "No voice mail GUID for this contact!";
-            }
-        } else {
-            qDebug() << __PRETTY_FUNCTION__ << "Empty contact returned!";
-        }
-    }
-
-    request->deleteLater();
 }
