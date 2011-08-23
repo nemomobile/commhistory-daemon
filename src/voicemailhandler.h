@@ -52,6 +52,8 @@ public:
      */
     static VoiceMailHandler* instance();
 
+    virtual ~VoiceMailHandler();
+
     /*!
      * \brief Tells if given phone number is a voice mail number or not.
      * \param Phone number to be checked
@@ -75,13 +77,11 @@ private Q_SLOTS:
     void slotVoiceMailDirectoryChanged();
 
 private:
-    VoiceMailHandler(QObject* parent = 0);
-    ~VoiceMailHandler();
+    VoiceMailHandler();
     void init();    
     QContactFetchRequest* startContactRequest(QContactFilter &filter, QStringList &details, const char *resultSlot);
 
 private:
-    static VoiceMailHandler* m_pInstance;
     QWeakPointer<QContactManager> m_pContactManager;
     QStringList m_voiceMailPhoneNumbers;
     QContactLocalId m_localContactId;

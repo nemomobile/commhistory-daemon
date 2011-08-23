@@ -43,20 +43,20 @@
 
 using namespace RTComLogger;
 
-VoiceMailHandler* VoiceMailHandler::m_pInstance = 0;
-
 // P U B L I C  M E T H O D S
 
 VoiceMailHandler* VoiceMailHandler::instance()
 {
     qDebug() << Q_FUNC_INFO;
 
-    if (!m_pInstance) {
-        m_pInstance = new VoiceMailHandler(QCoreApplication::instance());
-        m_pInstance->init();
+    static QWeakPointer<VoiceMailHandler> instance;
+
+    if (instance.isNull()) {
+        instance = new VoiceMailHandler();
+        instance.data()->init();
     }
 
-    return m_pInstance;
+    return instance.data();
 }
 
 bool VoiceMailHandler::isVoiceMailNumber(QString phoneNumber)
@@ -101,8 +101,8 @@ void VoiceMailHandler::fetchVoiceMailContact()
 
 // constructor
 //
-VoiceMailHandler::VoiceMailHandler(QObject* parent)
-        : QObject(parent)
+VoiceMailHandler::VoiceMailHandler()
+        : QObject(QCoreApplication::instance())
         , m_localContactId(0)
         , m_pVoiceMailFileWatcher(0)
         , m_voiceMailFileExists(false)
