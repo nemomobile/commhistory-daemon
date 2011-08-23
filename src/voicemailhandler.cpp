@@ -167,31 +167,12 @@ QContactFetchRequest* VoiceMailHandler::startContactRequest(QContactFilter &filt
         request->setFetchHint(hint);
 
         request->start();
-
-        // setup timeout for request
-        QTimer *timer = new QTimer(request);
-        connect(timer, SIGNAL(timeout()),
-                this, SLOT(slotContactRequestTimeout()));
-        timer->start(CONTACT_REQUEST_TIMEROUT);
     }
 
     return request;
 }
 
 // P R I V A T E  S L O T S
-
-void VoiceMailHandler::slotContactRequestTimeout()
-{
-    qDebug() << Q_FUNC_INFO;
-
-    Q_ASSERT(sender());
-
-    QContactFetchRequest *request = qobject_cast<QContactFetchRequest*>(sender()->parent());
-
-    Q_ASSERT(request);
-
-    request->deleteLater();
-}
 
 void VoiceMailHandler::slotVoiceMailContactsAvailable()
 {

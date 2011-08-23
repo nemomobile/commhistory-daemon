@@ -72,7 +72,6 @@ public:
     void fetchVoiceMailContact();
 
 private Q_SLOTS:
-    void slotContactRequestTimeout();
     void slotVoiceMailContactsAvailable();
     void slotVoiceMailDirectoryChanged();
 
