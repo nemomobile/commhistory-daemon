@@ -24,7 +24,6 @@
 #define VOICEMAILHANDLER_H
 
 #include <QWeakPointer>
-#include <QFileSystemWatcher>
 
 #include <qcontact.h>
 QTM_USE_NAMESPACE
@@ -34,6 +33,8 @@ class QContactManager;
 class QContactFetchRequest;
 class QContactFilter;
 QTM_END_NAMESPACE
+
+class QFileSystemWatcher;
 
 namespace RTComLogger {
 

@@ -24,6 +24,7 @@
 #include <QCoreApplication>
 #include <QDebug>
 #include <QDir>
+#include <QFileSystemWatcher>
 
 #include <CommHistory/commonutils.h>
 
