@@ -112,6 +112,9 @@
 #define MMS_READ_STATUS     QLatin1String("read-status")
 #define MMS_READ_BY         QLatin1String("read-by")
 
+// message editing support
+#define SUPERSEDES_TOKEN    QLatin1String("supersedes")
+
 #define PROTOCOL_TEL QLatin1String("tel")
 #define PROTOCOL_MMS QLatin1String("mms")
 
@@ -200,6 +203,17 @@ uint mailboxUnreadCount(const Tp::MessagePart &header)
     }
 
     return 0;
+}
+
+QString supersedesToken(const Tp::MessagePart &header)
+{
+    if (header.contains(SUPERSEDES_TOKEN)) {
+        QVariant typeVar = header.value(SUPERSEDES_TOKEN).variant();
+        if (typeVar.isValid())
+            return typeVar.value<QString>();
+    }
+
+    return QString();
 }
 
 } // anonymous namespace
@@ -705,15 +719,50 @@ void TextChannelListener::handleMessages()
                 m_EventTokens.insertMulti(event.id(), event.messageToken());
               // Normal sms
             } else {
-                if (message.isScrollback()) {
-                    scrollbackEvents << event;
-                } else {
-                    addEvents << event;
-                }
-                addMessages << message;
+                QString supersedes = supersedesToken(message.header());
+                if (!supersedes.isEmpty()) {
+                    CommHistory::Event originalEvent;
+                    DeliveryHandlingStatus status = getEventForToken(supersedes,
+                                                                     QString(),
+                                                                     m_Group.id(),
+                                                                     originalEvent);
+                    switch (status) {
+                    case DeliveryHandlingFailed:
+                        // handle as a new message
+                        addEvents << event;
+                        addMessages << message;
+                        nManager->showNotification(event, targetId(), m_Group.chatType());
+                        break;
+                    case DeliveryHandlingResolved:
+                        //update message
+                        originalEvent.setFreeText(event.freeText());
+                        originalEvent.setStartTime(event.startTime());
+                        if (originalEvent.isRead())
+                            originalEvent.setIsRead(false);
 
-                if (event.direction() != CommHistory::Event::Outbound) {
-                    nManager->showNotification(event, targetId(), m_Group.chatType());
+                        modifyEvents[event.groupId()] << originalEvent;
+                        modifyMessages[event.groupId()] << message;
+                        modifyTokens[event.groupId()].insertMulti(originalEvent.id(),originalEvent.messageToken());
+
+                        nManager->showNotification(originalEvent, targetId(), m_Group.chatType());
+                        break;
+                    case DeliveryHandlingPending:
+                        wait = true;
+                        break;
+                    default:;
+                    }
+                }
+                else {
+                    if (message.isScrollback()) {
+                        scrollbackEvents << event;
+                    } else {
+                        addEvents << event;
+                    }
+                    addMessages << message;
+
+                    if (event.direction() != CommHistory::Event::Outbound) {
+                        nManager->showNotification(event, targetId(), m_Group.chatType());
+                    }
                 }
             }
             break;
