@@ -978,4 +978,125 @@ void Ut_TextChannelListener::receivingFromSelf()
     QCOMPARE(nm->postedNotifications.size(), 0);
 }
 
+void Ut_TextChannelListener::supersedes()
+{
+    QString originalText("Original message");
+    QString editedText("Edited message");
+
+    NotificationManager *nm = NotificationManager::instance();
+    QVERIFY(nm);
+    nm->postedNotifications.clear();
+
+    // setup connection
+    Tp::ConnectionPtr conn(new Tp::Connection());
+    conn->ut_setIsReady(true);
+
+    //setup account
+    Tp::AccountPtr acc(new Tp::Account(conn, IM_ACCOUNT_PATH));
+
+    //setup channel
+    Tp::ChannelPtr ch(new Tp::TextChannel(IM_CHANNEL_PATH));
+    ch->ut_setIsRequested(false);
+    ch->ut_setTargetHandleType(Tp::HandleTypeContact);
+    ch->ut_setTargetHandle(TARGET_HANDLE);
+    QVariantMap immProp;
+    immProp.insert(TELEPATHY_INTERFACE_CHANNEL ".TargetID", IM_USERNAME);
+    ch->ut_setImmutableProperties(immProp);
+    ch->ut_setConnection(conn);
+
+    Tp::MethodInvocationContextPtr<> ctx(new Tp::MethodInvocationContext<>());
+
+    TextChannelListener tcl(acc, ch, ctx);
+    waitInvocationContext(ctx, 5000);
+
+    QVERIFY(ctx->isFinished());
+    QVERIFY(!ctx->isError());
+
+    // send received message
+    Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
+
+    uint timestamp = QDateTime::currentDateTime().toTime_t();
+    addMsgHeader(msg, 0, "received", timestamp);
+    addMsgHeader(msg, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNormal);
+    QString token = QUuid::createUuid().toString();
+    addMsgHeader(msg, 0, "message-token", token);
+
+    addMsgHeader(msg, 1,"content-type", "text/plain");
+    addMsgHeader(msg, 1,"content", originalText);
+    // set sender contact
+    Tp::ContactPtr sender(new Tp::Contact());
+    sender->ut_setHandle(22);
+    sender->ut_setId(IM_USERNAME);
+    msg.ut_setSender(sender);
+
+    Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(msg);
+
+    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
+    QVERIFY(waitSignal(eventCommitted, 5000));
+
+    CommHistory::Group g = fetchGroup(IM_ACCOUNT_PATH, IM_USERNAME, true);
+
+    QVERIFY(g.isValid());
+    QCOMPARE(g.localUid(), IM_ACCOUNT_PATH);
+    QCOMPARE(g.remoteUids().first(), IM_USERNAME);
+    QCOMPARE(g.lastMessageText(), originalText);
+    QCOMPARE(g.lastEventType(), CommHistory::Event::IMEvent);
+
+    CommHistory::Event e = fetchEvent(g.lastEventId());
+    QCOMPARE(e.id(), g.lastEventId());
+    QCOMPARE(e.direction(), CommHistory::Event::Inbound);
+    QCOMPARE(e.freeText(), originalText);
+    QCOMPARE(e.startTime().toTime_t(), timestamp);
+    QCOMPARE(e.endTime().toTime_t(), timestamp);
+    QCOMPARE(e.messageToken(), token);
+
+    QCOMPARE(nm->postedNotifications.size(), 1);
+    QCOMPARE(nm->postedNotifications.first().event.freeText(), originalText);
+    QCOMPARE(nm->postedNotifications.first().channelTargetId, IM_USERNAME);
+    QCOMPARE(nm->postedNotifications.first().chatType, CommHistory::Group::ChatTypeP2P);
+
+    // send edited message
+
+    Tp::ReceivedMessage msgEdited(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
+
+    uint timestampEdited = QDateTime::currentDateTime().toTime_t();
+    addMsgHeader(msgEdited, 0, "received", timestampEdited);
+    addMsgHeader(msgEdited, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNormal);
+    QString tokenEdited = QUuid::createUuid().toString();
+    addMsgHeader(msgEdited, 0, "message-token", tokenEdited);
+    addMsgHeader(msgEdited, 0, "supersedes", token);
+
+    addMsgHeader(msgEdited, 1,"content-type", "text/plain");
+    addMsgHeader(msgEdited, 1,"content", editedText);
+    // set sender contact
+    msgEdited.ut_setSender(sender);
+
+    eventCommitted.clear();
+    Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(msgEdited);
+
+    QVERIFY(waitSignal(eventCommitted, 5000));
+
+    g = fetchGroup(IM_ACCOUNT_PATH, IM_USERNAME, true);
+
+    QVERIFY(g.isValid());
+    QCOMPARE(g.localUid(), IM_ACCOUNT_PATH);
+    QCOMPARE(g.remoteUids().first(), IM_USERNAME);
+    QCOMPARE(g.lastMessageText(), editedText);
+    QCOMPARE(g.lastEventType(), CommHistory::Event::IMEvent);
+
+    CommHistory::Event ee = fetchEvent(g.lastEventId());
+    QCOMPARE(ee.id(), g.lastEventId());
+    QCOMPARE(ee.id(), e.id());
+    QCOMPARE(ee.direction(), CommHistory::Event::Inbound);
+    QCOMPARE(ee.freeText(), editedText);
+    QCOMPARE(ee.startTime().toTime_t(), timestampEdited);
+    QCOMPARE(ee.endTime().toTime_t(), e.endTime().toTime_t());
+    QCOMPARE(ee.messageToken(), token);
+
+    QCOMPARE(nm->postedNotifications.size(), 2);
+    QCOMPARE(nm->postedNotifications.last().event.freeText(), editedText);
+    QCOMPARE(nm->postedNotifications.last().channelTargetId, IM_USERNAME);
+    QCOMPARE(nm->postedNotifications.last().chatType, CommHistory::Group::ChatTypeP2P);
+}
+
 QTEST_MAIN(Ut_TextChannelListener)

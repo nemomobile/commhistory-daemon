@@ -56,6 +56,7 @@ private Q_SLOTS:
     void receiveVCard();
     void groups();
     void receivingFromSelf();
+    void supersedes();
 
 private:
     CommHistory::Group fetchGroup(const QString &localUid, const QString &remoteUid, bool wait);
