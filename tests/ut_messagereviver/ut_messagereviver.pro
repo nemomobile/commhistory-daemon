@@ -61,6 +61,7 @@ SOURCES     += ut_messagereviver.cpp \
 
 DESTDIR = ../bin
 QT += dbus
+QT -= gui
 
 # End of File
 
