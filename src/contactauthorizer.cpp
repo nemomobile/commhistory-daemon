@@ -468,17 +468,18 @@ void ContactAuthorizer::slotShowAuthorizationDialog(const QString& contactId,
 {
     Q_UNUSED(unused)
 
+    qDebug() << Q_FUNC_INFO << "Authorization dialog asked to be shown for account: " << accountPath << " requester being contact id: " << contactId;
+    qDebug() << Q_FUNC_INFO << "Contact's avatar filename: " << filename;
+
+    if(m_account && m_account->objectPath() != accountPath) {
+        qDebug() << Q_FUNC_INFO << "This ContactsAuthorizer does not serve the given account, but " << m_account->objectPath();
+        return;
+    }
+
+    // Request tapped first time:
     if (!m_requestTapped)
         m_requestTapped = true;
     else
-        return;
-
-    qDebug() << Q_FUNC_INFO;
-    qDebug() << Q_FUNC_INFO << m_account->objectPath() << "   " << accountPath;
-    qDebug() << Q_FUNC_INFO << "contact id: " << contactId;
-    qDebug() << Q_FUNC_INFO << "Avatar filename: " << filename;
-
-    if(m_account && m_account->objectPath() != accountPath)
         return;
 
     bool requestFound = false;
