@@ -729,6 +729,9 @@ void TextChannelListener::handleMessages()
                     switch (status) {
                     case DeliveryHandlingFailed:
                         // handle as a new message
+                        // use original's message token to be able to handle updates
+                        // for this message
+                        event.setMessageToken(supersedes);
                         addEvents << event;
                         addMessages << message;
                         nManager->showNotification(event, targetId(), m_Group.chatType());
