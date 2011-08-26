@@ -26,6 +26,7 @@
 
 // MeegoTouch
 #include <MNotification>
+#include <MLocale>
 
 // libcommhistory
 #include <CommHistory/EventModel>
@@ -1093,8 +1094,14 @@ void TextChannelListener::handleMessageFailed(const Tp::ReceivedMessage &message
         if (status == Tp::DeliveryStatusTemporarilyFailed ||
             status == Tp::DeliveryStatusPermanentlyFailed) {
 
-            QString recipient = !event.contactName().isEmpty() ?
-                                    event.contactName() : event.remoteUid();
+            QString recipient;
+            if (!event.contactName().isEmpty()) {
+                recipient = event.contactName();
+            } else {
+                MLocale locale;
+                recipient = locale.toLocalizedNumbers(event.remoteUid());
+            }
+
             // general error
             QString errorMsgToUser = txt_qtn_msg_error_sms_sending_failed(recipient);
 
