@@ -25,11 +25,10 @@
 using namespace RTComLogger;
 
 PersonalNotification::PersonalNotification(QObject* parent) : QObject(parent),
-    m_remoteUid(QString()), m_account(QString()),
     m_eventType(CommHistory::Event::UnknownType),
-    m_targetId(QString()), m_chatType(CommHistory::Group::ChatTypeP2P),
-    m_contactId(0), m_notificationText(QString()),
-    m_hasPendingEvents(false), m_chatName(QString())
+    m_chatType(CommHistory::Group::ChatTypeP2P),
+    m_contactId(0),
+    m_hasPendingEvents(false)
 {
 }
 
@@ -44,7 +43,7 @@ PersonalNotification::PersonalNotification(const QString& remoteUid,
     QObject(parent), m_remoteUid(remoteUid), m_account(account),
     m_eventType(eventType), m_targetId(channelTargetId), m_chatType(chatType),
     m_contactId(contactId), m_notificationText(lastNotification),
-    m_hasPendingEvents(false), m_chatName(QString())
+    m_hasPendingEvents(false)
 {
 }
 
@@ -66,6 +65,7 @@ PersonalNotification& PersonalNotification::operator=(const PersonalNotification
     setNotificationText(other.notificationText());
     setHasPendingEvents(other.hasPendingEvents());
     setChatName(other.chatName());
+    setEventToken(other.eventToken());
     return *this;
 }
 
@@ -115,6 +115,10 @@ QString PersonalNotification::chatName() const
     return m_chatName;
 }
 
+QString PersonalNotification::eventToken() const
+{
+    return m_eventToken;
+}
 
 void PersonalNotification::setRemoteUid(const QString& remoteUid)
 {
@@ -159,6 +163,11 @@ void PersonalNotification::setHasPendingEvents(bool hasPendingEvents)
 void PersonalNotification::setChatName(const QString& chatName)
 {
     m_chatName = chatName;
+}
+
+void PersonalNotification::setEventToken(const QString &eventToken)
+{
+    m_eventToken = eventToken;
 }
 
 bool PersonalNotification::operator == (const PersonalNotification& other) const
