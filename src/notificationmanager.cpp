@@ -189,6 +189,7 @@ void NotificationManager::init()
     m_NotificationTimer.setSingleShot(true);
     m_NotificationTimer.setInterval(NOTIFICATION_THRESHOLD);
     connect(&m_NotificationTimer, SIGNAL(timeout()), this, SLOT(fireNotifications()));
+    connect(&m_NotificationTimer, SIGNAL(timeout()), this, SLOT(slotObservedInboxChanged()));
 
     m_ContactsTimer.setSingleShot(true);
     m_ContactsTimer.setInterval(CONTACT_REQUEST_THRESHOLD);
@@ -441,6 +442,8 @@ void NotificationManager::slotObservedConversationChanged()
 
 void NotificationManager::slotObservedInboxChanged()
 {
+    qDebug() << Q_FUNC_INFO;
+
     if (m_ObservedInbox) {
         QVariant value = m_ObservedInbox->value(QVariant());
         if (!value.isNull()) {
@@ -579,6 +582,8 @@ void NotificationManager::resolveEvents()
 
 void NotificationManager::fireNotifications()
 {
+    qDebug() << Q_FUNC_INFO;
+
     // if we cant show notification
     // return
     if (!canShowNotification()) {
@@ -663,6 +668,8 @@ void NotificationManager::removeNotPendingEvents(const NotificationGroup &group)
 void NotificationManager::showLatestNotification(const NotificationGroup &group,
                                                  PersonalNotification &notification)
 {
+    qDebug() << Q_FUNC_INFO;
+
     MNotificationGroup *mgroup = m_MgtGroups.value(group.type());
     if (mgroup) {
         // reset counters if the group has been cleared
@@ -708,6 +715,8 @@ void NotificationManager::showLatestNotification(const NotificationGroup &group,
 
 void NotificationManager::updateNotificationGroup(const NotificationGroup &group)
 {
+    qDebug() << Q_FUNC_INFO;
+
     if (m_Notifications.contains(group)) {
         const PersonalNotification notification = m_Notifications.value(group);
 
