@@ -214,10 +214,9 @@ private:
     void removeNotPendingEvents(const NotificationGroup &group);
 
     void clearContactsCache();
-
     QString notificationName(const PersonalNotification &notification);
-
     bool isFilteredInbox();
+    bool updateEditedEvent(const CommHistory::Event& event);
 
 private:
     static NotificationManager* m_pInstance;

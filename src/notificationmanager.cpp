@@ -255,6 +255,47 @@ NotificationManager* NotificationManager::instance()
     return m_pInstance;
 }
 
+bool NotificationManager::updateEditedEvent(const CommHistory::Event& event)
+{
+    if (event.messageToken().isEmpty())
+        return false;
+
+    QMutableListIterator<PersonalNotification> i(m_unresolvedEvents);
+    while (i.hasNext()) {
+        if (i.value().eventToken() == event.messageToken()) {
+            PersonalNotification pn = i.value();
+            i.remove();
+
+            pn.setNotificationText(notificationText(event));
+            pn.setHasPendingEvents(true);
+            m_unresolvedEvents.enqueue(pn);
+
+            return true;
+        }
+    }
+
+    NotificationGroup eventGroup = notificationGroup(event.type());
+    QHash<NotificationGroup, PersonalNotification>::iterator j = m_Notifications.find(eventGroup);
+    while (j != m_Notifications.end() &&  j.key() == eventGroup) {
+        if (j.value().eventToken() == event.messageToken()) {
+            PersonalNotification pn = j.value();
+            m_Notifications.erase(j);
+
+            pn.setNotificationText(notificationText(event));
+            pn.setHasPendingEvents(true);
+
+            m_Notifications.insertMulti(eventGroup, pn);
+
+            fireNotifications();
+
+            return true;
+        }
+        ++j;
+    }
+
+    return false;
+}
+
 void NotificationManager::showNotification(const CommHistory::Event& event,
                                            const QString& channelTargetId,
                                            CommHistory::Group::ChatType chatType)
@@ -263,6 +304,10 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
 
     bool observed = isCurrentlyObservedByUI(event, channelTargetId, chatType);
     if (!event.isRead() && !observed) {
+        // try to update notifications for existing event
+        if (event.isValid() && updateEditedEvent(event))
+            return;
+
         // Get MUC topic from group
         QString chatName;
         if (m_GroupModel && (chatType == CommHistory::Group::ChatTypeUnnamed ||
@@ -288,6 +333,8 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
         notification.setNotificationText(notificationText(event));
         if (!chatName.isEmpty())
             notification.setChatName(chatName);
+
+        notification.setEventToken(event.messageToken());
 
         m_unresolvedEvents.enqueue(notification);
 
