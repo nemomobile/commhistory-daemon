@@ -795,6 +795,22 @@ void TextChannelListener::handleMessages()
             processedMessages << message;
             break;
         }
+        case Tp::ChannelTextMessageTypeAction: {
+            handleReceivedMessage(message, event);
+            event.setIsAction(true);
+
+            if (message.isScrollback()) {
+                scrollbackEvents << event;
+            } else {
+                addEvents << event;
+            }
+            addMessages << message;
+
+            if (event.direction() != CommHistory::Event::Outbound) {
+                nManager->showNotification(event, targetId(), m_Group.chatType());
+            }
+        break;
+        }
         default:
             qDebug() << "onMessageReceived: type " << type << " not supported";
             break;
@@ -1354,6 +1370,8 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
     event.setIsRead(true);
     event.setDirection(CommHistory::Event::Outbound);
     event.setRemoteUid(remoteUid);
+    if (message.messageType() == Tp::ChannelTextMessageTypeAction)
+        event.setIsAction(true);
 
     QDateTime sentTime;
     if (message.sent().isValid()) {
