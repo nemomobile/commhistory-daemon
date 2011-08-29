@@ -92,8 +92,8 @@
 #define txt_qtn_msg_error_sms_sending_failed(STR) qtTrId("qtn_msg_error_sms_sending_failed").arg(STR)
 //% "SMS sending failed. No message center number found in the sim card."
 #define txt_qtn_msg_error_missing_smsc qtTrId("qtn_msg_error_missing_smsc")
-//% "SMS sendng failed. Sending not allowed to this recipient: %1"
-#define txt_qtn_msg_error_fixed_dialing_active(STR) qtTrId("qtn_msg_error_fixed_dialing_active").arg(STR)
+//% "Fixed dialing active. Sending not allowed to %1."
+#define txt_qtn_re_error_denied_phone_number(STR) qtTrId("qtn_re_error_denied_phone_number").arg(STR)
 
 //% "Contact is offline. Unable to guarantee that the message will be delivered."
 #define txt_qtn_msg_general_supports_offline qtTrId("qtn_msg_general_supports_offline")

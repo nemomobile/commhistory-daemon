@@ -134,6 +134,7 @@ int main(int argc, char **argv)
     locale.installTrCatalog("telephony");
     locale.installTrCatalog("mms");
     locale.installTrCatalog("presence");
+    locale.installTrCatalog("recipientedit");
     MLocale::setDefault(locale);
 
     qDebug() << "Translation catalogs loaded";

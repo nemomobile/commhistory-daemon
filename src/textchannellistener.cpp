@@ -1096,10 +1096,17 @@ void TextChannelListener::handleMessageFailed(const Tp::ReceivedMessage &message
 
             QString recipient;
             if (!event.contactName().isEmpty()) {
+                // resolved name
                 recipient = event.contactName();
+            } else if (CommHistory::normalizePhoneNumber(event.remoteUid()).isEmpty()){
+                // IM address
+                recipient = event.remoteUid();
             } else {
+                // phone number
                 MLocale locale;
                 recipient = locale.toLocalizedNumbers(event.remoteUid());
+                recipient.insert(0, QChar(0x202A)); // left-to-right embedding
+                recipient.append(QChar(0x202C)); // pop directional formatting
             }
 
             // general error
@@ -1115,7 +1122,7 @@ void TextChannelListener::handleMessageFailed(const Tp::ReceivedMessage &message
             else if (dbusError == MODEM_ERROR_DESTINATION_ADDRESS_FDN_RESTRICTED ||
                      dbusError == MODEM_ERROR_SMS_ADDRESS_FDN_RESTRICTED) {
 
-                errorMsgToUser = txt_qtn_msg_error_fixed_dialing_active(recipient);
+                errorMsgToUser = txt_qtn_re_error_denied_phone_number(recipient);
             }
             // offline chatting
             else if (event.type() == CommHistory::Event::IMEvent
