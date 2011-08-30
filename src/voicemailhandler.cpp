@@ -62,8 +62,6 @@ VoiceMailHandler* VoiceMailHandler::instance()
 
 bool VoiceMailHandler::isVoiceMailNumber(QString phoneNumber)
 {
-    qDebug() << Q_FUNC_INFO << "Voice mail numbers are " << m_voiceMailPhoneNumbers << ", compared number is " << phoneNumber;
-
     bool match = false;
 
     foreach (QString numberInStore, m_voiceMailPhoneNumbers) {
@@ -78,8 +76,7 @@ bool VoiceMailHandler::isVoiceMailNumber(QString phoneNumber)
 
 bool VoiceMailHandler::isVoiceMailContact(QContactLocalId localId)
 {
-    qDebug() << Q_FUNC_INFO << "Voice mail contact's local id is " << m_localContactId << ", compared local id is " << localId;
-    return (m_localContactId = localId);
+    return (m_localContactId == localId);
 }
 
 void VoiceMailHandler::fetchVoiceMailContact()
@@ -203,11 +200,7 @@ void VoiceMailHandler::slotVoiceMailContactsAvailable()
                 m_voiceMailPhoneNumbers << phoneNumber.number();
             }
             qDebug() << __PRETTY_FUNCTION__ << "Voice mail phone numbers are: " << m_voiceMailPhoneNumbers;
-        } else {
-            qDebug() << __PRETTY_FUNCTION__ << "Empty voice mail contact!";
         }
-    } else {
-        qDebug() << __PRETTY_FUNCTION__ << "No voice mail contacts found!";
     }
 
     request->deleteLater();
@@ -226,8 +219,5 @@ void VoiceMailHandler::slotVoiceMailDirectoryChanged()
         qDebug() << Q_FUNC_INFO << "vmid file created!";
         m_voiceMailFileExists = true;
         fetchVoiceMailContact();
-    } else {
-        qDebug() << Q_FUNC_INFO << "Some unimportant directory change happened.";
     }
-
 }
