@@ -217,12 +217,15 @@ private:
 
     QString notificationName(const PersonalNotification &notification);
 
+    bool isFilteredInbox();
+
 private:
     static NotificationManager* m_pInstance;
     QMultiHash<NotificationGroup,PersonalNotification> m_Notifications;
     QHash<int, MNotificationGroup*> m_MgtGroups;
     ContextProperty* m_ObservedConversation;
     ContextProperty* m_ObservedInbox;
+    ContextProperty* m_FilteredInbox;
     ContextProperty* m_ObservedCallHistory;
     QString m_ObservedChannelLocalId;
     QString m_ObservedChannelRemoteId;

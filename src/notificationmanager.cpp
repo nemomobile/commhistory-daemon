@@ -130,7 +130,8 @@ bool matchContact(const QList<QContactOnlineAccount> &accounts,
 NotificationManager::NotificationManager(QObject* parent)
         : QObject(parent)
         , m_ObservedConversation(new ContextProperty(OBSERVED_CONVERSATION_KEY, this))
-        , m_ObservedInbox(new ContextProperty(INBOX_KEY, this))
+        , m_ObservedInbox(new ContextProperty(OBSERVED_INBOX_KEY, this))
+        , m_FilteredInbox(new ContextProperty(FILTERED_INBOX_KEY, this))
         , m_ObservedCallHistory(new ContextProperty(CALL_HISTORY_KEY, this))
         , m_Storage(QDir::homePath() + COMMHISTORYD_NOTIFICATIONSSTORAGE)
         , m_Initialised(false)
@@ -178,6 +179,11 @@ void NotificationManager::init()
 
     m_ObservedInbox->subscribe();
     connect(m_ObservedInbox,
+            SIGNAL(valueChanged()),
+            SLOT(slotObservedInboxChanged()));
+
+    m_FilteredInbox->subscribe();
+    connect(m_FilteredInbox,
             SIGNAL(valueChanged()),
             SLOT(slotObservedInboxChanged()));
 
@@ -447,9 +453,10 @@ void NotificationManager::slotObservedInboxChanged()
     if (m_ObservedInbox) {
         QVariant value = m_ObservedInbox->value(QVariant());
         if (!value.isNull()) {
-            bool inbox = value.toBool();
-            qDebug() << Q_FUNC_INFO << "inbox? " << inbox;
-            if (inbox) {
+            bool observed = value.toBool();
+            qDebug() << Q_FUNC_INFO << "inbox observed? " << observed;
+            // Remove groups only if inbox is observed AND we do not use filtering!
+            if (observed && !isFilteredInbox()) {
                 // remove sms, mms and im notification groups and save state
                 // remove meegotouch groups
                 bool save = false;
@@ -460,7 +467,11 @@ void NotificationManager::slotObservedInboxChanged()
                 if (save)
                     saveState();
             }
+        } else {
+            qDebug() << Q_FUNC_INFO << "Context property for observing inbox is NULL!";
         }
+    } else {
+        qWarning() << Q_FUNC_INFO << "NULL ContextProvider!";
     }
 }
 
@@ -477,6 +488,27 @@ void NotificationManager::slotObservedCallHistoryChanged()
             }
         }
     }
+}
+
+bool NotificationManager::isFilteredInbox()
+{
+    qDebug() << Q_FUNC_INFO;
+
+    bool filtered = false;
+
+    if (m_FilteredInbox) {
+        QVariant value = m_FilteredInbox->value(QVariant());
+        if (!value.isNull()) {
+            filtered = value.toBool();
+            qDebug() << Q_FUNC_INFO << "inbox filtered? " << filtered;
+        } else {
+            qDebug() << Q_FUNC_INFO << "Context property for inbox filtering is NULL!";
+        }
+    } else {
+        qWarning() << Q_FUNC_INFO << "NULL ContextProvider!";
+    }
+
+    return filtered;
 }
 
 void NotificationManager::clearContactsCache()
@@ -505,6 +537,8 @@ void NotificationManager::clearContactsCache()
 
 bool NotificationManager::removeNotificationGroup(int type)
 {
+    qDebug() << Q_FUNC_INFO << type;
+
     NotificationGroup group(type);
     removeGroup(type);
     bool success = m_Notifications.remove(group) > 0;
