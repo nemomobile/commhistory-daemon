@@ -119,12 +119,14 @@ void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& 
             connect(account.data(),
                     SIGNAL(stateChanged(bool)),
                     this,
-                    SLOT(slotAccountStateChanged(bool)));
+                    SLOT(slotAccountStateChanged(bool)),
+                    Qt::UniqueConnection);
             // ...or removed completely
             connect(account.data(),
                     SIGNAL(removed()),
                     this,
-                    SLOT(slotAccountRemoved()));
+                    SLOT(slotAccountRemoved()),
+                    Qt::UniqueConnection);
 
             ContactAuthorizer *authorizer = new ContactAuthorizer(connection, account, this);
             connect(authorizer, SIGNAL(destroyed(QObject*)), this, SLOT(slotRemoveAuthorizer(QObject*)));
