@@ -468,10 +468,8 @@ void NotificationManager::slotObservedInboxChanged()
                     saveState();
             }
         } else {
-            qDebug() << Q_FUNC_INFO << "Context property for observing inbox is NULL!";
+            qDebug() << Q_FUNC_INFO << "Context property value for observing inbox is NULL!";
         }
-    } else {
-        qWarning() << Q_FUNC_INFO << "NULL ContextProvider!";
     }
 }
 
@@ -502,10 +500,8 @@ bool NotificationManager::isFilteredInbox()
             filtered = value.toBool();
             qDebug() << Q_FUNC_INFO << "inbox filtered? " << filtered;
         } else {
-            qDebug() << Q_FUNC_INFO << "Context property for inbox filtering is NULL!";
+            qDebug() << Q_FUNC_INFO << "Context property value for inbox filtering is NULL!";
         }
-    } else {
-        qWarning() << Q_FUNC_INFO << "NULL ContextProvider!";
     }
 
     return filtered;
