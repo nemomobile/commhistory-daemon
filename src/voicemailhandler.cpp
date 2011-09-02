@@ -148,8 +148,7 @@ void VoiceMailHandler::init()
     QStringList watchedPaths;
     watchedPaths << voiceMailDir;
     m_pVoiceMailDirWatcher = new QFileSystemWatcher(watchedPaths);
-    connect(m_pVoiceMailDirWatcher, SIGNAL(directoryChanged(QString)), SLOT(slotVoiceMailDirectoryChanged(QString)));
-    connect(m_pVoiceMailDirWatcher, SIGNAL(fileChanged(QString)), SLOT(slotVoiceMailFileChanged(QString)));
+    startObservingVmcFile();
 
     // If vmid file already exists in /dev/shm/contacts directory then add it to watcher:
     if (QFile::exists(voiceMailFile)) {
