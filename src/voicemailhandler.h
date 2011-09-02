@@ -92,8 +92,6 @@ private:
     QStringList m_voiceMailPhoneNumbers;
     QContactLocalId m_localContactId;
     QFileSystemWatcher *m_pVoiceMailDirWatcher;
-    QFileSystemWatcher *m_pVoiceMailFileWatcher;
-    bool m_Initialised;
 };
 
 } // namespace RTComLogger
