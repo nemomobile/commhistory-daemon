@@ -72,9 +72,15 @@ public:
      */
     void fetchVoiceMailContact();
 
+    /*!
+     * \brief Clears voicemail contact data.
+     */
+    void clear();
+
 private Q_SLOTS:
     void slotVoiceMailContactsAvailable();
-    void slotVoiceMailDirectoryChanged();
+    void slotVoiceMailFileChanged(QString path);
+    void slotVoiceMailDirectoryChanged(QString path);
 
 private:
     VoiceMailHandler();
@@ -85,8 +91,9 @@ private:
     QWeakPointer<QContactManager> m_pContactManager;
     QStringList m_voiceMailPhoneNumbers;
     QContactLocalId m_localContactId;
+    QFileSystemWatcher *m_pVoiceMailDirWatcher;
     QFileSystemWatcher *m_pVoiceMailFileWatcher;
-    bool m_voiceMailFileExists;
+    bool m_Initialised;
 };
 
 } // namespace RTComLogger

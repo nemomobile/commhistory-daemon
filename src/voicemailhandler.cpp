@@ -94,6 +94,13 @@ void VoiceMailHandler::fetchVoiceMailContact()
     startContactRequest(filter, details, SLOT(slotVoiceMailContactsAvailable()));
 }
 
+void VoiceMailHandler::clear()
+{
+    qDebug() << Q_FUNC_INFO;
+
+    m_localContactId = 0;
+    m_voiceMailPhoneNumbers.clear();
+}
 
 // P R I V A T E  M E T H O D S
 
@@ -102,8 +109,9 @@ void VoiceMailHandler::fetchVoiceMailContact()
 VoiceMailHandler::VoiceMailHandler()
         : QObject(QCoreApplication::instance())
         , m_localContactId(0)
+        , m_pVoiceMailDirWatcher(0)
         , m_pVoiceMailFileWatcher(0)
-        , m_voiceMailFileExists(false)
+        , m_Initialised(false)
 {
     qDebug() << Q_FUNC_INFO;
 }
@@ -113,12 +121,16 @@ VoiceMailHandler::VoiceMailHandler()
 VoiceMailHandler::~VoiceMailHandler()
 {
     qDebug() << Q_FUNC_INFO;
+    delete m_pVoiceMailDirWatcher;
     delete m_pVoiceMailFileWatcher;
 }
 
 void VoiceMailHandler::init()
 {
     qDebug() << Q_FUNC_INFO;
+
+    if (m_Initialised)
+        return;
 
     QDir mainDir = QDir(VOICEMAIL_CONTACT_VMID_MAIN);
     if (!mainDir.exists(VOICEMAIL_CONTACT_VMID_DIR)) {
@@ -128,19 +140,29 @@ void VoiceMailHandler::init()
         }
     }
 
-    if (QFile::exists(QString("%1/%2/%3").arg(VOICEMAIL_CONTACT_VMID_MAIN).arg(VOICEMAIL_CONTACT_VMID_DIR).arg(VOICEMAIL_CONTACT_VMID_FILE))) {
-        qDebug() << Q_FUNC_INFO << "Voice mail vmid file exists.";
-        m_voiceMailFileExists = true;
-    }
+    QString voiceMailDir = QString("%1/%2").arg(VOICEMAIL_CONTACT_VMID_MAIN).arg(VOICEMAIL_CONTACT_VMID_DIR);
+    QString voiceMailFile = QString("%1/%2").arg(voiceMailDir).arg(VOICEMAIL_CONTACT_VMID_FILE);
 
+    // Create watcher for /dev/shm/contacts directory:
     QStringList watchedPaths;
-    watchedPaths << QString("%1/%2").arg(VOICEMAIL_CONTACT_VMID_MAIN).arg(VOICEMAIL_CONTACT_VMID_DIR);
-    m_pVoiceMailFileWatcher = new QFileSystemWatcher(watchedPaths);
-    connect(m_pVoiceMailFileWatcher,SIGNAL(directoryChanged(QString)),SLOT(slotVoiceMailDirectoryChanged()));
+    watchedPaths << voiceMailDir;
+    m_pVoiceMailDirWatcher = new QFileSystemWatcher(watchedPaths);
+    connect(m_pVoiceMailDirWatcher, SIGNAL(directoryChanged(QString)), SLOT(slotVoiceMailDirectoryChanged(QString)));
+
+    // If vmid file already exists in /dev/shm/contacts directory then create watcher for that file:
+    if (QFile::exists(voiceMailFile)) {
+        qDebug() << Q_FUNC_INFO << "Voice mail file " << voiceMailFile << " exists. Start monitoring it.";
+        QStringList watchedFiles;
+        watchedFiles << voiceMailFile;
+        m_pVoiceMailFileWatcher = new QFileSystemWatcher(watchedFiles);
+        connect(m_pVoiceMailFileWatcher, SIGNAL(fileChanged(QString)), SLOT(slotVoiceMailFileChanged(QString)));
+    }
 
     m_pContactManager = NotificationManager::instance()->contactManager();
 
     fetchVoiceMailContact();
+
+    m_Initialised = true;
 }
 
 QContactFetchRequest* VoiceMailHandler::startContactRequest(QContactFilter &filter, QStringList &details, const char *resultSlot)
@@ -206,18 +228,43 @@ void VoiceMailHandler::slotVoiceMailContactsAvailable()
     request->deleteLater();
 }
 
-void VoiceMailHandler::slotVoiceMailDirectoryChanged()
+void VoiceMailHandler::slotVoiceMailFileChanged(QString path)
 {
-    qDebug() << Q_FUNC_INFO;
+    // File can change for example when new voice mail contact is added. File can exist also when there is no voice mail contact.
+    qDebug() << Q_FUNC_INFO << path;
 
-    bool vmIdFileFound = QFile::exists(QString("%1/%2/%3").arg(VOICEMAIL_CONTACT_VMID_MAIN).arg(VOICEMAIL_CONTACT_VMID_DIR).arg(VOICEMAIL_CONTACT_VMID_FILE));
-    if (m_voiceMailFileExists && !vmIdFileFound) {
-        qDebug() << Q_FUNC_INFO << "wmid file removed!";
-        m_localContactId = 0;
-        m_voiceMailPhoneNumbers.clear();
-    } else if (!m_voiceMailFileExists && vmIdFileFound) {
-        qDebug() << Q_FUNC_INFO << "vmid file created!";
-        m_voiceMailFileExists = true;
-        fetchVoiceMailContact();
+    fetchVoiceMailContact();
+}
+
+void VoiceMailHandler::slotVoiceMailDirectoryChanged(QString path)
+{
+    qDebug() << Q_FUNC_INFO << path;
+
+    QString voiceMailFile  = QString("%1/%2/%3").arg(VOICEMAIL_CONTACT_VMID_MAIN).arg(VOICEMAIL_CONTACT_VMID_DIR).arg(VOICEMAIL_CONTACT_VMID_FILE);
+
+    bool vmIdFileFound = QFile::exists(voiceMailFile);
+
+    if (vmIdFileFound) {
+        qDebug() << Q_FUNC_INFO << "Voicemail file exists.";
+        if (!m_pVoiceMailFileWatcher) { // If we do not have file watcher already existing then create one.
+            qDebug() << Q_FUNC_INFO << "Start monitoring voicemail file.";
+            QStringList watchedFiles;
+            watchedFiles << voiceMailFile;
+            m_pVoiceMailFileWatcher = new QFileSystemWatcher(watchedFiles);
+            connect(m_pVoiceMailFileWatcher, SIGNAL(fileChanged(QString)), SLOT(slotVoiceMailFileChanged(QString)));
+            fetchVoiceMailContact();
+        } else {
+            // File watcher already exists, but does not monitor voicemail file, add monitoring:
+            if (m_pVoiceMailFileWatcher->files().isEmpty()) {
+                m_pVoiceMailFileWatcher->addPath(voiceMailFile);
+            }
+            // or something else was added to dir
+        }
+    } else {
+        // Voicemail file either removed or something else done with dir (other file added etc. although this should not happen AFAIK)
+        qDebug() << Q_FUNC_INFO << "Voicemail file not found, could have been removed manually, remove from file watcher.";
+        if (m_pVoiceMailFileWatcher) {
+            m_pVoiceMailFileWatcher->removePath(voiceMailFile);
+        }
     }
 }

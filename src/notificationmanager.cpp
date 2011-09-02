@@ -1239,6 +1239,14 @@ void NotificationManager::slotContactsRemoved(const QList<QContactLocalId> &cont
 
     qDebug() << Q_FUNC_INFO;
 
+    foreach (QContactLocalId localId, contactIds) {
+        // If removed contact is a voice mail one, then clear its data from VoiceMailHandler:
+        if (VoiceMailHandler::instance()->isVoiceMailContact(localId)) {
+            qDebug() << Q_FUNC_INFO << "Voice mail contact removed!";
+            VoiceMailHandler::instance()->clear();
+        }
+    }
+
     // update contact cache for notifications
     QList<QContactLocalId> updatedContactIds;
     QMutableHashIterator<TpContactUid, QContact> i(m_contacts);
