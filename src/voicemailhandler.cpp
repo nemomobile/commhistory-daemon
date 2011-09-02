@@ -102,6 +102,13 @@ void VoiceMailHandler::clear()
     m_voiceMailPhoneNumbers.clear();
 }
 
+QContactLocalId VoiceMailHandler::voiceMailContactId()
+{
+    qDebug() << Q_FUNC_INFO;
+
+    return m_localContactId;
+}
+
 // P R I V A T E  M E T H O D S
 
 // constructor
@@ -182,6 +189,14 @@ QContactFetchRequest* VoiceMailHandler::startContactRequest(QContactFilter &filt
     return request;
 }
 
+void VoiceMailHandler::startObservingVmcFile()
+{
+    qDebug() << Q_FUNC_INFO;
+
+    connect(m_pVoiceMailDirWatcher, SIGNAL(directoryChanged(QString)), SLOT(slotVoiceMailDirectoryChanged(QString)), Qt::UniqueConnection);
+    connect(m_pVoiceMailDirWatcher, SIGNAL(fileChanged(QString)), SLOT(slotVoiceMailFileChanged(QString)), Qt::UniqueConnection);
+}
+
 // P R I V A T E  S L O T S
 
 void VoiceMailHandler::slotVoiceMailContactsAvailable()
@@ -212,6 +227,10 @@ void VoiceMailHandler::slotVoiceMailContactsAvailable()
                 m_voiceMailPhoneNumbers << phoneNumber.number();
             }
             qDebug() << __PRETTY_FUNCTION__ << "Voice mail phone numbers are: " << m_voiceMailPhoneNumbers;
+
+            // We have voice mail contact data now, we can disconnect listening vmc file and dir changes until vmc is removed.
+            disconnect(m_pVoiceMailDirWatcher, SIGNAL(directoryChanged(QString)), this, SLOT(slotVoiceMailDirectoryChanged(QString)));
+            disconnect(m_pVoiceMailDirWatcher, SIGNAL(fileChanged(QString)), this, SLOT(slotVoiceMailFileChanged(QString)));
         }
     }
 
@@ -240,6 +259,7 @@ void VoiceMailHandler::slotVoiceMailDirectoryChanged(QString path)
         if (m_pVoiceMailDirWatcher->files().isEmpty()) {
             qDebug() << Q_FUNC_INFO << "Start monitoring voicemail file.";
             m_pVoiceMailDirWatcher->addPath(voiceMailFile);
+            fetchVoiceMailContact();
         }
         // else something else was changed in dir
     } else {

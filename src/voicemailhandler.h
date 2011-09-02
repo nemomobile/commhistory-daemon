@@ -61,12 +61,14 @@ public:
      * \returns true if given number is a voice mail number, false if it is not
      */
     bool isVoiceMailNumber(QString phoneNumber);
+
     /*!
      * \brief Tells if given QContactLocalId belongs to a voice mail contact or not.
      * \param QContactLocalId to be checked
      * \returns true if given id belongs to a voice mail contact, false if not
      */
     bool isVoiceMailContact(QContactLocalId localId);
+
     /*!
      * \brief Refreshes VoiceMailHandler by fetching possible voice mail contact from tracker based on GUID.
      */
@@ -76,6 +78,17 @@ public:
      * \brief Clears voicemail contact data.
      */
     void clear();
+
+    /*!
+     * \brief Returns voice mail contact id.
+     * \returns voice mail contact's local id
+     */
+    QContactLocalId voiceMailContactId();
+
+    /*!
+     * \brief Starts to listen QFileSystemWatcher for vmid dir and file changes.
+     */
+    void startObservingVmcFile();
 
 private Q_SLOTS:
     void slotVoiceMailContactsAvailable();

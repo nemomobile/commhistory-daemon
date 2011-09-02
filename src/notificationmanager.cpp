@@ -1239,12 +1239,12 @@ void NotificationManager::slotContactsRemoved(const QList<QContactLocalId> &cont
 
     qDebug() << Q_FUNC_INFO;
 
-    foreach (QContactLocalId localId, contactIds) {
+    if (contactIds.contains(VoiceMailHandler::instance()->voiceMailContactId())) {
         // If removed contact is a voice mail one, then clear its data from VoiceMailHandler:
-        if (VoiceMailHandler::instance()->isVoiceMailContact(localId)) {
-            qDebug() << Q_FUNC_INFO << "Voice mail contact removed!";
-            VoiceMailHandler::instance()->clear();
-        }
+        qDebug() << Q_FUNC_INFO << "Voice mail contact removed!";
+        VoiceMailHandler::instance()->clear();
+        // Start listening vmc file changes in order to be notified about new voice mail contact addings.
+        VoiceMailHandler::instance()->startObservingVmcFile();
     }
 
     // update contact cache for notifications
@@ -1268,12 +1268,10 @@ void NotificationManager::slotContactsChanged(const QList<QContactLocalId> &cont
 
     qDebug() << Q_FUNC_INFO;
 
-    foreach (QContactLocalId localId, contactIds) {
+    if (contactIds.contains(VoiceMailHandler::instance()->voiceMailContactId())) {
         // If changed contact is a voice mail one, then refresh its data in VoiceMailHandler:
-        if (VoiceMailHandler::instance()->isVoiceMailContact(localId)) {
-            qDebug() << Q_FUNC_INFO << "Voice mail contact changed!";
-            VoiceMailHandler::instance()->fetchVoiceMailContact();
-        }
+        qDebug() << Q_FUNC_INFO << "Voice mail contact changed!";
+        VoiceMailHandler::instance()->fetchVoiceMailContact();
     }
 
     if (!m_contacts.isEmpty() || !m_Notifications.isEmpty()) {
