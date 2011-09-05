@@ -1967,14 +1967,31 @@ void TextChannelListener::slotGroupMembersChanged(
                 this,
                 SLOT(slotContactsReady(Tp::PendingOperation *)));
 
-        foreach (Tp::ContactPtr contact, groupMembersAdded) {
+        connect(pc,
+                SIGNAL(finished(Tp::PendingOperation *)),
+                this,
+                SLOT(slotJoinedGroupChat(Tp::PendingOperation *)));
+    }
+}
 
+void TextChannelListener::slotJoinedGroupChat(Tp::PendingOperation *operation)
+{
+    qDebug() << Q_FUNC_INFO << channel();
+
+    if (operation && operation->isError()) {
+        qWarning() << "No contacts" << operation->errorMessage();
+        return;
+    }
+
+    Tp::PendingContacts* pendingContacts = static_cast<Tp::PendingContacts *>(operation);
+    if (pendingContacts) {
+        QList<Tp::ContactPtr> contacts(pendingContacts->contacts());
+        for (int i = 0; i < contacts.count(); i++) {
             // Ignore self contact. In that case "You have joined..." message
             // should be shown instead (by messaging-ui)
-            if (contact != m_Channel->groupSelfContact()) {
-
-                qDebug() << contact->alias() << "joined";
-                sendGroupChatEvent(txt_qtn_msg_group_chat_remote_joined(contact->alias()));
+            if (contacts.value(i) != m_Channel->groupSelfContact()) {
+                qDebug() << contacts.value(i)->alias() << "joined";
+                sendGroupChatEvent(txt_qtn_msg_group_chat_remote_joined(contacts.value(i)->alias()));
             }
         }
     }

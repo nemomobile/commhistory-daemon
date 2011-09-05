@@ -102,6 +102,7 @@ private Q_SLOTS:
     void slotExpungeMessages();
     void slotSingleModelReady(bool status);
     void slotSaveFailedEvents();
+    void slotJoinedGroupChat(Tp::PendingOperation *operation);
 
 private:
 
