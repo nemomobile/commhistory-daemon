@@ -399,9 +399,11 @@ bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& even
 
 void NotificationManager::removeNotifications(const QString &accountPath)
 {
+    qDebug() << Q_FUNC_INFO << "Removing notifications for account " << accountPath;
+
     QSet<NotificationGroup> updatedGroups;
 
-    // remove matched notifications and udpate group
+    // remove matched notifications and update group
     QMutableHashIterator<NotificationGroup, PersonalNotification> i(m_Notifications);
     while (i.hasNext()) {
 
@@ -502,17 +504,25 @@ void NotificationManager::slotObservedInboxChanged()
         if (!value.isNull()) {
             bool observed = value.toBool();
             qDebug() << Q_FUNC_INFO << "inbox observed? " << observed;
-            // Remove groups only if inbox is observed AND we do not use filtering!
-            if (observed && !isFilteredInbox()) {
-                // remove sms, mms and im notification groups and save state
-                // remove meegotouch groups
-                bool save = false;
-                save = removeNotificationGroup(CommHistory::Event::IMEvent) || save;
-                save = removeNotificationGroup(CommHistory::Event::SMSEvent) || save;
-                save = removeNotificationGroup(CommHistory::Event::MMSEvent) || save;
-                save = removeNotificationGroup(VOICEMAIL_SMS_EVENT_TYPE) || save;
-                if (save)
-                    saveState();
+            if (observed) {
+                QStringList filteredAccountPaths = filteredInboxAccountPaths();
+                // No filtering, we can remove all messaging related notifications:
+                if (filteredAccountPaths.isEmpty()) {
+                    // remove sms, mms and im notification groups and save state
+                    // remove meegotouch groups
+                    bool save = false;
+                    save = removeNotificationGroup(CommHistory::Event::IMEvent) || save;
+                    save = removeNotificationGroup(CommHistory::Event::SMSEvent) || save;
+                    save = removeNotificationGroup(CommHistory::Event::MMSEvent) || save;
+                    save = removeNotificationGroup(VOICEMAIL_SMS_EVENT_TYPE) || save;
+                    if (save)
+                        saveState();
+                } else {
+                    // Filtering is in use, remove only notifications of those accounts whose threads are visible in inbox:
+                    qDebug() << Q_FUNC_INFO << "Removing only notifications belonging to accounts " << filteredAccountPaths;
+                    foreach (QString accountPath, filteredAccountPaths)
+                        removeNotifications(accountPath);
+                }
             }
         } else {
             qDebug() << Q_FUNC_INFO << "Context property value for observing inbox is NULL!";
@@ -535,23 +545,24 @@ void NotificationManager::slotObservedCallHistoryChanged()
     }
 }
 
-bool NotificationManager::isFilteredInbox()
+QStringList NotificationManager::filteredInboxAccountPaths()
 {
     qDebug() << Q_FUNC_INFO;
 
-    bool filtered = false;
+    QStringList accountPaths;
 
     if (m_FilteredInbox) {
         QVariant value = m_FilteredInbox->value(QVariant());
         if (!value.isNull()) {
-            filtered = value.toBool();
-            qDebug() << Q_FUNC_INFO << "inbox filtered? " << filtered;
+            accountPaths = value.toStringList();
+            qDebug() << Q_FUNC_INFO << "inbox filtered using account paths: " << accountPaths;
         } else {
-            qDebug() << Q_FUNC_INFO << "Context property value for inbox filtering is NULL!";
+            // We do not have filtering on.
+            qDebug() << Q_FUNC_INFO << "Context property value for inbox filtering is not set.";
         }
     }
 
-    return filtered;
+    return accountPaths;
 }
 
 void NotificationManager::clearContactsCache()

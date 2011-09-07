@@ -215,7 +215,7 @@ private:
 
     void clearContactsCache();
     QString notificationName(const PersonalNotification &notification);
-    bool isFilteredInbox();
+    QStringList filteredInboxAccountPaths();
     bool updateEditedEvent(const CommHistory::Event& event);
 
 private:
