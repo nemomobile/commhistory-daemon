@@ -116,10 +116,11 @@ public:
 
 public Q_SLOTS:
     /*!
-     * \brief Removes notifications belong to a particular account.
+     * \brief Removes notifications belonging to a particular account having optionally certain remote uids.
      * \param accountPath
+     * \param remoteUids
      */
-    void removeNotifications(const QString &accountPath);
+    void removeNotifications(const QString &accountPath, const QStringList &remoteUids = QStringList());
 
 private Q_SLOTS:
     /*!
@@ -215,6 +216,7 @@ private:
 
     void clearContactsCache();
     QString notificationName(const PersonalNotification &notification);
+    bool isFilteredInbox();
     QStringList filteredInboxAccountPaths();
     bool updateEditedEvent(const CommHistory::Event& event);
 
