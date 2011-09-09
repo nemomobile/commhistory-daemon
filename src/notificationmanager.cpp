@@ -399,7 +399,7 @@ bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& even
 
 void NotificationManager::removeNotifications(const QString &accountPath, const QStringList &remoteUids)
 {
-    qDebug() << Q_FUNC_INFO << "Removing notifications for account " << accountPath << " having remoteuids " << remoteUids;
+    qDebug() << Q_FUNC_INFO << "Removing notifications for account " << accountPath << " from remote uids " << remoteUids;
 
     QSet<NotificationGroup> updatedGroups;
 
@@ -408,19 +408,46 @@ void NotificationManager::removeNotifications(const QString &accountPath, const 
     while (i.hasNext()) {
 
         i.next();
-        if (i.key().isValid() &&
-            MAP_MMS_TO_RING(i.value().account()) == accountPath &&
-            (!remoteUids.isEmpty() && remoteUids.contains(i.value().remoteUid()))) {
 
-            qDebug() << Q_FUNC_INFO << "Removing notification: accountPath: " << i.value().account() << " remoteUid: " << i.value().remoteUid();
+        int eventType = i.value().eventType();
 
-            // record notification group id
-            updatedGroups.insert(i.key());
-            // no need to resolve events anymore -> remove personal notification from queue
-            m_unresolvedEvents.removeAll(i.value());
-            // at last, delete _i_
-            i.remove();
+        qDebug() << Q_FUNC_INFO << "Event type of notification is " << eventType;
+
+        if (eventType == CommHistory::Event::IMEvent || eventType == CommHistory::Event::SMSEvent
+             || eventType == CommHistory::Event::MMSEvent || eventType == VOICEMAIL_SMS_EVENT_TYPE) {
+
+
+            if (i.key().isValid() && MAP_MMS_TO_RING(i.value().account()) == accountPath) {
+
+                qDebug() << Q_FUNC_INFO << "Notification's target id: " << i.value().targetId();
+                qDebug() << Q_FUNC_INFO << "Notification's remote id: " << i.value().remoteUid();
+
+                bool remoteUidMatch = false;
+                if (!remoteUids.isEmpty()) {
+                    foreach (QString remoteUid, remoteUids) {
+                        if (CommHistory::remoteAddressMatch(i.value().remoteUid(), remoteUid)) {
+                            remoteUidMatch = true;
+                            break;
+                        }
+                    }
+
+                    if (!remoteUidMatch) {
+                        qDebug() << Q_FUNC_INFO << "Remote uid " << i.value().remoteUid() << " not found from notifications of " << accountPath;
+                        continue;
+                    }
+                }
+
+                qDebug() << Q_FUNC_INFO << "Removing notification: accountPath: " << i.value().account() << " remoteUid: " << i.value().remoteUid();
+
+                // record notification group id
+                updatedGroups.insert(i.key());
+                // no need to resolve events anymore -> remove personal notification from queue
+                m_unresolvedEvents.removeAll(i.value());
+                // at last, delete _i_
+                i.remove();
+            }
         }
+
     }
 
     if (!updatedGroups.isEmpty()) {
@@ -509,7 +536,7 @@ void NotificationManager::slotObservedInboxChanged()
             qDebug() << Q_FUNC_INFO << "inbox observed? " << observed;
             if (observed) {
                 // No filtering, we can remove all messaging related notifications:
-                if (isFilteredInbox()) {
+                if (!isFilteredInbox()) {
                     // remove sms, mms and im notification groups and save state
                     // remove meegotouch groups
                     bool save = false;
@@ -523,8 +550,13 @@ void NotificationManager::slotObservedInboxChanged()
                     // Filtering is in use, remove only notifications of those accounts whose threads are visible in inbox:
                     QMap<QString,QVariant> filteredAccountPaths = filteredInboxAccountPaths();
                     qDebug() << Q_FUNC_INFO << "Removing only notifications belonging to accounts " << filteredAccountPaths.uniqueKeys();
-                    foreach (QString accountPath, filteredAccountPaths)
-                        removeNotifications(accountPath);
+                    foreach (QString accountPath, filteredAccountPaths.uniqueKeys()) {
+                        QVariant var = filteredAccountPaths.value(accountPath);
+                        if (!var.isNull()) {
+                            QStringList remoteUids = var.toStringList();
+                            removeNotifications(accountPath, remoteUids);
+                        }
+                    }
                 }
             }
         } else {
@@ -558,7 +590,7 @@ bool NotificationManager::isFilteredInbox()
     return true;
 }
 
-QStringList NotificationManager::filteredInboxAccountPaths()
+QMap<QString,QVariant> NotificationManager::filteredInboxAccountPaths()
 {
     qDebug() << Q_FUNC_INFO;
 
@@ -572,12 +604,12 @@ QStringList NotificationManager::filteredInboxAccountPaths()
             qDebug() << Q_FUNC_INFO << "inbox filtered using account paths " << accountPaths;
             foreach (QString accountPath, accountPaths) {
                 qDebug() << Q_FUNC_INFO << "Account path: " << accountPath;
-                QVariantList remoteUids = filteringMap.values(accountPath);
-                foreach (QVariant var, remoteUids) {
-                    if (var.isValid())
-                        qDebug() << Q_FUNC_INFO << "remoteUid: " << var.toString();
-                    else
-                        qDebug() << Q_FUNC_INFO << "no remote uid";
+                QVariant var = filteringMap.value(accountPath);
+                if (!var.isNull()) {
+                    QStringList remoteUids = var.toStringList();
+                    foreach (QString remoteUid, remoteUids) {
+                        qDebug() << Q_FUNC_INFO << "remoteUid: " << remoteUid;
+                    }
                 }
             }
         } else {
