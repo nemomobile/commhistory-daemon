@@ -420,24 +420,23 @@ void NotificationManager::removeNotifications(const QString &accountPath, const 
             if (i.key().isValid() && MAP_MMS_TO_RING(i.value().account()) == accountPath) {
 
                 qDebug() << Q_FUNC_INFO << "Notification's target id: " << i.value().targetId();
-                qDebug() << Q_FUNC_INFO << "Notification's remote id: " << i.value().remoteUid();
 
                 bool remoteUidMatch = false;
                 if (!remoteUids.isEmpty()) {
                     foreach (QString remoteUid, remoteUids) {
-                        if (CommHistory::remoteAddressMatch(i.value().remoteUid(), remoteUid)) {
+                        if (CommHistory::remoteAddressMatch(i.value().targetId(), remoteUid)) {
                             remoteUidMatch = true;
                             break;
                         }
                     }
 
                     if (!remoteUidMatch) {
-                        qDebug() << Q_FUNC_INFO << "Remote uid " << i.value().remoteUid() << " not found from notifications of " << accountPath;
+                        qDebug() << Q_FUNC_INFO << "Remote uid " << i.value().targetId() << " not found from notifications of " << accountPath;
                         continue;
                     }
                 }
 
-                qDebug() << Q_FUNC_INFO << "Removing notification: accountPath: " << i.value().account() << " remoteUid: " << i.value().remoteUid();
+                qDebug() << Q_FUNC_INFO << "Removing notification: accountPath: " << i.value().account() << " remoteUid: " << i.value().targetId();
 
                 // record notification group id
                 updatedGroups.insert(i.key());
