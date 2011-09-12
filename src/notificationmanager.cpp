@@ -399,7 +399,9 @@ bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& even
 
 void NotificationManager::removeNotifications(const QString &accountPath, const QStringList &remoteUids)
 {
-    qDebug() << Q_FUNC_INFO << "Removing notifications for account " << accountPath << " from remote uids " << remoteUids;
+    qDebug() << Q_FUNC_INFO << "Removing notifications:";
+    qDebug() << Q_FUNC_INFO << "account: " << accountPath;
+    qDebug() << Q_FUNC_INFO << "remote uids: " << remoteUids;
 
     QSet<NotificationGroup> updatedGroups;
 
@@ -411,17 +413,19 @@ void NotificationManager::removeNotifications(const QString &accountPath, const 
 
         int eventType = i.value().eventType();
 
-        qDebug() << Q_FUNC_INFO << "Event type of notification is " << eventType;
+        qDebug() << Q_FUNC_INFO << "Event type of found notification is " << eventType;
 
+        // Remove only a notification that belongs to messaging-ui area:
         if (eventType == CommHistory::Event::IMEvent || eventType == CommHistory::Event::SMSEvent
              || eventType == CommHistory::Event::MMSEvent || eventType == VOICEMAIL_SMS_EVENT_TYPE) {
 
-
+            // Remove only a notification matching to the account:
             if (i.key().isValid() && MAP_MMS_TO_RING(i.value().account()) == accountPath) {
 
                 qDebug() << Q_FUNC_INFO << "Notification's target id: " << i.value().targetId();
 
                 bool remoteUidMatch = false;
+                // If we have remote uids narrowing the matching criteria:
                 if (!remoteUids.isEmpty()) {
                     foreach (QString remoteUid, remoteUids) {
                         if (CommHistory::remoteAddressMatch(i.value().targetId(), remoteUid)) {
@@ -552,6 +556,7 @@ void NotificationManager::slotObservedInboxChanged()
                     foreach (QString accountPath, filteredAccountPaths.uniqueKeys()) {
                         QVariant var = filteredAccountPaths.value(accountPath);
                         if (!var.isNull()) {
+                            // We might have also remote uids narrowing the range of notifications to be removed:
                             QStringList remoteUids = var.toStringList();
                             removeNotifications(accountPath, remoteUids);
                         }
@@ -599,18 +604,6 @@ QMap<QString,QVariant> NotificationManager::filteredInboxAccountPaths()
         QVariant value = m_FilteredInbox->value(QVariant());
         if (!value.isNull()) {
             filteringMap = value.toMap();
-            QStringList accountPaths = filteringMap.uniqueKeys();
-            qDebug() << Q_FUNC_INFO << "inbox filtered using account paths " << accountPaths;
-            foreach (QString accountPath, accountPaths) {
-                qDebug() << Q_FUNC_INFO << "Account path: " << accountPath;
-                QVariant var = filteringMap.value(accountPath);
-                if (!var.isNull()) {
-                    QStringList remoteUids = var.toStringList();
-                    foreach (QString remoteUid, remoteUids) {
-                        qDebug() << Q_FUNC_INFO << "remoteUid: " << remoteUid;
-                    }
-                }
-            }
         } else {
             // We do not have filtering on.
             qDebug() << Q_FUNC_INFO << "Context property value for inbox filtering is not set.";

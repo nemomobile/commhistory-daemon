@@ -117,8 +117,8 @@ public:
 public Q_SLOTS:
     /*!
      * \brief Removes notifications belonging to a particular account having optionally certain remote uids.
-     * \param accountPath
-     * \param remoteUids
+     * \param accountPath Notifications of this account are to be removed.
+     * \param remoteUids Notifications of accountPath connected also to remoteUids are to be removed.
      */
     void removeNotifications(const QString &accountPath, const QStringList &remoteUids = QStringList());
 
