@@ -314,6 +314,8 @@ void Ut_NotificationManager::testImNotification()
 
     nm->showNotification(event, CONTACT_1_REMOTE_ID);
 
+    justWait(1000);
+
     MNotificationGroup *mgtGroup = getGroup(event.type(), 5000);
     QVERIFY(mgtGroup);
     QVERIFY(mgtGroup->isPublished());
@@ -330,6 +332,8 @@ void Ut_NotificationManager::testImNotification()
     // Multiple notifications from contact 1
     CommHistory::Event event1 = createImEvent(CONTACT_1_REMOTE_ID, CONTACT_1_ID);
     nm->showNotification(event1, CONTACT_1_REMOTE_ID);
+
+    justWait(1000);
 
     mgtGroup = getGroup(event.type(), 5000);
     QVERIFY(mgtGroup);
@@ -367,6 +371,7 @@ void Ut_NotificationManager::testVoicemail()
     QVERIFY(getGroup(CommHistory::Event::VoicemailEvent, 10) == 0);
 
     nm->slotMWICountChanged(1);
+    justWait(1000);
 
     MNotificationGroup *mgtGroup = getGroup(CommHistory::Event::VoicemailEvent, 5000);
     QVERIFY(mgtGroup);
@@ -378,6 +383,7 @@ void Ut_NotificationManager::testVoicemail()
 
     nm->slotMWICountChanged(2);
 
+    justWait(1000);
     mgtGroup = getGroup(CommHistory::Event::VoicemailEvent, 5000);
     QVERIFY(mgtGroup);
     QVERIFY(mgtGroup->isPublished());
@@ -388,6 +394,7 @@ void Ut_NotificationManager::testVoicemail()
 
     nm->slotMWICountChanged(-1); // unknown number
 
+    justWait(1000);
     mgtGroup = getGroup(CommHistory::Event::VoicemailEvent, 5000);
     QVERIFY(mgtGroup);
     QVERIFY(mgtGroup->isPublished());
@@ -397,6 +404,7 @@ void Ut_NotificationManager::testVoicemail()
     justWait(NOTIFICATION_THRESHOLD + 500);
 
     nm->slotMWICountChanged(0);
+    justWait(1000);
 
     mgtGroup = getGroup(CommHistory::Event::VoicemailEvent, 1);
     QVERIFY(mgtGroup == 0);
@@ -415,6 +423,8 @@ void Ut_NotificationManager::testMissedCallNotification()
 
     nm->showNotification(event, CONTACT_1_REMOTE_ID);
 
+    justWait(1000);
+
     MNotificationGroup *mgtGroup = getGroup(event.type(), 5000);
     QVERIFY(mgtGroup);
     QVERIFY(mgtGroup->isPublished());
@@ -431,6 +441,8 @@ void Ut_NotificationManager::testMissedCallNotification()
     // Multiple notifications from contact 1
     CommHistory::Event event1 = createMissedCallEvent(CONTACT_1_REMOTE_ID, CONTACT_1_ID);
     nm->showNotification(event1, CONTACT_1_REMOTE_ID);
+
+    justWait(1000);
 
     mgtGroup = getGroup(event.type(), 5000);
     QVERIFY(mgtGroup);

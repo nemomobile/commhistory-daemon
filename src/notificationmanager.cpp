@@ -706,7 +706,6 @@ QString NotificationManager::eventType(int type)
     for(int i = 0; i < _eventTypesCount; i++) {
         if(_eventTypes[i].type == type) {
             event = QLatin1String(_eventTypes[i].event);
-            qDebug() << Q_FUNC_INFO << "event type string is " << event;
             break;
         }
     }
