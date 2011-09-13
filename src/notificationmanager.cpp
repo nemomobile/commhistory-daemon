@@ -397,11 +397,9 @@ bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& even
     return localIdMatch && remoteIdMatch && chatTypeMatch;
 }
 
-void NotificationManager::removeNotifications(const QString &accountPath, const QStringList &remoteUids)
+void NotificationManager::removeNotifications(const QString &accountPath)
 {
-    qDebug() << Q_FUNC_INFO << "Removing notifications:";
-    qDebug() << Q_FUNC_INFO << "account: " << accountPath;
-    qDebug() << Q_FUNC_INFO << "remote uids: " << remoteUids;
+    qDebug() << Q_FUNC_INFO << "Removing notifications of account " << accountPath;
 
     QSet<NotificationGroup> updatedGroups;
 
@@ -421,25 +419,6 @@ void NotificationManager::removeNotifications(const QString &accountPath, const 
 
             // Remove only a notification matching to the account:
             if (i.key().isValid() && MAP_MMS_TO_RING(i.value().account()) == accountPath) {
-
-                qDebug() << Q_FUNC_INFO << "Notification's target id: " << i.value().targetId();
-
-                bool remoteUidMatch = false;
-                // If we have remote uids narrowing the matching criteria:
-                if (!remoteUids.isEmpty()) {
-                    foreach (QString remoteUid, remoteUids) {
-                        if (CommHistory::remoteAddressMatch(i.value().targetId(), remoteUid)) {
-                            remoteUidMatch = true;
-                            break;
-                        }
-                    }
-
-                    if (!remoteUidMatch) {
-                        qDebug() << Q_FUNC_INFO << "Remote uid " << i.value().targetId() << " not found from notifications of " << accountPath;
-                        continue;
-                    }
-                }
-
                 qDebug() << Q_FUNC_INFO << "Removing notification: accountPath: " << i.value().account() << " remoteUid: " << i.value().targetId();
 
                 // record notification group id
@@ -551,15 +530,10 @@ void NotificationManager::slotObservedInboxChanged()
                         saveState();
                 } else {
                     // Filtering is in use, remove only notifications of those accounts whose threads are visible in inbox:
-                    QMap<QString,QVariant> filteredAccountPaths = filteredInboxAccountPaths();
-                    qDebug() << Q_FUNC_INFO << "Removing only notifications belonging to accounts " << filteredAccountPaths.uniqueKeys();
-                    foreach (QString accountPath, filteredAccountPaths.uniqueKeys()) {
-                        QVariant var = filteredAccountPaths.value(accountPath);
-                        if (!var.isNull()) {
-                            // We might have also remote uids narrowing the range of notifications to be removed:
-                            QStringList remoteUids = var.toStringList();
-                            removeNotifications(accountPath, remoteUids);
-                        }
+                    QStringList filteredAccountPaths = filteredInboxAccountPaths();
+                    qDebug() << Q_FUNC_INFO << "Removing only notifications belonging to accounts " << filteredAccountPaths;
+                    foreach (QString accountPath, filteredAccountPaths) {
+                        removeNotifications(accountPath);
                     }
                 }
             }
@@ -594,23 +568,23 @@ bool NotificationManager::isFilteredInbox()
     return true;
 }
 
-QMap<QString,QVariant> NotificationManager::filteredInboxAccountPaths()
+QStringList NotificationManager::filteredInboxAccountPaths()
 {
     qDebug() << Q_FUNC_INFO;
 
-    QMap<QString,QVariant> filteringMap;
+    QStringList filteredAccounts;
 
     if (m_FilteredInbox) {
         QVariant value = m_FilteredInbox->value(QVariant());
         if (!value.isNull()) {
-            filteringMap = value.toMap();
+            filteredAccounts = value.toStringList();
         } else {
             // We do not have filtering on.
             qDebug() << Q_FUNC_INFO << "Context property value for inbox filtering is not set.";
         }
     }
 
-    return filteringMap;
+    return filteredAccounts;
 }
 
 void NotificationManager::clearContactsCache()
