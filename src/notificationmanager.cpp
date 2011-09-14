@@ -397,7 +397,7 @@ bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& even
     return localIdMatch && remoteIdMatch && chatTypeMatch;
 }
 
-void NotificationManager::removeNotifications(const QString &accountPath, bool observationCase)
+void NotificationManager::removeNotifications(const QString &accountPath, bool messagesOnly)
 {
     qDebug() << Q_FUNC_INFO << "Removing notifications of account " << accountPath;
 
@@ -411,7 +411,7 @@ void NotificationManager::removeNotifications(const QString &accountPath, bool o
 
         // If removal should be done based on Inbox being observed then remove only those notifications
         // that belong to messaging-ui area:
-        if (observationCase && (eventType != CommHistory::Event::IMEvent && eventType != CommHistory::Event::SMSEvent
+        if (messagesOnly && (eventType != CommHistory::Event::IMEvent && eventType != CommHistory::Event::SMSEvent
              && eventType != CommHistory::Event::MMSEvent && eventType != VOICEMAIL_SMS_EVENT_TYPE)) {
             qDebug() << Q_FUNC_INFO << "Skipping " << eventType << " type of notification";
             continue;

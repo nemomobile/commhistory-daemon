@@ -118,8 +118,9 @@ public Q_SLOTS:
     /*!
      * \brief Removes notifications belonging to a particular account having optionally certain remote uids.
      * \param accountPath Notifications of this account are to be removed.
+     * \param messagesOnly Remove only messaging related notifications.
      */
-    void removeNotifications(const QString &accountPath, bool observationCase = false);
+    void removeNotifications(const QString &accountPath, bool messagesOnly = false);
 
 private Q_SLOTS:
     /*!
