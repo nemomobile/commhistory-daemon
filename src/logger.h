@@ -63,6 +63,9 @@ public Q_SLOTS:
      */
     void channelClosed(ChannelListener *listener);
 
+private Q_SLOTS:
+    void slotInvalidated(Tp::DBusProxy *proxy, const QString &errorName, const QString &errorMessage);
+
 private:
     QStringList m_Channels;
     Tp::ClientRegistrarPtr m_Registrar;

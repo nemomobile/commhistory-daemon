@@ -91,6 +91,11 @@ void Logger::createChannelListener(const QString &channelType,
          return;
     }
 
+    connect(channel.data(),
+            SIGNAL( invalidated(Tp::DBusProxy*, const QString&, const QString& ) ),
+            this,
+            SLOT( slotInvalidated(Tp::DBusProxy*, const QString&, const QString& ) ) );
+
     qDebug() << "creating listener for: " << channelObjectPath << " type " << channelType;
 
     ChannelListener* listener = 0;
@@ -112,9 +117,28 @@ void Logger::createChannelListener(const QString &channelType,
 void Logger::channelClosed(ChannelListener *listener)
 {
     if(listener) {
-        m_Channels.removeAll(listener->channel());
         listener->deleteLater();
         listener = 0;
     }
 }
 
+void Logger::slotInvalidated(Tp::DBusProxy *proxy,
+            const QString &errorName, const QString &errorMessage)
+{
+    qDebug() << __PRETTY_FUNCTION__ << proxy->objectPath();
+
+    Q_UNUSED(proxy)
+    Q_UNUSED(errorName)
+    Q_UNUSED(errorMessage)
+
+    Tp::Channel *channel = qobject_cast<Tp::Channel *>(sender());
+    if (channel) {
+        qDebug() << __PRETTY_FUNCTION__ << "Removing " << channel->objectPath() << " from channels list";
+        m_Channels.removeAll(channel->objectPath());
+    }
+
+    disconnect(channel,
+            SIGNAL( invalidated(Tp::DBusProxy*, const QString&, const QString& ) ),
+            this,
+            SLOT( slotInvalidated(Tp::DBusProxy*, const QString&, const QString& ) ) );
+}
