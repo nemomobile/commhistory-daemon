@@ -218,6 +218,8 @@ QString supersedesToken(const Tp::MessagePart &header)
 
 } // anonymous namespace
 
+QMultiHash<QString,uint> TextChannelListener::m_pendingMessageIds;
+
 TextChannelListener::TextChannelListener(const Tp::AccountPtr &account,
                                          const Tp::ChannelPtr &channel,
                                          const Tp::MethodInvocationContextPtr<> &context,
@@ -251,6 +253,12 @@ void TextChannelListener::channelListenerReady()
         connect( textChannel.data(),
                  SIGNAL( messageReceived(const Tp::ReceivedMessage&) ),
                  SLOT( slotMessageReceived(const Tp::ReceivedMessage&) ),
+                 Qt::UniqueConnection);
+
+        // When message in text channel is acknowledged, the pendingMessageRemoved signal is emitted:
+        connect( textChannel.data(),
+                 SIGNAL( pendingMessageRemoved(const Tp::ReceivedMessage&) ),
+                 SLOT( slotPendingMessageRemoved(const Tp::ReceivedMessage&) ),
                  Qt::UniqueConnection);
 
         connect( textChannel.data(),
@@ -588,7 +596,25 @@ void TextChannelListener::slotOnModelReady(bool status)
 void TextChannelListener::slotMessageReceived(const Tp::ReceivedMessage &message)
 {
     Q_UNUSED(message);
+    qDebug() << __PRETTY_FUNCTION__;
+
     handleMessages();
+}
+
+void TextChannelListener::slotPendingMessageRemoved(const Tp::ReceivedMessage &message)
+{
+    qDebug() << __PRETTY_FUNCTION__;
+
+    uint pendingId = PENDING_ID(message);
+
+    qDebug() << __PRETTY_FUNCTION__ << "Pending message (pending id = " << pendingId << ") having content "
+             << message.text() << " acked and removed from channel's message queue.";
+
+    if (m_pendingMessageIds.contains(m_Channel->objectPath(), pendingId)) {
+        qDebug() << __PRETTY_FUNCTION__ << "Removing message from channel " << m_Channel->objectPath()
+                 << " having pending id " << pendingId << " from pending messages list of all text channel listeners";
+        m_pendingMessageIds.remove(m_Channel->objectPath(), pendingId);
+    }
 }
 
 void TextChannelListener::handleMessages()
@@ -608,18 +634,26 @@ void TextChannelListener::handleMessages()
     if (!textChannel) {
         qCritical() << "TextChannelListener has non text channel";
         return;
+    }    
+
+    // Add to our local message queue only those messages that are not yet pending:
+    foreach (Tp::ReceivedMessage me, textChannel->messageQueue()) {
+        uint pendingId = PENDING_ID(me);
+        if (!m_pendingMessageIds.contains(m_Channel->objectPath(), pendingId)) {
+            m_messageQueue << me;
+            m_pendingMessageIds.insertMulti(m_Channel->objectPath(), pendingId);
+        }
     }
 
-    m_messageQueue << textChannel->messageQueue();
-    Tp::TextChannelPtr textChannelPtr = Tp::TextChannelPtr::dynamicCast(m_Channel);
-    if(!textChannelPtr.isNull()) {
-        textChannelPtr->forget(textChannel->messageQueue());
-    }
+    qDebug() << __PRETTY_FUNCTION__ << "Number of messages in local message queue: " << m_messageQueue.size();
 
     foreach(Tp::ReceivedMessage message, m_messageQueue) {
         CommHistory::Event event;
         Tp::ChannelTextMessageType type = message.messageType();
         bool wait = false;
+
+        qDebug() << __PRETTY_FUNCTION__ << "Handling message from channel " << m_Channel->objectPath()
+                 << " with content " << message.text() << " and with pending id " << PENDING_ID(message);
 
         switch (type) {
         case Tp::ChannelTextMessageTypeDeliveryReport: {

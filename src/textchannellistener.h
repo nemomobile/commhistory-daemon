@@ -50,6 +50,7 @@ namespace Tp {
 
 namespace RTComLogger
 {
+
 /*!
  * \class TextChannelListener
  * \brief class responsible for listening and logging activity on a text channel
@@ -103,6 +104,7 @@ private Q_SLOTS:
     void slotSingleModelReady(bool status);
     void slotSaveFailedEvents();
     void slotJoinedGroupChat(Tp::PendingOperation *operation);
+    void slotPendingMessageRemoved(const Tp::ReceivedMessage &message);
 
 private:
 
@@ -231,6 +233,8 @@ private:
     uint m_FailedSaveCount;
     QList<CommHistory::Event> m_failedSaveEvents;
 
+    // Global storage, among all text channel listeners, of ids of messages not acknowledged yet by mui:
+    static QMultiHash<QString,uint> m_pendingMessageIds;
 #ifdef UNIT_TEST
     friend class Ut_TextChannelListener;
 #endif

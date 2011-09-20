@@ -116,6 +116,8 @@ void Logger::createChannelListener(const QString &channelType,
 
 void Logger::channelClosed(ChannelListener *listener)
 {
+    qDebug() << __FUNCTION__ << "Got channelClosed signal from listener. Deleting listener.";
+
     if(listener) {
         listener->deleteLater();
         listener = 0;
