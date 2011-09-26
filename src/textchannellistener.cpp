@@ -37,6 +37,7 @@
 #include <CommHistory/ClassZeroSMSModel>
 #include <CommHistory/SingleEventModel>
 #include <CommHistory/TrackerIO>
+#include <CommHistory/ConversationModel>
 
 // Telepathy
 #include <TelepathyQt4/TextChannel>
@@ -83,6 +84,7 @@
 #define VOICEMAIL_TYPE       QLatin1String("x-nokia-voicemail-type")
 #define MAILBOX_UNREAD_COUNT QLatin1String("x-nokia-mailbox-unread-count")
 #define MAILBOX_HAS_UNREAD   QLatin1String("x-nokia-mailbox-has-unread")
+#define REPLACE_TYPE         QLatin1String("sms-replace-number")
 
 // content
 #define PART_CONTENT       QLatin1String("content")
@@ -166,6 +168,17 @@ bool isVoicemail(const Tp::MessagePart &header)
     }
 
     return false;
+}
+
+QString replaceType(const Tp::MessagePart &header)
+{
+    if (header.contains(REPLACE_TYPE)) {
+        QVariant typeVar = header.value(REPLACE_TYPE).variant();
+        if (typeVar.isValid())
+            return typeVar.value<QString>();
+    }
+
+    return QString();
 }
 
 QString voicemailType(const Tp::MessagePart &header)
@@ -631,6 +644,7 @@ void TextChannelListener::handleMessages()
     QHash<int, QList<Tp::ReceivedMessage> > modifyMessages;
     // expunge tokens for committing events
     QHash<int, QMultiHash<int, QString> > modifyTokens;
+    bool hasReplaceMessage = false;
 
     NotificationManager* nManager = NotificationManager::instance();
 
@@ -718,6 +732,8 @@ void TextChannelListener::handleMessages()
             // fills event properties
             handleReceivedMessage(message, event);
 
+            QString replaceTypeValue = replaceType(message.header());
+
             if (mmsNotification.isValid()) {
                 qDebug() << __FUNCTION__ << "found MMS notification, overwriting";
                 // overwrite MMS notification with downloaded message
@@ -755,6 +771,15 @@ void TextChannelListener::handleMessages()
                 processedMessages << message;
                 classZeroSMSModel()->addEvent(event,true);
                 m_EventTokens.insertMulti(event.id(), event.messageToken());
+            // Replace sms
+            } else if (!replaceTypeValue.isEmpty()) {
+                qDebug() << __FUNCTION__ << "Replace type of sms";
+                m_replaceEvents << event;
+                m_replaceMessages << message;
+                hasReplaceMessage = true;
+                if (event.direction() != CommHistory::Event::Outbound) {
+                    nManager->showNotification(event, targetId(), m_Group.chatType());
+                }
               // Normal sms
             } else {
                 QString supersedes = supersedesToken(message.header());
@@ -876,6 +901,11 @@ void TextChannelListener::handleMessages()
         }
     }
 
+    if (hasReplaceMessage) {
+        if (conversationModel().isReady())
+            conversationModel().getEvents(m_Group.id());
+    }
+
     if (!modifyEvents.isEmpty()) {
         QHash<int, QList<CommHistory::Event> >::iterator i;
         for (i = modifyEvents.begin(); i != modifyEvents.end(); ++i) {
@@ -892,6 +922,67 @@ void TextChannelListener::handleMessages()
     foreach (Tp::ReceivedMessage message, processedMessages) {
         m_messageQueue.removeOne(message);
     }
+}
+
+void TextChannelListener::slotConvModelReady(bool success)
+{
+    qDebug() << __FUNCTION__;
+
+    if (success && !m_replaceEvents.isEmpty()) {
+        CommHistory::Event event = m_replaceEvents.takeFirst();
+
+        // Model should inform us when event that we add is committed into tracker.
+        connect(&conversationModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event> &, bool)),
+                this, SLOT(slotConvEventsCommitted(const QList<CommHistory::Event> &, bool)));
+
+        if (conversationModel().addEvent(event)) {
+            // Add event token to list to indicate that the event is under committing process.
+            m_EventTokens.insertMulti(event.id(), event.messageToken());
+        } else  {
+            qWarning() << "Adding replace type of event failed!";
+        }
+
+        m_messageQueue.removeOne(m_replaceMessages.takeFirst());
+    }
+}
+
+void TextChannelListener::slotConvEventsCommitted(const QList<CommHistory::Event> &events, bool success)
+{
+    qDebug() << __FUNCTION__;
+
+    disconnect(&conversationModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event> &, bool)),
+            this, SLOT(slotConvEventsCommitted(const QList<CommHistory::Event> &, bool)));
+
+    if (success) {
+        QList<CommHistory::Event> eventsToBeRemoved;
+
+        foreach (CommHistory::Event committedEvent, events) {
+            // This should never happen, but still in case to avoid unnecessary conversation model looping:
+            if (committedEvent.headers().value(REPLACE_TYPE).isEmpty()) continue;
+
+            QString replaceTypeValueCommitted = committedEvent.headers().value(REPLACE_TYPE);
+
+            for (int i=0;i<conversationModel().rowCount(QModelIndex());i++) {
+                QModelIndex eventIndex = conversationModel().index(i,0);
+                if (eventIndex.isValid()) {
+                    CommHistory::Event event = conversationModel().event(eventIndex);
+                    // Set previous voicemail SMS having same replace type to be removed:
+                    if ((event.headers().value(REPLACE_TYPE) == replaceTypeValueCommitted)
+                        && committedEvent.id() != event.id())
+                        eventsToBeRemoved.append(event);
+                }
+            }
+        }
+
+        foreach (CommHistory::Event event, eventsToBeRemoved)
+            if (!conversationModel().deleteEvent(event)) qWarning() << "Removing replace type of event failed!";
+    }
+
+    // Call to handle msg expunging, event tokens list and failed cases:
+    slotEventsCommitted(events,success);
+
+    // Check if there are more replace type of messages in message queue to be handled:
+    slotConvModelReady(true);
 }
 
 bool TextChannelListener::recoverDeliveryEcho(const Tp::Message &message,
@@ -1328,6 +1419,14 @@ void TextChannelListener::fillEventFromMessage(const Tp::Message &message,
         parseMMSHeaders(message, event);
 
     checkVCard(message.parts(), event);
+
+    // Check for possible sms-replace-number header in Tp::Message:
+    QString replaceTypeString = replaceType(message.header());
+    if (!replaceTypeString.isEmpty()) {
+        QHash<QString, QString> replaceTypeHeader;
+        replaceTypeHeader.insert(REPLACE_TYPE, replaceTypeString);
+        event.setHeaders(replaceTypeHeader);
+    }
 
     event.setLocalUid(m_Account->objectPath());
     event.setFreeText(message.text());
@@ -2150,7 +2249,8 @@ bool TextChannelListener::hasPendingOperations() const
              && m_expungeTokens.isEmpty()
              && m_EventTokens.isEmpty()
              && m_pendingGroups.isEmpty()
-             && m_failedSaveEvents.isEmpty());
+             && m_failedSaveEvents.isEmpty()
+             && m_replaceMessages.isEmpty());
 }
 
 void TextChannelListener::tryToClose()

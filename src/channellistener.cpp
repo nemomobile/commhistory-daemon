@@ -25,6 +25,7 @@
 
 #include <QDebug>
 #include <CommHistory/EventModel>
+#include <CommHistory/ConversationModel>
 
 #include <TelepathyQt4/PendingReady>
 #include <TelepathyQt4/TextChannel>
@@ -42,7 +43,7 @@ ChannelListener::ChannelListener(const Tp::AccountPtr &account,
                                  const Tp::MethodInvocationContextPtr<> &context,
                                  QObject *parent)
     : QObject(parent), m_Account(account), m_Channel(channel), m_InvocationContext(context),
-      m_pEventModel(0)
+      m_pEventModel(0), m_pConversationModel(0)
 {
     connect(m_Account.data(),
             SIGNAL(invalidated(Tp::DBusProxy*, const QString&, const QString&)),
@@ -151,6 +152,28 @@ CommHistory::EventModel& ChannelListener::eventModel()
     }
 
     return *m_pEventModel;
+}
+
+CommHistory::ConversationModel& ChannelListener::conversationModel()
+{
+    if(!m_pConversationModel){
+        m_pConversationModel = new CommHistory::ConversationModel(this);
+        // We are interested only in replace type that will be stored into Headers property:
+        m_pConversationModel->setPropertyMask(CommHistory::Event::PropertySet()
+                                              << CommHistory::Event::Headers);
+        // Model should inform us when it is populated after calling getEvents:
+        connect(m_pConversationModel, SIGNAL(modelReady(bool)),
+                this, SLOT(slotConvModelReady(bool)));
+    }
+
+    return *m_pConversationModel;
+}
+
+void ChannelListener::slotConvModelReady(bool success)
+{
+    Q_UNUSED(success)
+
+    qDebug() << __FUNCTION__;
 }
 
 QString ChannelListener::targetId() const

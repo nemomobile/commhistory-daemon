@@ -105,6 +105,8 @@ private Q_SLOTS:
     void slotSaveFailedEvents();
     void slotJoinedGroupChat(Tp::PendingOperation *operation);
     void slotPendingMessageRemoved(const Tp::ReceivedMessage &message);
+    void slotConvEventsCommitted(const QList<CommHistory::Event> &events, bool success);
+    virtual void slotConvModelReady(bool success);
 
 private:
 
@@ -235,6 +237,9 @@ private:
 
     // Global storage, among all text channel listeners, of ids of messages not acknowledged yet by mui:
     static QMultiHash<QString,uint> m_pendingMessageIds;
+
+    QList<Tp::ReceivedMessage> m_replaceMessages;
+    QList<CommHistory::Event> m_replaceEvents;
 #ifdef UNIT_TEST
     friend class Ut_TextChannelListener;
 #endif
