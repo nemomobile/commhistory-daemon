@@ -932,6 +932,8 @@ CommHistory::ConversationModel& TextChannelListener::conversationModel()
         // We are interested only in replace type that will be stored into Headers property:
         m_pConversationModel->setPropertyMask(CommHistory::Event::PropertySet()
                                               << CommHistory::Event::Headers);
+        // We are not interested in contact changes, just replace type of a message:
+        m_pConversationModel->enableContactChanges(false);
         // Model should inform us when it is populated after calling getEvents:
         connect(m_pConversationModel, SIGNAL(modelReady(bool)),
                 this, SLOT(slotConvModelReady(bool)));
