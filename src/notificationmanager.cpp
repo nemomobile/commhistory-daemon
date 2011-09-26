@@ -1270,7 +1270,10 @@ void NotificationManager::createDataDir()
 QContactManager* NotificationManager::contactManager()
 {
     if(!m_pContactManager){
-        m_pContactManager = new QContactManager(CONTACT_STORAGE_TYPE);
+        QMap<QString,QString> params;
+        params["contact-types"] = QLatin1String("contact");
+        params["omit-presence-changes"] = QLatin1String(""); // value ignored
+        m_pContactManager = new QContactManager(CONTACT_STORAGE_TYPE, params);
         m_pContactManager->setParent(this);
         connect(m_pContactManager,
                 SIGNAL(contactsAdded(const QList<QContactLocalId>&)),
