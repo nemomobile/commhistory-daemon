@@ -30,7 +30,6 @@
 
 namespace CommHistory {
     class EventModel;
-    class ConversationModel;
 }
 
 namespace RTComLogger
@@ -94,7 +93,6 @@ protected:
     void invocationContextError();
 
     CommHistory::EventModel& eventModel();
-    CommHistory::ConversationModel& conversationModel();
 
     /*!
      * \brief helper methods, checks if ChannelListener is ready, if there is
@@ -115,11 +113,6 @@ protected Q_SLOTS:
     virtual void invalidated(Tp::DBusProxy *proxy,
         const QString &errorName, const QString &errorMessage);
 
-    /*!
-      * \brief Called when ConversationModel is populated as a result of calling getEvents.
-      */
-    virtual void slotConvModelReady(bool success);
-
 private Q_SLOTS:
     /*!
      * \brief Slots to handle different stages of channel preparation
@@ -133,7 +126,6 @@ protected:
     Tp::MethodInvocationContextPtr<> m_InvocationContext;
     CommHistory::Event::EventDirection m_Direction;
     CommHistory::EventModel* m_pEventModel;
-    CommHistory::ConversationModel* m_pConversationModel;
 };
 
 } // namespace RTComLogger

@@ -35,6 +35,7 @@ namespace CommHistory {
     class Event;
     class ClassZeroSMSModel;
     class SingleEventModel;
+    class ConversationModel;
 }
 
 namespace Tp {
@@ -105,8 +106,8 @@ private Q_SLOTS:
     void slotSaveFailedEvents();
     void slotJoinedGroupChat(Tp::PendingOperation *operation);
     void slotPendingMessageRemoved(const Tp::ReceivedMessage &message);
+    void slotConvModelReady(bool success);
     void slotConvEventsCommitted(const QList<CommHistory::Event> &events, bool success);
-    virtual void slotConvModelReady(bool success);
 
 private:
 
@@ -178,6 +179,8 @@ private:
 
     bool areRemotePartiesOffline();
 
+    CommHistory::ConversationModel& conversationModel();
+
 private:
 
     typedef QPair<QString,QString> Presence;
@@ -240,6 +243,7 @@ private:
 
     QList<Tp::ReceivedMessage> m_replaceMessages;
     QList<CommHistory::Event> m_replaceEvents;
+    CommHistory::ConversationModel* m_pConversationModel;
 #ifdef UNIT_TEST
     friend class Ut_TextChannelListener;
 #endif

@@ -251,7 +251,8 @@ TextChannelListener::TextChannelListener(const Tp::AccountPtr &account,
       m_PropertiesIf(0),
       m_IsGroupChat(false),
       m_channelClosed(false),
-      m_FailedSaveCount(0)
+      m_FailedSaveCount(0),
+      m_pConversationModel(0)
 {
     qDebug() << __PRETTY_FUNCTION__;
     makeChannelReady(Tp::TextChannel::FeatureMessageQueue
@@ -922,6 +923,21 @@ void TextChannelListener::handleMessages()
     foreach (Tp::ReceivedMessage message, processedMessages) {
         m_messageQueue.removeOne(message);
     }
+}
+
+CommHistory::ConversationModel& TextChannelListener::conversationModel()
+{
+    if(!m_pConversationModel){
+        m_pConversationModel = new CommHistory::ConversationModel(this);
+        // We are interested only in replace type that will be stored into Headers property:
+        m_pConversationModel->setPropertyMask(CommHistory::Event::PropertySet()
+                                              << CommHistory::Event::Headers);
+        // Model should inform us when it is populated after calling getEvents:
+        connect(m_pConversationModel, SIGNAL(modelReady(bool)),
+                this, SLOT(slotConvModelReady(bool)));
+    }
+
+    return *m_pConversationModel;
 }
 
 void TextChannelListener::slotConvModelReady(bool success)
