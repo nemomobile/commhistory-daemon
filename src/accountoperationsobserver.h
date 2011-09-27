@@ -136,6 +136,7 @@ private:
     Tp::AccountManagerPtr m_AccountManager;
     QList<QString> m_accountPathsForConvs; // Conversations of these account paths should be removed.
     QMap<QString,RTComLogger::AccountSpecificCallModel*> m_accountPathsForCalls; // Calls of these account paths should be removed.
+    QMap<QString, Tp::AccountPtr> m_accounts;
 };
 
 } // namespace RTComLogger

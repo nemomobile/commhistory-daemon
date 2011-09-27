@@ -100,6 +100,7 @@ void AccountOperationsObserver::slotConnectToSignals(const Tp::AccountPtr &accou
     qDebug() << Q_FUNC_INFO << "START";
 
     if (!account.isNull()) {
+        m_accounts.insert(account->objectPath(), account);
 
         connect(account.data(),
                 SIGNAL(removed()),
@@ -137,6 +138,8 @@ void AccountOperationsObserver::slotAccountRemoved()
     if (account) {
         QString accountPath = account->objectPath();
         qDebug() << Q_FUNC_INFO << "Account " << accountPath << " removed.";
+
+        m_accounts.remove(accountPath);
 
         /* Store paths of removed accounts into lists so that if call and/or group models are not
            yet ready while more accounts are being removed then all of those removed accounts
