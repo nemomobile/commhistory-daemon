@@ -29,6 +29,7 @@
 #include <CommHistory/Group>
 
 #include "channellistener.h"
+#include "constants.h"
 
 namespace CommHistory {
     class GroupModel;
@@ -155,7 +156,7 @@ private:
     void handleMessageFailed(const Tp::ReceivedMessage &message,
                              const CommHistory::Event &event);
     void sendGroupChatEvent(const QString &message);
-    void showErrorNote(const QString &errorMsg);
+    void showErrorNote(const QString &errorMsg, BannerType type = ErrorBanner);
 
     // attempt to read original message from delivery report
     bool recoverDeliveryEcho(const Tp::Message &message, CommHistory::Event &event);

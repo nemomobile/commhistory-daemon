@@ -1325,35 +1325,40 @@ void TextChannelListener::handleMessageFailed(const Tp::ReceivedMessage &message
 
             // general error
             QString errorMsgToUser = txt_qtn_msg_error_sms_sending_failed(recipient);
+            BannerType type = ErrorBannerStrong;
 
             // check for specific error:
             // missing smsc
             if (dbusError == MODEM_ERROR_SMSC_ADDRESS_NOT_AVAILABLE) {
 
                 errorMsgToUser = txt_qtn_msg_error_missing_smsc;
+                type = ErrorBanner;
             }
             // fdn error
             else if (dbusError == MODEM_ERROR_DESTINATION_ADDRESS_FDN_RESTRICTED ||
                      dbusError == MODEM_ERROR_SMS_ADDRESS_FDN_RESTRICTED) {
 
                 errorMsgToUser = txt_qtn_re_error_denied_phone_number(recipient);
+                type = ErrorBanner;
             }
             // offline chatting
             else if (event.type() == CommHistory::Event::IMEvent
                      && areRemotePartiesOffline()) {
+
                 errorMsgToUser = txt_qtn_msg_general_does_not_support_offline;
+                type = ErrorBanner;
             }
 
             qDebug() << "error message shown to user:" << errorMsgToUser;
-            showErrorNote(errorMsgToUser);
+            showErrorNote(errorMsgToUser, type);
         }
     }
 }
 
-void TextChannelListener::showErrorNote(const QString &errorMsg)
+void TextChannelListener::showErrorNote(const QString &errorMsg, BannerType type)
 {
     if (!errorMsg.isEmpty()) {
-        MNotification notification(ErrorBanner);
+        MNotification notification(type);
         notification.setBody(errorMsg);
         notification.publish();
     }
