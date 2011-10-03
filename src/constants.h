@@ -52,7 +52,8 @@ namespace RTComLogger {
 
 #define VOICEMAIL_INTERFACE    QLatin1String("com.nokia.telephony.callhistory")
 #define VOICEMAIL_OBJECT_PATH  QLatin1String("/callhistory")
-#define VOICEMAIL_METHOD  QLatin1String("voicemail")
+#define VOICEMAIL_METHOD       QLatin1String("voicemail")
+#define REPLACE_TYPE           QLatin1String("sms-replace-number")
 
 #define CSD_SIM_SERVICE_NAME       QLatin1String("com.nokia.csd.SIM")
 #define CSD_SIM_OBJECT_PATH        QLatin1String("/com/nokia/csd/sim")

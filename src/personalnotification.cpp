@@ -66,6 +66,7 @@ PersonalNotification& PersonalNotification::operator=(const PersonalNotification
     setHasPendingEvents(other.hasPendingEvents());
     setChatName(other.chatName());
     setEventToken(other.eventToken());
+    setSmsReplaceNumber(other.smsReplaceNumber());
     return *this;
 }
 
@@ -120,6 +121,11 @@ QString PersonalNotification::eventToken() const
     return m_eventToken;
 }
 
+QString PersonalNotification::smsReplaceNumber() const
+{
+    return m_smsReplaceNumber;
+}
+
 void PersonalNotification::setRemoteUid(const QString& remoteUid)
 {
     m_remoteUid = remoteUid;
@@ -168,6 +174,11 @@ void PersonalNotification::setChatName(const QString& chatName)
 void PersonalNotification::setEventToken(const QString &eventToken)
 {
     m_eventToken = eventToken;
+}
+
+void PersonalNotification::setSmsReplaceNumber(const QString &number)
+{
+    m_smsReplaceNumber = number;
 }
 
 bool PersonalNotification::operator == (const PersonalNotification& other) const

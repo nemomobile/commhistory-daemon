@@ -331,6 +331,8 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
                                           channelTargetId,
                                           chatType);
         notification.setNotificationText(notificationText(event));
+        notification.setSmsReplaceNumber(event.headers().value(REPLACE_TYPE));
+
         if (!chatName.isEmpty())
             notification.setChatName(chatName);
 
@@ -1021,7 +1023,29 @@ int NotificationManager::countContacts(const NotificationGroup& group)
 
 int NotificationManager::countNotifications(const NotificationGroup& group)
 {
-    return m_Notifications.count(group);
+    qDebug() << Q_FUNC_INFO;
+
+    // If we have more than one new message from same sender and messages have
+    // same SMS replace number, then we count all those messages as one.
+    QList<PersonalNotification> pnsCounted;
+    foreach (PersonalNotification pn, m_Notifications.values(group)) {
+        bool match = false;
+        if (!pn.smsReplaceNumber().isEmpty()) {
+            foreach (PersonalNotification counted, pnsCounted) {
+                if (pn.remoteUid() == counted.remoteUid() && pn.smsReplaceNumber() == counted.smsReplaceNumber()) {
+                    match = true;
+                }
+            }
+        }
+
+        if (!match)
+            pnsCounted.append(pn);
+    }
+
+    qDebug() << Q_FUNC_INFO << "Notification count with replace typed messages taken into account: " << pnsCounted.count();
+    qDebug() << Q_FUNC_INFO << "Absolute notification count: " << m_Notifications.count(group);
+
+    return pnsCounted.count();
 }
 
 void NotificationManager::requestContact(TpContactUid cuid)

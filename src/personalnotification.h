@@ -58,6 +58,8 @@ class PersonalNotification : public QObject, public Serialisable
                                 WRITE setChatName)
     Q_PROPERTY(QString eventToken READ eventToken
                                   WRITE setEventToken)
+    Q_PROPERTY(QString smsReplaceNumber READ smsReplaceNumber
+                                        WRITE setSmsReplaceNumber)
 
 public:
     PersonalNotification(QObject* parent = 0);
@@ -89,6 +91,7 @@ public:
     bool hasPendingEvents() const;
     QString chatName() const;
     QString eventToken() const;
+    QString smsReplaceNumber() const;
 
     void setRemoteUid(const QString& remoteUid);
     void setAccount(const QString& account);
@@ -100,6 +103,7 @@ public:
     void setHasPendingEvents(bool hasPendingEvents = true);
     void setChatName(const QString& chatName);
     void setEventToken(const QString& eventToken);
+    void setSmsReplaceNumber(const QString& number);
 
 private:
     QString m_remoteUid;
@@ -112,6 +116,7 @@ private:
     bool m_hasPendingEvents;
     QString m_chatName;
     QString m_eventToken;
+    QString m_smsReplaceNumber;
 };
 
 } // namespace

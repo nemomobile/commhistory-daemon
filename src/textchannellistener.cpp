@@ -84,7 +84,6 @@
 #define VOICEMAIL_TYPE       QLatin1String("x-nokia-voicemail-type")
 #define MAILBOX_UNREAD_COUNT QLatin1String("x-nokia-mailbox-unread-count")
 #define MAILBOX_HAS_UNREAD   QLatin1String("x-nokia-mailbox-has-unread")
-#define REPLACE_TYPE         QLatin1String("sms-replace-number")
 
 // content
 #define PART_CONTENT       QLatin1String("content")
