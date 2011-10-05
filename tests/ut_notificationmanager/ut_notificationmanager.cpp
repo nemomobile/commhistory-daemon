@@ -122,6 +122,7 @@ void Ut_NotificationManager::cleanup()
 
 CommHistory::Event Ut_NotificationManager::createImEvent(const QString& remoteUid, int contactId)
 {
+    eventId++;
     CommHistory::Event event;
     event.setType(CommHistory::Event::IMEvent);
     event.setDirection(CommHistory::Event::Inbound);
@@ -130,11 +131,10 @@ CommHistory::Event Ut_NotificationManager::createImEvent(const QString& remoteUi
     event.setLocalUid(DUT_ACCOUNT_PATH);
     event.setRemoteUid(remoteUid);
     event.setFreeText(MESSAGE_TEXT);
-    event.setMessageToken(MESSAGE_TEXT);
+    event.setMessageToken(MESSAGE_TEXT + QString::number(eventId));
     event.setContactId(contactId);
     event.setGroupId(1);
     event.setId(eventId);
-    eventId++;
     return event;
 }
 
@@ -310,11 +310,11 @@ void Ut_NotificationManager::testImNotification()
     nm->removeNotificationGroup(event.type());
     removeGroup(event.type());
 
-    QVERIFY(getGroup(event.type(), 10) == 0);
+    QVERIFY(getGroup(event.type(), 2000) == 0);
 
     nm->showNotification(event, CONTACT_1_REMOTE_ID);
 
-    justWait(1000);
+    justWait(2000);
 
     MNotificationGroup *mgtGroup = getGroup(event.type(), 5000);
     QVERIFY(mgtGroup);

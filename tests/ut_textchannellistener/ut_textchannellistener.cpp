@@ -68,6 +68,8 @@
 using namespace RTComLogger;
 
 namespace {
+    static uint pendingMessageId = 0;
+
     bool waitSignal(QSignalSpy &spy, int msec)
     {
         QTime timer;
@@ -307,6 +309,7 @@ void Ut_TextChannelListener::receiving()
     Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
 
     uint timestamp = QDateTime::currentDateTime().toTime_t();
+    addMsgHeader(msg, 0, "pending-message-id", pendingMessageId++);
     addMsgHeader(msg, 0, "received", timestamp);
     addMsgHeader(msg, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNormal);
     QString token = QUuid::createUuid().toString();
@@ -438,6 +441,7 @@ void Ut_TextChannelListener::smsSending()
     Tp::ReceivedMessage accepted(Tp::MessagePartList() << Tp::MessagePart());
 
     uint timestampAccepted = QDateTime::currentDateTime().toTime_t();
+    addMsgHeader(accepted, 0, "pending-message-id", pendingMessageId++);
     addMsgHeader(accepted, 0, "received", timestampAccepted);
     addMsgHeader(accepted, 0, "message-sent", timestampAccepted);
     addMsgHeader(accepted, 0, "message-type", (uint)Tp::ChannelTextMessageTypeDeliveryReport);
@@ -446,9 +450,8 @@ void Ut_TextChannelListener::smsSending()
     QString acceptedToken = QUuid::createUuid().toString();
     addMsgHeader(accepted, 0, "message-token", acceptedToken);
 
-    Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(accepted);
-
     eventCommitted.clear();
+    Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(accepted);
     QVERIFY(waitSignal(eventCommitted, 5000));
 
     g = fetchGroup(SMS_ACCOUNT_PATH, SMS_NUMBER, true);
@@ -462,6 +465,7 @@ void Ut_TextChannelListener::smsSending()
     Tp::ReceivedMessage delivered(Tp::MessagePartList() << Tp::MessagePart());
 
     uint timestampDelivered = QDateTime::currentDateTime().toTime_t();
+    addMsgHeader(delivered, 0, "pending-message-id", pendingMessageId++);
     addMsgHeader(delivered, 0, "received", timestampDelivered);
     addMsgHeader(delivered, 0, "message-sent", timestampDelivered);
     addMsgHeader(delivered, 0, "message-type", (uint)Tp::ChannelTextMessageTypeDeliveryReport);
@@ -475,9 +479,8 @@ void Ut_TextChannelListener::smsSending()
     else
         addMsgHeader(delivered, 0, "delivery-status", (uint)Tp::DeliveryStatusPermanentlyFailed);
 
-    Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(delivered);
-
     eventCommitted.clear();
+    Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(delivered);
     QVERIFY(waitSignal(eventCommitted, 5000));
 
     g = fetchGroup(SMS_ACCOUNT_PATH, SMS_NUMBER, true);
@@ -514,6 +517,7 @@ QString sendVoicemail(Tp::ChannelPtr ch,
                    int unreadCount) {
     Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
 
+    addMsgHeader(msg, 0, "pending-message-id", pendingMessageId++);
     addMsgHeader(msg, 0, "received", QDateTime::currentDateTime().toTime_t());
     addMsgHeader(msg, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNotice);
     QString token = QUuid::createUuid().toString();
@@ -717,6 +721,7 @@ void Ut_TextChannelListener::receiveVCard()
     Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
 
     uint timestamp = QDateTime::currentDateTime().toTime_t();
+    addMsgHeader(msg, 0, "pending-message-id", pendingMessageId++);
     addMsgHeader(msg, 0, "received", timestamp);
     addMsgHeader(msg, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNormal);
     QString token = QUuid::createUuid().toString();
@@ -821,6 +826,7 @@ void Ut_TextChannelListener::groups()
         Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
 
         uint timestamp = QDateTime::currentDateTime().toTime_t();
+        addMsgHeader(msg, 0, "pending-message-id", pendingMessageId++);
         addMsgHeader(msg, 0, "received", timestamp);
         addMsgHeader(msg, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNormal);
 
@@ -867,6 +873,7 @@ void Ut_TextChannelListener::groups()
         Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
 
         uint timestamp = QDateTime::currentDateTime().toTime_t();
+        addMsgHeader(msg, 0, "pending-message-id", pendingMessageId++);
         addMsgHeader(msg, 0, "received", timestamp);
         addMsgHeader(msg, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNormal);
 
@@ -940,6 +947,7 @@ void Ut_TextChannelListener::receivingFromSelf()
     Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
 
     uint timestamp = QDateTime::currentDateTime().toTime_t();
+    addMsgHeader(msg, 0, "pending-message-id", pendingMessageId++);
     addMsgHeader(msg, 0, "received", timestamp);
     addMsgHeader(msg, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNormal);
     QString token = QUuid::createUuid().toString();
@@ -1016,6 +1024,7 @@ void Ut_TextChannelListener::supersedes()
     Tp::ReceivedMessage msg(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
 
     uint timestamp = QDateTime::currentDateTime().toTime_t();
+    addMsgHeader(msg, 0, "pending-message-id", pendingMessageId++);
     addMsgHeader(msg, 0, "received", timestamp);
     addMsgHeader(msg, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNormal);
     QString token = QUuid::createUuid().toString();
@@ -1060,6 +1069,7 @@ void Ut_TextChannelListener::supersedes()
     Tp::ReceivedMessage msgEdited(Tp::MessagePartList() << Tp::MessagePart() << Tp::MessagePart());
 
     uint timestampEdited = QDateTime::currentDateTime().toTime_t();
+    addMsgHeader(msgEdited, 0, "pending-message-id", pendingMessageId++);
     addMsgHeader(msgEdited, 0, "received", timestampEdited);
     addMsgHeader(msgEdited, 0, "message-type", (uint)Tp::ChannelTextMessageTypeNormal);
     QString tokenEdited = QUuid::createUuid().toString();

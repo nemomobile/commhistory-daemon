@@ -630,7 +630,7 @@ NotificationGroup NotificationManager::notificationGroup(int type)
 {
     NotificationGroup group(type);
 
-    if (!m_Notifications.contains(group))
+    if (!m_MgtGroups.contains(type))
         addGroup(type);
 
     return group;
