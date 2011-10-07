@@ -1563,6 +1563,11 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
         recipients << event.remoteUid();
     }
 
+    if (event.type() == CommHistory::Event::IMEvent
+        && areRemotePartiesOffline()) {
+        event.setStatus(CommHistory::Event::TemporarilyFailedOfflineStatus);
+    }
+
     foreach (const QString& recipient, recipients) {
         bool addMessage = true;
         if (m_Account->protocolName() == PROTOCOL_MMS) {
