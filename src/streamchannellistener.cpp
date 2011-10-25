@@ -249,6 +249,23 @@ void StreamChannelListener::slotGroupMembersChanged(
 void StreamChannelListener::slotStreamStateChanged(const Tp::StreamedMediaStreamPtr &stream,
                                                    Tp::MediaStreamState state)
 {
+    if (stream->type() == Tp::MediaStreamTypeVideo) {
+        bool modified = false;
+
+        if (state == Tp::MediaStreamStateConnected) {
+            m_Event.setIsVideoCall(true);
+            modified = true;
+        } else if (state == Tp::MediaStreamStateDisconnected
+                   && !m_CallEnded) {
+            m_Event.setIsVideoCall(false);
+            modified = true;
+        }
+
+        if (modified && m_EventAdded) {
+            // already added -> addEvent() will modify
+            addEvent();
+        }
+    }
     if (stream->type() == Tp::MediaStreamTypeAudio
         && state == Tp::MediaStreamStateConnected) {
         Tp::StreamedMediaChannelPtr mediaChannel =
