@@ -35,6 +35,7 @@
 
 #define CURRENT_SERVICE_POINT_PROPERTY_NAME ("CurrentServicePoint")
 #define INITIAL_SERVICE_POINT_PROPERTY QLatin1String(TELEPATHY_INTERFACE_CHANNEL_INTERFACE_SERVICE_POINT ".InitialServicePoint")
+#define STREAM_CHANNEL_INITIAL_VIDEO_PROPERTY QLatin1String(TELEPATHY_INTERFACE_CHANNEL_TYPE_STREAMED_MEDIA ".InitialVideo")
 
 #define SAVING_INTERVAL 5*60000 // 5 minute
 
@@ -77,6 +78,9 @@ StreamChannelListener::StreamChannelListener(const Tp::AccountPtr &account,
             m_Direction = CommHistory::Event::Outbound;
     }
     m_Event.setDirection(m_Direction);
+
+    if (properties.value(STREAM_CHANNEL_INITIAL_VIDEO_PROPERTY).toBool())
+        m_Event.setIsVideoCall(true);
 
     QVariant spProp = m_Channel->immutableProperties().value(INITIAL_SERVICE_POINT_PROPERTY);
     if (spProp.isValid()) {
@@ -252,10 +256,11 @@ void StreamChannelListener::slotStreamStateChanged(const Tp::StreamedMediaStream
     if (stream->type() == Tp::MediaStreamTypeVideo) {
         bool modified = false;
 
-        if (state == Tp::MediaStreamStateConnected) {
+        if (state == Tp::MediaStreamStateConnected && !m_Event.isVideoCall()) {
             m_Event.setIsVideoCall(true);
             modified = true;
         } else if (state == Tp::MediaStreamStateDisconnected
+                   && m_Event.isVideoCall()
                    && !m_CallEnded) {
             m_Event.setIsVideoCall(false);
             modified = true;
