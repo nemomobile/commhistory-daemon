@@ -836,9 +836,11 @@ void NotificationManager::updateNotificationGroup(const NotificationGroup &group
         // get group action
         QString groupAction = action(group, notification, grouped);
 
+        MLocale tempLocale;
         // update group
         if (group.type() != CommHistory::Event::VoicemailEvent && group.type() != VOICEMAIL_SMS_EVENT_TYPE)
-            name = contactNames(group).join(CONTACT_SEPARATOR_IN_NOTIFICATION_GROUP);
+            name = tempLocale.joinStringList( contactNames(group) );
+            //name = contactNames(group).join(CONTACT_SEPARATOR_IN_NOTIFICATION_GROUP);
 
         updateGroup(group.type(), countNotifications(group), name, message, groupAction);
     } else {
