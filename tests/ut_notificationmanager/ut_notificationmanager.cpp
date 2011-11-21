@@ -319,8 +319,8 @@ void Ut_NotificationManager::testImNotification()
     MNotificationGroup *mgtGroup = getGroup(event.type(), 5000);
     QVERIFY(mgtGroup);
     QVERIFY(mgtGroup->isPublished());
-    QCOMPARE(mgtGroup->summary(), CONTACT_1_REMOTE_ID);
-    QCOMPARE(mgtGroup->body(), MESSAGE_TEXT);
+    QVERIFY(mgtGroup->summary().localeAwareCompare(CONTACT_1_REMOTE_ID));
+    QVERIFY(mgtGroup->body().localeAwareCompare(MESSAGE_TEXT));
 
     NotificationGroup group = nm->notificationGroup(event.type());
 
@@ -338,7 +338,7 @@ void Ut_NotificationManager::testImNotification()
     mgtGroup = getGroup(event.type(), 5000);
     QVERIFY(mgtGroup);
     QVERIFY(mgtGroup->isPublished());
-    QCOMPARE(mgtGroup->summary(), CONTACT_1_REMOTE_ID);
+    QVERIFY(mgtGroup->summary().localeAwareCompare(CONTACT_1_REMOTE_ID));
     QCOMPARE(mgtGroup->body(), txt_qtn_msg_notification_new_message(2));
 
     QVERIFY(nm->countContacts(group) == 1);
@@ -428,7 +428,7 @@ void Ut_NotificationManager::testMissedCallNotification()
     MNotificationGroup *mgtGroup = getGroup(event.type(), 5000);
     QVERIFY(mgtGroup);
     QVERIFY(mgtGroup->isPublished());
-    QCOMPARE(mgtGroup->summary(), CONTACT_1_REMOTE_ID);
+    QVERIFY(mgtGroup->summary().localeAwareCompare(CONTACT_1_REMOTE_ID));
     QCOMPARE(mgtGroup->body(), txt_qtn_call_missed(1));
 
     NotificationGroup group = nm->notificationGroup(event.type());
@@ -447,7 +447,7 @@ void Ut_NotificationManager::testMissedCallNotification()
     mgtGroup = getGroup(event.type(), 5000);
     QVERIFY(mgtGroup);
     QVERIFY(mgtGroup->isPublished());
-    QCOMPARE(mgtGroup->summary(), CONTACT_1_REMOTE_ID);
+    QVERIFY(mgtGroup->summary().localeAwareCompare(CONTACT_1_REMOTE_ID));
     QCOMPARE(mgtGroup->body(), txt_qtn_call_missed(2));
 
     QVERIFY(nm->countContacts(group) == 1);
