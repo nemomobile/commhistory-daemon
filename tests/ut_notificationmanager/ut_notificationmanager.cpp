@@ -320,7 +320,7 @@ void Ut_NotificationManager::testImNotification()
     QVERIFY(mgtGroup);
     QVERIFY(mgtGroup->isPublished());
     QVERIFY(mgtGroup->summary().localeAwareCompare(CONTACT_1_REMOTE_ID));
-    QVERIFY(mgtGroup->body().localeAwareCompare(MESSAGE_TEXT));
+    QCOMPARE(mgtGroup->body(), MESSAGE_TEXT);
 
     NotificationGroup group = nm->notificationGroup(event.type());
 
