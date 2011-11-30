@@ -97,7 +97,7 @@ void setupSigtermHandler()
 
     term.sa_handler = termSignalHandler;
     sigemptyset(&term.sa_mask);
-    term.sa_flags |= SA_RESTART;
+    term.sa_flags = SA_RESTART;
 
     if(::sigaction(SIGTERM, &term, 0))
         qFatal("Failed setup SIGTERM signal handler");
