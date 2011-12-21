@@ -141,8 +141,8 @@ int main(int argc, char **argv)
 
     CommHistoryService *service = new CommHistoryService(&app);
     if (!service->isRegistered()) {
-        qDebug() << "Already running, exiting";
-        return 0;
+        qCritical() << "Service registration failed (already running or DBus not found), exiting";
+        _exit(1);
     }
     new CommHistoryIfAdaptor(service);
     qDebug() << "Service created";

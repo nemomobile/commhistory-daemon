@@ -28,6 +28,11 @@ CommHistoryService::CommHistoryService( QObject* parent )
     : QObject(parent),
       m_IsRegistered(false)
 {
+    if (!QDBusConnection::sessionBus().isConnected()) {
+        qCritical() << "ERROR: No DBus session bus found!";
+        return;
+    }
+
     if (parent) {
         if(!QDBusConnection::sessionBus().registerObject(COMM_HISTORY_OBJECT_PATH, this)) {
             qWarning() << "Object registration failed!";
