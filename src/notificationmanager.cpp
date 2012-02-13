@@ -1131,7 +1131,7 @@ void NotificationManager::slotResultsAvailable()
                        // there is no contact for the remote id
 
     // show remote id in case of multiple contacts match
-    if (request->contacts().size() == 1) {
+    if (request->contacts().size() == 1 && request->contacts().first().localId() != m_pContactManager->selfContactId()) {
         contact = request->contacts().first();
         qDebug() << Q_FUNC_INFO << "Using" << contact.displayLabel();
     }
@@ -1463,13 +1463,15 @@ void NotificationManager::slotResultsAvailableForUnknown()
         bool matchedLocalId = false;
 
         foreach (QContact contact, request->contacts()) {
-            QList<QContactOnlineAccount> accounts = contact.details<QContactOnlineAccount>();
-            QList<QContactPhoneNumber> phones = contact.details<QContactPhoneNumber>();
+            if (contact.localId() != m_pContactManager->selfContactId()) {
+                QList<QContactOnlineAccount> accounts = contact.details<QContactOnlineAccount>();
+                QList<QContactPhoneNumber> phones = contact.details<QContactPhoneNumber>();
 
-            if (matchContact(accounts, phones, cuid.first, cuid.second))
-                matchedContacts << contact;
-            if (cacheContact.localId() == contact.localId())
-                matchedLocalId = true;
+                if (matchContact(accounts, phones, cuid.first, cuid.second))
+                    matchedContacts << contact;
+                if (cacheContact.localId() == contact.localId())
+                    matchedLocalId = true;
+            } // if
         }
 
         if (matchedContacts.size() == 1)
