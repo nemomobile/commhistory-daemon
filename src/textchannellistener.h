@@ -90,7 +90,7 @@ private Q_SLOTS:
     void slotEventsCommitted(QList<CommHistory::Event> events, bool status);
     void slotClassZeroSMSRemoved(const QModelIndex&, int, int);
     void slotContactsReady(Tp::PendingOperation* operation);
-    void slotPropertiesChanged(const Tp::PropertyValueList &props);
+    void slotPropertiesChanged(const Tp::PropertyValueList &props, bool listProps = false);
     void slotGroupMembersChanged(const Tp::Contacts &groupMembersAdded,
                                  const Tp::Contacts &groupLocalPendingMembersAdded,
                                  const Tp::Contacts &groupRemotePendingMembersAdded,
@@ -147,7 +147,8 @@ private:
     bool storeVCard (const QByteArray &vcard, QString &name);
     bool checkStoredMessagesIf();
     void expungeMessage(const QString &token);
-    void updateGroupChatName(ChangedChannelProperty changedChannelProperty);
+    void updateGroupChatName(ChangedChannelProperty changedChannelProperty,
+                             bool suppressGroupChatEvents);
 
     /*! returns model, if model doesnt exist, creates one */
     CommHistory::ClassZeroSMSModel* classZeroSMSModel();

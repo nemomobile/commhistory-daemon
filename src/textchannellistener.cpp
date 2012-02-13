@@ -573,7 +573,7 @@ void TextChannelListener::slotGetPropertiesFinished(QDBusPendingCallWatcher *wat
         watcher->deleteLater();
         return;
     }
-    slotPropertiesChanged(reply.value());
+    slotPropertiesChanged(reply.value(), true);
     watcher->deleteLater();
 }
 
@@ -1628,7 +1628,8 @@ void TextChannelListener::expungeMessage(const QString &token)
     }
 }
 
-void TextChannelListener::updateGroupChatName(ChangedChannelProperty changedChannelProperty)
+void TextChannelListener::updateGroupChatName(ChangedChannelProperty changedChannelProperty,
+                                              bool suppressGroupChatEvents)
 {
     qDebug() << Q_FUNC_INFO;
 
@@ -1657,6 +1658,11 @@ void TextChannelListener::updateGroupChatName(ChangedChannelProperty changedChan
                 modGroup.setChatName(m_Group.chatName());
                 if (!m_GroupModel->modifyGroup(modGroup))
                     qCritical() << "failed to modify group in tracker";
+
+                if (suppressGroupChatEvents) {
+                    qDebug() << Q_FUNC_INFO << "NOT creating group chat event";
+                    return;
+                }
 
                 QString remoteId;
                 // Here we need to figure out who changed the topic
@@ -2107,9 +2113,9 @@ void TextChannelListener::slotContactsReady(Tp::PendingOperation* operation)
     }
 }
 
-void TextChannelListener::slotPropertiesChanged(const Tp::PropertyValueList &props)
+void TextChannelListener::slotPropertiesChanged(const Tp::PropertyValueList &props, bool listProps)
 {
-    qDebug() << Q_FUNC_INFO;
+    qDebug() << Q_FUNC_INFO << listProps;
     ChangedChannelProperty changedProperty = None;
 
     foreach (Tp::PropertyValue value, props) {
@@ -2136,7 +2142,7 @@ void TextChannelListener::slotPropertiesChanged(const Tp::PropertyValueList &pro
     }
 
     if (changedProperty != None)
-        updateGroupChatName(changedProperty);
+        updateGroupChatName(changedProperty, listProps);
 }
 
 void TextChannelListener::slotGroupMembersChanged(
