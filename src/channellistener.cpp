@@ -141,7 +141,7 @@ void ChannelListener::invocationContextFinished()
 
 void ChannelListener::invocationContextError()
 {
-    finishedWithError(QLatin1String(TELEPATHY_ERROR_INVALID_ARGUMENT),QString());
+    finishedWithError(QLatin1String(TP_QT_ERROR_INVALID_ARGUMENT),QString());
 }
 
 CommHistory::EventModel& ChannelListener::eventModel()
@@ -161,8 +161,8 @@ QString ChannelListener::targetId() const
 
     if (properties.contains(TELEPATHY_CHANNEL_INTERFACE_PERSISTENT_ID)) {
         targetId = properties.value(TELEPATHY_CHANNEL_INTERFACE_PERSISTENT_ID).toString();
-    } else if (properties.contains(QLatin1String(TELEPATHY_INTERFACE_CHANNEL ".TargetID"))) {
-        targetId = properties.value(QLatin1String(TELEPATHY_INTERFACE_CHANNEL ".TargetID")).toString();
+    } else if (properties.contains(TP_QT_IFACE_CHANNEL+QLatin1String(".TargetID"))) {
+        targetId = properties.value(TP_QT_IFACE_CHANNEL+QLatin1String(".TargetID")).toString();
     }
 
     return targetId;

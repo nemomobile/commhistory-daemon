@@ -34,8 +34,8 @@
 #include <TelepathyQt4/StreamedMediaChannel>
 
 #define CURRENT_SERVICE_POINT_PROPERTY_NAME ("CurrentServicePoint")
-#define INITIAL_SERVICE_POINT_PROPERTY QLatin1String(TELEPATHY_INTERFACE_CHANNEL_INTERFACE_SERVICE_POINT ".InitialServicePoint")
-#define STREAM_CHANNEL_INITIAL_VIDEO_PROPERTY QLatin1String(TELEPATHY_INTERFACE_CHANNEL_TYPE_STREAMED_MEDIA ".InitialVideo")
+#define INITIAL_SERVICE_POINT_PROPERTY TP_QT_IFACE_CHANNEL_INTERFACE_SERVICE_POINT+QLatin1String(".InitialServicePoint")
+#define STREAM_CHANNEL_INITIAL_VIDEO_PROPERTY TP_QT_IFACE_CHANNEL_TYPE_STREAMED_MEDIA+QLatin1String(".InitialVideo")
 
 #define SAVING_INTERVAL 5*60000 // 5 minute
 
@@ -73,8 +73,8 @@ StreamChannelListener::StreamChannelListener(const Tp::AccountPtr &account,
     m_Direction = CommHistory::Event::Inbound;
 
     QVariantMap properties = m_Channel->immutableProperties();
-    if (properties.contains(QLatin1String(TELEPATHY_INTERFACE_CHANNEL ".Requested"))) {
-        if (properties.value(QLatin1String(TELEPATHY_INTERFACE_CHANNEL ".Requested")).toBool())
+    if (properties.contains(TP_QT_IFACE_CHANNEL+QLatin1String(".Requested"))) {
+        if (properties.value(TP_QT_IFACE_CHANNEL+QLatin1String(".Requested")).toBool())
             m_Direction = CommHistory::Event::Outbound;
     }
     m_Event.setDirection(m_Direction);
@@ -305,7 +305,7 @@ void StreamChannelListener::invalidated(Tp::DBusProxy *proxy,
     // means "hung up by local user", but if the remote hangs up before
     // we get MembersChanged, tpqt probably returns the same error.
     if ( (m_Direction == CommHistory::Event::Inbound) && (!m_CallStarted)) {
-        if (!errorName.isEmpty() && errorName != TELEPATHY_ERROR_CANCELLED)
+        if (!errorName.isEmpty() && errorName != TP_QT_ERROR_CANCELLED)
             m_Event.setIsMissedCall(true);
     }
 

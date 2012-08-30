@@ -3164,6 +3164,7 @@ const int NUM_MEDIA_STREAM_TRANSPORT_TYPES = (2+1);
  * building with Q_NO_CAST_FROM_ASCII defined.
  */
 #define TP_QT4_IFACE_CHANNEL QLatin1String("org.freedesktop.Telepathy.Channel")
+#define TP_QT_IFACE_CHANNEL QLatin1String("org.freedesktop.Telepathy.Channel")
 
 /**
  * \ingroup ifacestrconsts
@@ -3224,6 +3225,7 @@ const int NUM_MEDIA_STREAM_TRANSPORT_TYPES = (2+1);
  * building with Q_NO_CAST_FROM_ASCII defined.
  */
 #define TP_QT4_IFACE_CHANNEL_TYPE_STREAMED_MEDIA QLatin1String("org.freedesktop.Telepathy.Channel.Type.StreamedMedia")
+#define TP_QT_IFACE_CHANNEL_TYPE_STREAMED_MEDIA QLatin1String("org.freedesktop.Telepathy.Channel.Type.StreamedMedia")
 
 /**
  * \ingroup ifacestrconsts
@@ -3389,6 +3391,7 @@ const int NUM_MEDIA_STREAM_TRANSPORT_TYPES = (2+1);
  * building with Q_NO_CAST_FROM_ASCII defined.
  */
 #define TP_QT4_IFACE_CHANNEL_INTERFACE_GROUP QLatin1String("org.freedesktop.Telepathy.Channel.Interface.Group")
+#define TP_QT_IFACE_CHANNEL_INTERFACE_GROUP QLatin1String("org.freedesktop.Telepathy.Channel.Interface.Group")
 
 /**
  * \ingroup ifacestrconsts
@@ -3464,6 +3467,7 @@ const int NUM_MEDIA_STREAM_TRANSPORT_TYPES = (2+1);
  * building with Q_NO_CAST_FROM_ASCII defined.
  */
 #define TP_QT4_IFACE_CHANNEL_INTERFACE_SERVICE_POINT QLatin1String("org.freedesktop.Telepathy.Channel.Interface.ServicePoint")
+#define TP_QT_IFACE_CHANNEL_INTERFACE_SERVICE_POINT QLatin1String("org.freedesktop.Telepathy.Channel.Interface.ServicePoint")
 
 /**
  * \ingroup ifacestrconsts
@@ -3808,6 +3812,7 @@ const int NUM_MEDIA_STREAM_TRANSPORT_TYPES = (2+1);
  * Raised when one of the provided arguments is invalid.
  */
 #define TP_QT4_ERROR_INVALID_ARGUMENT QLatin1String("org.freedesktop.Telepathy.Error.InvalidArgument")
+#define TP_QT_ERROR_INVALID_ARGUMENT QLatin1String("org.freedesktop.Telepathy.Error.InvalidArgument")
 
 /**
  * \ingroup errorstrconsts
@@ -4015,6 +4020,7 @@ const int NUM_MEDIA_STREAM_TRANSPORT_TYPES = (2+1);
  * event queue.
  */
 #define TP_QT4_ERROR_CANCELLED QLatin1String("org.freedesktop.Telepathy.Error.Cancelled")
+#define TP_QT_ERROR_CANCELLED QLatin1String("org.freedesktop.Telepathy.Error.Cancelled")
 
 /**
  * \ingroup errorstrconsts

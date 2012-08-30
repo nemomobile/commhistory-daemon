@@ -87,7 +87,7 @@ void Logger::createChannelListener(const QString &channelType,
     if ( m_Channels.contains( channelObjectPath ) &&
          !channelType.isEmpty() &&
          !channelObjectPath.isEmpty() ) {
-         context->setFinishedWithError(QLatin1String(TELEPATHY_ERROR_INVALID_ARGUMENT), QString());
+         context->setFinishedWithError(QLatin1String(TP_QT_ERROR_INVALID_ARGUMENT), QString());
          return;
     }
 
@@ -99,11 +99,11 @@ void Logger::createChannelListener(const QString &channelType,
     qDebug() << "creating listener for: " << channelObjectPath << " type " << channelType;
 
     ChannelListener* listener = 0;
-    if( channelType == QLatin1String(TELEPATHY_INTERFACE_CHANNEL_TYPE_TEXT) ) {
+    if( channelType == QLatin1String(TP_QT_IFACE_CHANNEL_TYPE_TEXT) ) {
         listener = new TextChannelListener(account, channel, context, this);
         connect(listener, SIGNAL(savingFailed(const Tp::ConnectionPtr&)),
                 m_Reviver, SLOT(checkConnection(const Tp::ConnectionPtr&)));
-    } else if ( channelType == QLatin1String(TELEPATHY_INTERFACE_CHANNEL_TYPE_STREAMED_MEDIA) ) {
+    } else if ( channelType == QLatin1String(TP_QT_IFACE_CHANNEL_TYPE_STREAMED_MEDIA) ) {
         listener = new StreamChannelListener(account, channel, context, this);
     }
 

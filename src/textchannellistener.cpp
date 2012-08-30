@@ -1984,7 +1984,7 @@ void TextChannelListener::channelReady()
             m_GroupHandleType = Tp::HandleTypeRoom;
         } else if (m_Channel->targetHandleType() == Tp::HandleTypeNone
                    && m_Channel->interfaces().contains(
-                       TELEPATHY_INTERFACE_CHANNEL_INTERFACE_GROUP)) {
+                       TP_QT_IFACE_CHANNEL_INTERFACE_GROUP)) {
             m_IsGroupChat = true;
             m_GroupHandleType = Tp::HandleTypeNone;
             m_PersistentId = m_Channel->immutableProperties().value(
@@ -1998,7 +1998,7 @@ void TextChannelListener::channelReady()
             }
         }
 
-        if (m_Channel->interfaces().contains(TELEPATHY_INTERFACE_CHANNEL_INTERFACE_GROUP))
+        if (m_Channel->interfaces().contains(TP_QT_IFACE_CHANNEL_INTERFACE_GROUP))
             connect(m_Channel.data(),
                     SIGNAL(groupMembersChanged(const Tp::Contacts &,
                                                const Tp::Contacts &,
