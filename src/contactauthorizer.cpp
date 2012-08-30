@@ -376,7 +376,9 @@ void ContactAuthorizer::slotAvatarDataChanged(const Tp::AvatarData &data)
 
     Tp::Contact *contact = qobject_cast<Tp::Contact*>(sender());
     if (contact) {
-        Tp::ContactPtr contactPtr (m_pContactManager->lookupContactByHandle(contact->handle().first()));
+        Tp::ReferencedHandles handleList;
+        handleList << contact->handle();
+        Tp::ContactPtr contactPtr (m_pContactManager->contactsForHandles(handleList)->contacts().first());
         queueAuthorization(contactPtr, data.fileName);
     }
 }
