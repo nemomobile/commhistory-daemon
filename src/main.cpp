@@ -88,7 +88,10 @@ static int sigtermFd[2];
 void termSignalHandler(int)
 {
     char a = 1;
-    ::write(sigtermFd[0], &a, sizeof(a));
+    if(write(sigtermFd[0], &a, sizeof(a)) < 1)
+    {
+        qWarning("Failed to handle term signal.");
+    }
 }
 
 void setupSigtermHandler()
