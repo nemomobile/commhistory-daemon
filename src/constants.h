@@ -39,9 +39,9 @@ namespace RTComLogger {
 #define COMM_HISTORY_OBJECT_PATH     QLatin1String("/com/nokia/CommHistory")
 #define COMM_HISTORY_INTERFACE       QLatin1String("com.nokia.CommHistoryIf")
 
-#define MESSAGING_SERVICE_NAME    QLatin1String("com.nokia.Messaging")
-#define MESSAGING_INTERFACE       QLatin1String("com.nokia.MessagingIf")
-#define SHOW_INBOX_METHOD         QLatin1String("showInbox")
+#define MESSAGING_SERVICE_NAME    QLatin1String("org.nemomobile.qmlmessages")
+#define MESSAGING_INTERFACE       QLatin1String("org.nemomobile.qmlmessages")
+#define SHOW_INBOX_METHOD         QLatin1String("showGroupsWindow")
 #define START_CONVERSATION_METHOD QLatin1String("startConversation")
 
 #define CALL_HISTORY_SERVICE_NAME QLatin1String("com.nokia.telephony.callhistory")
