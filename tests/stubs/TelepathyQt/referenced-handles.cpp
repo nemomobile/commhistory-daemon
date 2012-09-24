@@ -63,7 +63,7 @@ private:
 /**
  * \class ReferencedHandles
  * \ingroup clientconn
- * \headerfile TelepathyQt4/referenced-handles.h <TelepathyQt4/ReferencedHandles>
+ * \headerfile TelepathyQt/referenced-handles.h <TelepathyQt/ReferencedHandles>
  *
  * \brief Helper container for safe management of handle lifetimes. Every handle
  * in a ReferencedHandles container is guaranteed to be valid (and stay valid,

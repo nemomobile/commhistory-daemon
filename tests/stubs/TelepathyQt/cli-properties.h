@@ -27,7 +27,7 @@ namespace Client
 
 /**
  * \class PropertiesInterfaceInterface
- * \headerfile TelepathyQt4/properties.h <TelepathyQt4/Properties>
+ * \headerfile TelepathyQt/properties.h <TelepathyQt/Properties>
  * \ingroup clientprops
  *
  * Proxy class providing a 1:1 mapping of the D-Bus interface "org.freedesktop.Telepathy.Properties."

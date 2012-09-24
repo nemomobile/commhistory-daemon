@@ -2,7 +2,7 @@
 #define _CommHistoryTp_Connection_HEADER_GUARD_
 
 
-#include "TelepathyQt4/Connection"
+#include "TelepathyQt/Connection"
 
 #include <QtGlobal>
 
@@ -12,8 +12,8 @@
 
 #include <QDBusPendingReply>
 
-#include "TelepathyQt4/AbstractInterface"
-#include "TelepathyQt4/DBusProxy"
+#include "TelepathyQt/AbstractInterface"
+#include "TelepathyQt/DBusProxy"
 #include <QDebug>
 
 // basically the same as GLib's G_GNUC_DEPRECATED

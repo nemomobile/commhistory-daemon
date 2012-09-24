@@ -30,12 +30,12 @@
 #include <QSignalSpy>
 #include <QUuid>
 
-#include "TelepathyQt4/types.h"
-#include "TelepathyQt4/account.h"
-#include "TelepathyQt4/text-channel.h"
-#include "TelepathyQt4/message.h"
-#include "TelepathyQt4/connection.h"
-#include "TelepathyQt4/contact-manager.h"
+#include "TelepathyQt/types.h"
+#include "TelepathyQt/account.h"
+#include "TelepathyQt/text-channel.h"
+#include "TelepathyQt/message.h"
+#include "TelepathyQt/connection.h"
+#include "TelepathyQt/contact-manager.h"
 
 #include "TpExtensions/cli-connection.h" // stored messages if
 

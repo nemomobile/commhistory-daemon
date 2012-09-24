@@ -97,7 +97,7 @@ inline uint Message::Private::senderHandle() const
 /**
  * \class Message
  * \ingroup clientchannel
- * \headerfile TelepathyQt4/text-channel.h <TelepathyQt4/TextChannel>
+ * \headerfile TelepathyQt/text-channel.h <TelepathyQt/TextChannel>
  *
  * \brief The Message class represents a Telepathy message in a text channel.
  * These objects are implicitly shared, like QString.
@@ -319,7 +319,7 @@ MessagePart& Message::ut_part(uint index)
 /**
  * \class ReceivedMessage
  * \ingroup clientchannel
- * \headerfile TelepathyQt4/text-channel.h <TelepathyQt4/TextChannel>
+ * \headerfile TelepathyQt/text-channel.h <TelepathyQt/TextChannel>
  *
  * \brief The ReceivedMessage class is a subclass of Message, representing a
  * received message.
