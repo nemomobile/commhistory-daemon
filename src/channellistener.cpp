@@ -26,14 +26,14 @@
 #include <QDebug>
 #include <CommHistory/EventModel>
 
-#include <TelepathyQt4/PendingReady>
-#include <TelepathyQt4/TextChannel>
-#include <TelepathyQt4/StreamedMediaChannel>
-#include <TelepathyQt4/Channel>
-#include <TelepathyQt4/ContactManager>
-#include <TelepathyQt4/PendingContacts>
-#include <TelepathyQt4/Types>
-#include <TelepathyQt4/Contact>
+#include <TelepathyQt/PendingReady>
+#include <TelepathyQt/TextChannel>
+#include <TelepathyQt/StreamedMediaChannel>
+#include <TelepathyQt/Channel>
+#include <TelepathyQt/ContactManager>
+#include <TelepathyQt/PendingContacts>
+#include <TelepathyQt/Types>
+#include <TelepathyQt/Contact>
 
 using namespace RTComLogger;
 

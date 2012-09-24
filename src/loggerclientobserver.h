@@ -25,8 +25,8 @@
 
 #include <QObject>
 
-#include <TelepathyQt4/AbstractClientObserver>
-#include <TelepathyQt4/Types>
+#include <TelepathyQt/AbstractClientObserver>
+#include <TelepathyQt/Types>
 
 namespace RTComLogger
 {

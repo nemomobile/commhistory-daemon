@@ -162,7 +162,7 @@ cli_connection_stamp.commands = \
             --specxml=$$GENERATED_ALL_XML \
             --ifacexml=$$GENERATED_ALL_XML \
             --extraincludes='\<TpExtensions/Connection\>' \
-            --extraincludes='\<TelepathyQt4/Connection\>' \
+            --extraincludes='\<TelepathyQt/Connection\>' \
             --mainiface='Tp::Client::ConnectionInterface' && \
         $$MOC \$(DEFINES) \$(INCPATH) \
             $$EXTENSIONS_GENERATED_DIR/cli-connection.h \

@@ -23,9 +23,9 @@
 #ifndef ACCOUNTOPERATIONSOBSERVER_H
 #define ACCOUNTOPERATIONSOBSERVER_H
 
-#include <TelepathyQt4/AccountManager>
-#include <TelepathyQt4/Account>
-#include <TelepathyQt4/PendingOperation>
+#include <TelepathyQt/AccountManager>
+#include <TelepathyQt/Account>
+#include <TelepathyQt/PendingOperation>
 
 namespace CommHistory
 {

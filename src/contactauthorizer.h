@@ -28,10 +28,10 @@
 #include <QHash>
 
 // Tp
-#include <TelepathyQt4/Account>
-#include <TelepathyQt4/Contact>
-#include <TelepathyQt4/Connection>
-#include <TelepathyQt4/ContactManager>
+#include <TelepathyQt/Account>
+#include <TelepathyQt/Contact>
+#include <TelepathyQt/Connection>
+#include <TelepathyQt/ContactManager>
 
 class MNotification;
 

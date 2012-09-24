@@ -23,7 +23,7 @@
 #include "loggerclientobserver.h"
 #include "logger.h"
 
-#include <TelepathyQt4/Channel>
+#include <TelepathyQt/Channel>
 
 using namespace RTComLogger;
 

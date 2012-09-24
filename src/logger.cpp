@@ -23,10 +23,10 @@
 #include <QtDBus/QtDBus>
 #include <QDebug>
 
-#include <TelepathyQt4/ClientRegistrar>
-#include <TelepathyQt4/Debug>
-#include <TelepathyQt4/Channel>
-#include <TelepathyQt4/ChannelClassSpec>
+#include <TelepathyQt/ClientRegistrar>
+#include <TelepathyQt/Debug>
+#include <TelepathyQt/Channel>
+#include <TelepathyQt/ChannelClassSpec>
 
 #include "logger.h"
 #include "channellistener.h"

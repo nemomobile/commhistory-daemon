@@ -31,7 +31,7 @@
 #include <CommHistory/Event>
 
 // TpQt4
-#include <TelepathyQt4/StreamedMediaChannel>
+#include <TelepathyQt/StreamedMediaChannel>
 
 #define CURRENT_SERVICE_POINT_PROPERTY_NAME ("CurrentServicePoint")
 #define INITIAL_SERVICE_POINT_PROPERTY TP_QT_IFACE_CHANNEL_INTERFACE_SERVICE_POINT+QLatin1String(".InitialServicePoint")

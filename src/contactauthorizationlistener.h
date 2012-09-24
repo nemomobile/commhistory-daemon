@@ -27,8 +27,8 @@
 #include <QStringList>
 
 // Tp
-#include <TelepathyQt4/Connection>
-#include <TelepathyQt4/AccountManager>
+#include <TelepathyQt/Connection>
+#include <TelepathyQt/AccountManager>
 
 #include "contactauthorizer.h"
 

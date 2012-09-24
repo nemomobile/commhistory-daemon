@@ -24,7 +24,7 @@
 #define MESSAGE_REVIVER_H
 
 #include <QObject>
-#include <TelepathyQt4/Connection>
+#include <TelepathyQt/Connection>
 
 namespace CommHistory {
     class EventModel;

@@ -26,9 +26,9 @@
 #include "constants.h"
 
 // Tp
-#include <TelepathyQt4/PendingReady>
-#include <TelepathyQt4/AccountManager>
-#include <TelepathyQt4/AccountSet>
+#include <TelepathyQt/PendingReady>
+#include <TelepathyQt/AccountManager>
+#include <TelepathyQt/AccountSet>
 
 // Meego
 #include <MNotification>

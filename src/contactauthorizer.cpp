@@ -35,11 +35,11 @@
 #include <MRemoteAction>
 
 // Tp
-#include <TelepathyQt4/AvatarData>
-#include <TelepathyQt4/ContactManager>
-#include <TelepathyQt4/PendingReady>
-#include <TelepathyQt4/PendingContacts>
-#include <TelepathyQt4/Contact>
+#include <TelepathyQt/AvatarData>
+#include <TelepathyQt/ContactManager>
+#include <TelepathyQt/PendingReady>
+#include <TelepathyQt/PendingContacts>
+#include <TelepathyQt/Contact>
 
 // constants
 static const char* AuthorizationNotificationType = "x-nokia.messaging.authorizationrequest";

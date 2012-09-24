@@ -23,8 +23,8 @@
 #include "connectionutils.h"
 
 // Tp
-#include <TelepathyQt4/PendingReady>
-#include <TelepathyQt4/AccountSet>
+#include <TelepathyQt/PendingReady>
+#include <TelepathyQt/AccountSet>
 
 using namespace RTComLogger;
 

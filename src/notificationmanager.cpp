@@ -54,7 +54,7 @@
 #include <CommHistory/Group>
 
 // Telepathy includes
-#include <TelepathyQt4/Constants>
+#include <TelepathyQt/Constants>
 
 // Our includes
 #include "notificationmanager.h"

@@ -40,15 +40,15 @@
 #include <CommHistory/ConversationModel>
 
 // Telepathy
-#include <TelepathyQt4/TextChannel>
-#include <TelepathyQt4/Message>
-#include <TelepathyQt4/Contact>
-#include <TelepathyQt4/ContactManager>
-#include <TelepathyQt4/PendingContacts>
-#include <TelepathyQt4/Connection>
-#include <TelepathyQt4/Properties>
-#include <TelepathyQt4/Presence>
-#include <TelepathyQt4/types.h>
+#include <TelepathyQt/TextChannel>
+#include <TelepathyQt/Message>
+#include <TelepathyQt/Contact>
+#include <TelepathyQt/ContactManager>
+#include <TelepathyQt/PendingContacts>
+#include <TelepathyQt/Connection>
+#include <TelepathyQt/Properties>
+#include <TelepathyQt/Presence>
+#include <TelepathyQt/types.h>
 
 #include <TpExtensions/Connection> // stored messages if
 #include <TpExtensions/Constants> // Flash sms

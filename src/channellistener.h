@@ -24,9 +24,9 @@
 #define CHANNEL_LISTENER_H
 
 #include <CommHistory/Event>
-#include <TelepathyQt4/Types>
-#include <TelepathyQt4/Channel>
-#include <TelepathyQt4/Account>
+#include <TelepathyQt/Types>
+#include <TelepathyQt/Channel>
+#include <TelepathyQt/Account>
 
 namespace CommHistory {
     class EventModel;

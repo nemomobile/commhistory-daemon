@@ -26,10 +26,10 @@
 #include <QObject>
 
 // Tp includes
-#include <TelepathyQt4/Connection>
-#include <TelepathyQt4/AccountManager>
-#include <TelepathyQt4/Account>
-#include <TelepathyQt4/PendingOperation>
+#include <TelepathyQt/Connection>
+#include <TelepathyQt/AccountManager>
+#include <TelepathyQt/Account>
+#include <TelepathyQt/PendingOperation>
 
 namespace RTComLogger
 {

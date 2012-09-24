@@ -24,7 +24,7 @@
 #include "accountoperationsobserver.h"
 #include "notificationmanager.h"
 
-#include <TelepathyQt4/PendingReady>
+#include <TelepathyQt/PendingReady>
 
 #include <CommHistory/GroupModel>
 #include <CommHistory/CallModel>

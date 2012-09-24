@@ -25,7 +25,7 @@
 
 #include <QDateTime>
 #include <QTimerEvent>
-#include <TelepathyQt4/Types>
+#include <TelepathyQt/Types>
 #include <time.h>
 #include "channellistener.h"
 

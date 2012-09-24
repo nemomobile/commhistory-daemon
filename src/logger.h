@@ -24,7 +24,7 @@
 #define LOGGER_H
 
 #include <QObject>
-#include <TelepathyQt4/Types>
+#include <TelepathyQt/Types>
 
 namespace RTComLogger {
 
