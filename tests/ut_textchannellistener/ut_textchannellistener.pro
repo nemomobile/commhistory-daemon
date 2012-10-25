@@ -42,10 +42,11 @@ INCLUDEPATH = ../stubs/ \
 
 TARGET = ut_textchannellistener
 CONFIG += link_pkgconfig \
-          mobility
+          mobility \
+          mlocale
 LIBS += -lQtContacts -lQtVersit
 PKGCONFIG += contextsubscriber-1.0 \
-             meegotouch
+             mlite
 
 TEST_SOURCES += $$COMMHISTORYDSRCDIR/textchannellistener.cpp \
                 $$COMMHISTORYDSRCDIR/channellistener.cpp

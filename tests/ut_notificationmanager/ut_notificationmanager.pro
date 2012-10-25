@@ -37,9 +37,10 @@
 #-----------------------------------------------------------------------------
 TARGET = ut_notificationmanager
 CONFIG += link_pkgconfig \
-          mobility
+          mobility \
+          mlocale
 PKGCONFIG += contextsubscriber-1.0 \
-             meegotouch \
+             mlite \
              TelepathyQt4 \
              qmsystem2
 

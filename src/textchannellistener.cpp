@@ -1317,7 +1317,7 @@ void TextChannelListener::handleMessageFailed(const Tp::ReceivedMessage &message
                 recipient = event.remoteUid();
             } else {
                 // phone number
-                MLocale locale;
+                ML10N::MLocale locale;
                 recipient = locale.toLocalizedNumbers(event.remoteUid());
                 recipient.insert(0, QChar(0x202A)); // left-to-right embedding
                 recipient.append(QChar(0x202C)); // pop directional formatting

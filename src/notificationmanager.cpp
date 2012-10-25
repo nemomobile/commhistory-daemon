@@ -836,7 +836,7 @@ void NotificationManager::updateNotificationGroup(const NotificationGroup &group
         // get group action
         QString groupAction = action(group, notification, grouped);
 
-        MLocale tempLocale;
+        ML10N::MLocale tempLocale;
         // update group
         if (group.type() != CommHistory::Event::VoicemailEvent && group.type() != VOICEMAIL_SMS_EVENT_TYPE)
             name = tempLocale.joinStringList( contactNames(group) );
@@ -1162,7 +1162,7 @@ QString NotificationManager::contactName(const QString &localUid,
             if (normalizePhoneNumber(remoteUid).isEmpty()) {
                 result = remoteUid;
             } else {
-                MLocale locale;
+                ML10N::MLocale locale;
                 result = locale.toLocalizedNumbers(remoteUid);
             }
         }

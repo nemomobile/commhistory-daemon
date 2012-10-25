@@ -45,7 +45,7 @@ CONFIG += link_pkgconfig \
           mobility
 LIBS += -lQtContacts -lQtVersit
 PKGCONFIG += contextsubscriber-1.0 \
-             meegotouch
+             mlite
 
 TEST_SOURCES += $$COMMHISTORYDSRCDIR/streamchannellistener.cpp \
                 $$COMMHISTORYDSRCDIR/channellistener.cpp

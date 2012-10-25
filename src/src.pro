@@ -37,7 +37,8 @@ MOBILITY += contacts \
 CONFIG += debug \
           qdbus \
           link_pkgconfig \
-          mobility
+          mobility \
+          mlocale
 
 QT += sql \
       gui
@@ -45,7 +46,7 @@ QT += sql \
 PKGCONFIG += TelepathyQt4 \
              commhistory \
              contextsubscriber-1.0 \
-             meegotouch \
+             mlite \
              qmsystem2
 
 # -----------------------------------------------------------------------------

@@ -132,13 +132,13 @@ int main(int argc, char **argv)
     QObject::connect(snTerm, SIGNAL(activated(int)), &app, SLOT(quit()));
     setupSigtermHandler();
 
-    MLocale locale;
+    ML10N::MLocale locale;
     locale.installTrCatalog("messaging");
     locale.installTrCatalog("telephony");
     locale.installTrCatalog("mms");
     locale.installTrCatalog("presence");
     locale.installTrCatalog("recipientedit");
-    MLocale::setDefault(locale);
+    ML10N::MLocale::setDefault(locale);
 
     qDebug() << "Translation catalogs loaded";
 

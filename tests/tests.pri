@@ -30,7 +30,7 @@ MOBILITY += contacts versit
 CONFIG += mobility
 COMMHISTORYDSRCDIR = ../../src
 DEPENDPATH  += $${INCLUDEPATH}
-PKGCONFIG += meegotouch commhistory
+PKGCONFIG += mlite commhistory
 
 !include( ../common-installs-config.pri ) : \
     error( "Unable to include common-installs-config.pri!" )
