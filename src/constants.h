@@ -111,12 +111,12 @@ struct EventTypes {
 
 static const EventTypes _eventTypes[] =
 {
-    {CommHistory::Event::IMEvent,       "x-nokia.messaging.im"},
-    {CommHistory::Event::SMSEvent,      "x-nokia.messaging.sms"},
-    {CommHistory::Event::MMSEvent,      "x-nokia.messaging.mms"},
-    {CommHistory::Event::CallEvent,     "x-nokia.call.missed"},
-    {CommHistory::Event::VoicemailEvent,"x-nokia.messaging.voicemail"},
-    {VOICEMAIL_SMS_EVENT_TYPE,          "x-nokia.messaging.voicemail-SMS"}
+    {CommHistory::Event::IMEvent,       "x-nemo.messaging.im"},
+    {CommHistory::Event::SMSEvent,      "x-nemo.messaging.sms"},
+    {CommHistory::Event::MMSEvent,      "x-nemo.messaging.mms"},
+    {CommHistory::Event::CallEvent,     "x-nemo.call.missed"},
+    {CommHistory::Event::VoicemailEvent,"x-nemo.messaging.voicemail"},
+    {VOICEMAIL_SMS_EVENT_TYPE,          "x-nemo.messaging.voicemail-SMS"}
 };
 
 static const int _eventTypesCount = sizeof(_eventTypes) / sizeof(EventTypes);
@@ -124,7 +124,7 @@ static const int _eventTypesCount = sizeof(_eventTypes) / sizeof(EventTypes);
 
 // Custom system info banner types for commhistoryd:
 typedef QString BannerType;
-const BannerType ErrorBanner = "x-nokia.messaging.error";
-const BannerType ErrorBannerStrong = "x-nokia.messaging.error.strong";
+const BannerType ErrorBanner = "x-nemo.messaging.error";
+const BannerType ErrorBannerStrong = "x-nemo.messaging.error.strong";
 
 #endif //#define CONSTANTS_H

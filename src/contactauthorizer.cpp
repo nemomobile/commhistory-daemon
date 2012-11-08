@@ -42,7 +42,7 @@
 #include <TelepathyQt/Contact>
 
 // constants
-static const char* AuthorizationNotificationType = "x-nokia.messaging.authorizationrequest";
+static const char* AuthorizationNotificationType = "x-nemo.messaging.authorizationrequest";
 
 #define OBJECT_PATH QLatin1String("/")
 #define BUDDY_AUTHORIZER_SERVICE_NAME    QLatin1String("com.nokia.buddyauthorizer-service")
