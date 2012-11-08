@@ -203,6 +203,6 @@ include( ../common-installs-config.pri )
 # -----------------------------------------------------------------------------
 # Installation target for application resources
 # -----------------------------------------------------------------------------
-notification_types.path  = $${INSTALL_PREFIX}/share/meegotouch/notifications/eventtypes
+notification_types.path  = $${INSTALL_PREFIX}/share/lipstick/notificationcategories
 notification_types.files = $${_PRO_FILE_PWD_}/../data/notifications/*.conf
 INSTALLS                += notification_types
