@@ -33,7 +33,7 @@ PROJECT_NAME = commhistory-daemon
 # Project version
 # remember to update debian/* files if you changes this
 # -----------------------------------------------------------------------------
-PROJECT_VERSION = 0.0.26
+PROJECT_VERSION = 0.4.2
 
 # -----------------------------------------------------------------------------
 # Project's data directories
