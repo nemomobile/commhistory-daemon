@@ -35,4 +35,4 @@ PKGCONFIG += mlite commhistory
 !include( ../common-installs-config.pri ) : \
     error( "Unable to include common-installs-config.pri!" )
 # override default path for tests
-target.path = $${INSTALL_PREFIX}/share/commhistory-daemon-tests
+target.path = /opt/tests/$${PROJECT_NAME}
