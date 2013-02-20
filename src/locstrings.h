@@ -47,16 +47,16 @@
 #include <MLocale>
 
 //% "%L1 new message(s)"
-#define txt_qtn_msg_notification_new_message(NUM) qtTrId("qtn_msg_notification_new_message", NUM)
+#define txt_qtn_msg_notification_new_message(NUM) qtTrId("qtn_msg_notification_new_message").arg(NUM)
 //% "Contact card"
 #define txt_qtn_msg_contact_card_label qtTrId("qtn_msg_contact_card_label")
 //% "%1 | %2"
 #define txt_qtn_msg_notification_new_vcard(STR) qtTrId("qtn_msg_received_contact_card").arg(txt_qtn_msg_contact_card_label).arg(STR)
 
 //% "%L1 missed call(s)"
-#define txt_qtn_call_missed(NUM) qtTrId("qtn_call_missed", NUM)
+#define txt_qtn_call_missed(NUM) qtTrId("qtn_call_missed").arg(NUM)
 //% "%L1 voicemail(s)"
-#define txt_qtn_call_voicemail_notification(NUM) qtTrId("qtn_call_voicemail_notification", NUM)
+#define txt_qtn_call_voicemail_notification(NUM) qtTrId("qtn_call_voicemail_notification").arg(NUM)
 //% "Private number"
 #define txt_qtn_call_type_private qtTrId("qtn_call_type_private")
 //% "Voicemail"
