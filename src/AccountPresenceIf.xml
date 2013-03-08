@@ -1,0 +1,21 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node>
+  <interface name="org.nemomobile.AccountPresenceIf">
+    <method name="setGlobalPresence">
+      <arg name="state" type="i" direction="in"/>
+    </method>
+    <method name="setGlobalPresenceWithMessage">
+      <arg name="state" type="i" direction="in"/>
+      <arg name="message" type="s" direction="in"/>
+    </method>
+    <method name="setAccountPresence">
+      <arg name="accountUri" type="s" direction="in"/>
+      <arg name="state" type="i" direction="in"/>
+    </method>
+    <method name="setAccountPresenceWithMessage">
+      <arg name="accountUri" type="s" direction="in"/>
+      <arg name="state" type="i" direction="in"/>
+      <arg name="message" type="s" direction="in"/>
+    </method>
+  </interface>
+</node>

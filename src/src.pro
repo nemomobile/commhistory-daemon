@@ -73,6 +73,8 @@ HEADERS += logger.h \
            accountoperationsobserver.h \
            accountspecificcallmodel_p.h \
            accountspecificcallmodel.h \
+           accountpresenceifadaptor.h \
+           accountpresenceservice.h \
            olddatadeleter.h \
            voicemailhandler.h
 
@@ -95,6 +97,8 @@ SOURCES += main.cpp \
            mwilistener.cpp \
            accountoperationsobserver.cpp \
            accountspecificcallmodel.cpp \
+           accountpresenceifadaptor.cpp \
+           accountpresenceservice.cpp \
            olddatadeleter.cpp \
            voicemailhandler.cpp
 
