@@ -32,6 +32,7 @@ client.files = CommHistory.client
 
 service.path = $${INSTALL_PREFIX}/share/dbus-1/services
 service.files = org.freedesktop.Telepathy.Client.CommHistory.service \
+    org.nemomobile.AccountPresence.service \
     com.nokia.CommHistory.service
 
 INSTALLS += client service
