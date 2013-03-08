@@ -33,16 +33,16 @@ AccountPresenceIfAdaptor::~AccountPresenceIfAdaptor()
     // destructor
 }
 
-void AccountPresenceIfAdaptor::setAccountPresence(const QString &accountProtocol, const QString &accountUri, int state)
+void AccountPresenceIfAdaptor::setAccountPresence(const QString &accountUri, int state)
 {
     // handle method call org.nemomobile.AccountPresenceIf.setAccountPresence
-    QMetaObject::invokeMethod(parent(), "setAccountPresence", Q_ARG(QString, accountProtocol), Q_ARG(QString, accountUri), Q_ARG(int, state));
+    QMetaObject::invokeMethod(parent(), "setAccountPresence", Q_ARG(QString, accountUri), Q_ARG(int, state));
 }
 
-void AccountPresenceIfAdaptor::setAccountPresenceWithMessage(const QString &accountProtocol, const QString &accountUri, int state, const QString &message)
+void AccountPresenceIfAdaptor::setAccountPresenceWithMessage(const QString &accountUri, int state, const QString &message)
 {
     // handle method call org.nemomobile.AccountPresenceIf.setAccountPresenceWithMessage
-    QMetaObject::invokeMethod(parent(), "setAccountPresenceWithMessage", Q_ARG(QString, accountProtocol), Q_ARG(QString, accountUri), Q_ARG(int, state), Q_ARG(QString, message));
+    QMetaObject::invokeMethod(parent(), "setAccountPresenceWithMessage", Q_ARG(QString, accountUri), Q_ARG(int, state), Q_ARG(QString, message));
 }
 
 void AccountPresenceIfAdaptor::setGlobalPresence(int state)

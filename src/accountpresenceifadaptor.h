@@ -9,8 +9,8 @@
  * before re-generating it.
  */
 
-#ifndef ACCOUNTPRESENCEIFADAPTOR_H_1362714055
-#define ACCOUNTPRESENCEIFADAPTOR_H_1362714055
+#ifndef ACCOUNTPRESENCEIFADAPTOR_H_1362717597
+#define ACCOUNTPRESENCEIFADAPTOR_H_1362717597
 
 #include <QtCore/QObject>
 #include <QtDBus/QtDBus>
@@ -38,12 +38,10 @@ class AccountPresenceIfAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"in\" type=\"s\" name=\"message\"/>\n"
 "    </method>\n"
 "    <method name=\"setAccountPresence\">\n"
-"      <arg direction=\"in\" type=\"s\" name=\"accountProtocol\"/>\n"
 "      <arg direction=\"in\" type=\"s\" name=\"accountUri\"/>\n"
 "      <arg direction=\"in\" type=\"i\" name=\"state\"/>\n"
 "    </method>\n"
 "    <method name=\"setAccountPresenceWithMessage\">\n"
-"      <arg direction=\"in\" type=\"s\" name=\"accountProtocol\"/>\n"
 "      <arg direction=\"in\" type=\"s\" name=\"accountUri\"/>\n"
 "      <arg direction=\"in\" type=\"i\" name=\"state\"/>\n"
 "      <arg direction=\"in\" type=\"s\" name=\"message\"/>\n"
@@ -56,8 +54,8 @@ public:
 
 public: // PROPERTIES
 public Q_SLOTS: // METHODS
-    void setAccountPresence(const QString &accountProtocol, const QString &accountUri, int state);
-    void setAccountPresenceWithMessage(const QString &accountProtocol, const QString &accountUri, int state, const QString &message);
+    void setAccountPresence(const QString &accountUri, int state);
+    void setAccountPresenceWithMessage(const QString &accountUri, int state, const QString &message);
     void setGlobalPresence(int state);
     void setGlobalPresenceWithMessage(int state, const QString &message);
 Q_SIGNALS: // SIGNALS

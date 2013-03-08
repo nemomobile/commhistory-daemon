@@ -107,31 +107,25 @@ void AccountPresenceService::setGlobalPresenceWithMessage(int state, const QStri
     }
 }
 
-void AccountPresenceService::setAccountPresence(const QString &accountProtocol, const QString &accountUri, int state)
+void AccountPresenceService::setAccountPresence(const QString &accountUri, int state)
 {
-    setAccountPresenceWithMessage(accountProtocol, accountUri, state, QString());
+    setAccountPresenceWithMessage(accountUri, state, QString());
 }
 
-void AccountPresenceService::setAccountPresenceWithMessage(const QString &accountProtocol, const QString &accountUri, int state, const QString &message)
+void AccountPresenceService::setAccountPresenceWithMessage(const QString &accountUri, int state, const QString &message)
 {
-    QVariantMap filter;
-    filter.insert(QLatin1String("protocolName"), accountProtocol);
-    filter.insert(QLatin1String("normalizedName"), accountUri);
-
-    const QList<Tp::AccountPtr> &matchingAccounts(m_accountManager->filterAccounts(filter)->accounts());
-    if (matchingAccounts.isEmpty()) {
-        qWarning() << "Unable to identify account to set presence:" << accountProtocol << '/' << accountUri;
-    } else {
-        foreach (Tp::AccountPtr account, matchingAccounts) {
-            Tp::Presence presence = presenceValue(state, message);
-            if (presence.isValid()) {
-                if (!setAccountPresence(account, presence)) {
-                    qWarning() << "Unable to set presence for account:" << account->displayName();
-                }
-            } else {
-                qWarning() << "Unable to set account presence to invalid state:" << state << "for account:" << account->displayName();
+    Tp::AccountPtr account = m_accountManager->accountForPath(accountUri);
+    if (account && account->isValidAccount()) {
+        Tp::Presence presence = presenceValue(state, message);
+        if (presence.isValid()) {
+            if (!setAccountPresence(account, presence)) {
+                qWarning() << "Unable to set presence for account:" << account->displayName();
             }
+        } else {
+            qWarning() << "Unable to set account presence to invalid state:" << state << "for account:" << account->displayName();
         }
+    } else {
+        qWarning() << "Unable to identify account to set presence:" << accountUri;
     }
 }
 

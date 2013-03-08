@@ -9,12 +9,10 @@
       <arg name="message" type="s" direction="in"/>
     </method>
     <method name="setAccountPresence">
-      <arg name="accountProtocol" type="s" direction="in"/>
       <arg name="accountUri" type="s" direction="in"/>
       <arg name="state" type="i" direction="in"/>
     </method>
     <method name="setAccountPresenceWithMessage">
-      <arg name="accountProtocol" type="s" direction="in"/>
       <arg name="accountUri" type="s" direction="in"/>
       <arg name="state" type="i" direction="in"/>
       <arg name="message" type="s" direction="in"/>

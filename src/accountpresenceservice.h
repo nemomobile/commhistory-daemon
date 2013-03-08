@@ -49,8 +49,8 @@ public:
 public Q_SLOTS:
     void setGlobalPresence(int state);
     void setGlobalPresenceWithMessage(int state, const QString &message);
-    void setAccountPresence(const QString &accountProtocol, const QString &accountUri, int state);
-    void setAccountPresenceWithMessage(const QString &accountProtocol, const QString &accountUri, int state, const QString &message);
+    void setAccountPresence(const QString &accountUri, int state);
+    void setAccountPresenceWithMessage(const QString &accountUri, int state, const QString &message);
 
     bool isRegistered();
 
