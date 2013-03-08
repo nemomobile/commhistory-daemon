@@ -32,6 +32,8 @@
 #include "notificationmanager.h"
 #include "commhistoryservice.h"
 #include "commhistoryifadaptor.h"
+#include "accountpresenceservice.h"
+#include "accountpresenceifadaptor.h"
 #include "messagereviver.h"
 #include "contactauthorizationlistener.h"
 #include "connectionutils.h"
@@ -142,17 +144,25 @@ int main(int argc, char **argv)
 
     qDebug() << "Translation catalogs loaded";
 
-    CommHistoryService *service = new CommHistoryService(&app);
-    if (!service->isRegistered()) {
-        qCritical() << "Service registration failed (already running or DBus not found), exiting";
+    CommHistoryService *chService = new CommHistoryService(&app);
+    if (!chService->isRegistered()) {
+        qCritical() << "CommHistoryService registration failed (already running or DBus not found), exiting";
         _exit(1);
     }
-    new CommHistoryIfAdaptor(service);
-    qDebug() << "Service created";
+    new CommHistoryIfAdaptor(chService);
+    qDebug() << "CommHistoryService created";
 
     ConnectionUtils *utils = new ConnectionUtils(&app);
 
-    new ContactAuthorizationListener(utils, service);
+    new ContactAuthorizationListener(utils, chService);
+
+    AccountPresenceService *apService = new AccountPresenceService(utils->accountManager(), &app);
+    if (!apService->isRegistered()) {
+        qCritical() << "AccountPresenceService registration failed (already running or DBus not found), exiting";
+        _exit(1);
+    }
+    new AccountPresenceIfAdaptor(apService);
+    qDebug() << "AccountPresenceService created";
 
     // ids.dat might not always be restored from backup as commhistoryd
     // runs in the background and can overwrite it; force it to be

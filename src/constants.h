@@ -39,6 +39,10 @@ namespace RTComLogger {
 #define COMM_HISTORY_OBJECT_PATH     QLatin1String("/com/nokia/CommHistory")
 #define COMM_HISTORY_INTERFACE       QLatin1String("com.nokia.CommHistoryIf")
 
+#define ACCOUNT_PRESENCE_SERVICE_NAME    QLatin1String("org.nemomobile.AccountPresence")
+#define ACCOUNT_PRESENCE_OBJECT_PATH     QLatin1String("/org/nemomobile/AccountPresence")
+#define ACCOUNT_PRESENCE_INTERFACE       QLatin1String("org.nemomobile.AccountPresenceIf")
+
 #define MESSAGING_SERVICE_NAME    QLatin1String("org.nemomobile.qmlmessages")
 #define MESSAGING_INTERFACE       QLatin1String("org.nemomobile.qmlmessages")
 #define SHOW_INBOX_METHOD         QLatin1String("showGroupsWindow")
