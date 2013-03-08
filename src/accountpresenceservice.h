@@ -58,6 +58,7 @@ public Q_SLOTS:
 
 private:
     bool setAccountPresence(Tp::AccountPtr account, const Tp::Presence &presence);
+    bool setAccountPresence(Tp::AccountPtr account, const Tp::Presence &presence, bool current);
     void operationCompleted(Tp::PendingOperation *po, const QString &description);
 
     bool m_IsRegistered;

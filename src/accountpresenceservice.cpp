@@ -145,9 +145,22 @@ void AccountPresenceService::pendingOperationCompleted(Tp::PendingOperation *po)
 
 bool AccountPresenceService::setAccountPresence(Tp::AccountPtr account, const Tp::Presence &presence)
 {
+    if (account->isOnline()) {
+        // Ignore any error from setting the automatic presence
+        setAccountPresence(account, presence, false);
+        return setAccountPresence(account, presence, true);
+    } else {
+        // Ignore any error from setting the current presence
+        setAccountPresence(account, presence, true);
+        return setAccountPresence(account, presence, false);
+    }
+}
+
+bool AccountPresenceService::setAccountPresence(Tp::AccountPtr account, const Tp::Presence &presence, bool current)
+{
     Tp::PendingOperation *po = 0;
 
-    if (account->isOnline()) {
+    if (current) {
         po = account->setRequestedPresence(presence);
     } else {
         po = account->setAutomaticPresence(presence);
