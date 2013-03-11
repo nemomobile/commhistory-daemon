@@ -35,8 +35,8 @@
 #include <TelepathyQt/AccountManager>
 
 #include <QObject>
-#include <QList>
 #include <QMap>
+#include <QPair>
 
 namespace Tp { class PendingOperation; }
 
@@ -72,15 +72,12 @@ private:
     Tp::AccountManagerPtr m_accountManager;
     QMap<Tp::PendingOperation*, QString> m_operations;
 
-    struct UpdateDetails {
-        UpdateDetails(const QString &u, int s, const QString &m) : accountUri(u), state(s), message(m) {}
+    typedef QPair<int, QString> UpdateDetails;
 
-        QString accountUri;
-        int state;
-        QString message;
-    };
+    UpdateDetails m_globalUpdate;
+    bool m_globalUpdatePresent;
 
-    QList<UpdateDetails> m_deferredUpdates;
+    QMap<QString, UpdateDetails> m_accountUpdate;
 };
 
 #endif // ACCOUNTPRESENCESERVICE_H

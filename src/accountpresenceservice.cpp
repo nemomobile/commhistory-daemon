@@ -42,7 +42,8 @@
 AccountPresenceService::AccountPresenceService(Tp::AccountManagerPtr manager, QObject* parent)
     : QObject(parent),
       m_IsRegistered(false),
-      m_accountManager(manager)
+      m_accountManager(manager),
+      m_globalUpdatePresent(false)
 {
     if (!m_accountManager) {
         qCritical() << "ERROR: Cannot provide service without Account Manager!";
@@ -111,7 +112,10 @@ void AccountPresenceService::setGlobalPresenceWithMessage(int state, const QStri
     if (m_accountManager->isReady()) {
         globalPresenceUpdate(state, message);
     } else {
-        m_deferredUpdates.append(UpdateDetails(QString(), state, message));
+        // Defer this update - any previous deferred updates are superseded
+        m_globalUpdate = qMakePair(state, message);
+        m_globalUpdatePresent = true;
+        m_accountUpdate.clear();
     }
 }
 
@@ -125,7 +129,8 @@ void AccountPresenceService::setAccountPresenceWithMessage(const QString &accoun
     if (m_accountManager->isReady()) {
         accountPresenceUpdate(accountUri, state, message);
     } else {
-        m_deferredUpdates.append(UpdateDetails(accountUri, state, message));
+        // Defer this update - any previous deferred updates for this account are superseded
+        m_accountUpdate.insert(accountUri, qMakePair(state, message));
     }
 }
 
@@ -135,15 +140,17 @@ void AccountPresenceService::accountManagerReady(Tp::PendingOperation *)
         qDebug() << "Account manager is now ready";
 
         // Process any updates that were previously deferred
-        foreach (const UpdateDetails &details, m_deferredUpdates) {
-            if (!details.accountUri.isNull()) {
-                accountPresenceUpdate(details.accountUri, details.state, details.message);
-            } else {
-                globalPresenceUpdate(details.state, details.message);
-            }
+        if (m_globalUpdatePresent) {
+            m_globalUpdatePresent = false;
+            globalPresenceUpdate(m_globalUpdate.first, m_globalUpdate.second);
         }
 
-        m_deferredUpdates.clear();
+        QMap<QString, UpdateDetails>::const_iterator it = m_accountUpdate.constBegin(), end = m_accountUpdate.constEnd();
+        for ( ; it != end; ++it) {
+            const UpdateDetails &details(it.value());
+            accountPresenceUpdate(it.key(), details.first, details.second);
+        }
+        m_accountUpdate.clear();
     } else {
         qCritical() << "ERROR: Cannot provide service without Account Manager readiness!";
     }
