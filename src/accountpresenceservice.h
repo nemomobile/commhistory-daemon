@@ -33,10 +33,12 @@
 #define ACCOUNTPRESENCESERVICE_H
 
 #include <TelepathyQt/AccountManager>
-#include <TelepathyQt/PendingOperation>
 
 #include <QObject>
+#include <QList>
 #include <QMap>
+
+namespace Tp { class PendingOperation; }
 
 class AccountPresenceService : public QObject
 {
@@ -52,18 +54,33 @@ public Q_SLOTS:
     void setAccountPresence(const QString &accountUri, int state);
     void setAccountPresenceWithMessage(const QString &accountUri, int state, const QString &message);
 
+    void accountManagerReady(Tp::PendingOperation *po);
     bool isRegistered();
 
     void pendingOperationCompleted(Tp::PendingOperation *po);
 
 private:
-    bool setAccountPresence(Tp::AccountPtr account, const Tp::Presence &presence);
-    bool setAccountPresence(Tp::AccountPtr account, const Tp::Presence &presence, bool current);
+    void globalPresenceUpdate(int state, const QString &message);
+    void accountPresenceUpdate(const QString &accountUri, int state, const QString &message);
+
+    bool presenceUpdate(Tp::AccountPtr account, const Tp::Presence &presence);
+    bool presenceUpdate(Tp::AccountPtr account, const Tp::Presence &presence, bool current);
+
     void operationCompleted(Tp::PendingOperation *po, const QString &description);
 
     bool m_IsRegistered;
     Tp::AccountManagerPtr m_accountManager;
     QMap<Tp::PendingOperation*, QString> m_operations;
+
+    struct UpdateDetails {
+        UpdateDetails(const QString &u, int s, const QString &m) : accountUri(u), state(s), message(m) {}
+
+        QString accountUri;
+        int state;
+        QString message;
+    };
+
+    QList<UpdateDetails> m_deferredUpdates;
 };
 
 #endif // ACCOUNTPRESENCESERVICE_H

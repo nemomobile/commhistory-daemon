@@ -34,6 +34,8 @@
 
 #include <TelepathyQt/Account>
 #include <TelepathyQt/AccountSet>
+#include <TelepathyQt/PendingOperation>
+#include <TelepathyQt/PendingReady>
 
 #include <QtDBus>
 
@@ -42,22 +44,34 @@ AccountPresenceService::AccountPresenceService(Tp::AccountManagerPtr manager, QO
       m_IsRegistered(false),
       m_accountManager(manager)
 {
+    if (!m_accountManager) {
+        qCritical() << "ERROR: Cannot provide service without Account Manager!";
+        return;
+    }
+
     if (!QDBusConnection::sessionBus().isConnected()) {
         qCritical() << "ERROR: No DBus session bus found!";
         return;
     }
 
-    if (parent) {
-        if(!QDBusConnection::sessionBus().registerObject(ACCOUNT_PRESENCE_OBJECT_PATH, this)) {
-            qWarning() << "Object registration failed!";
+    if (!QDBusConnection::sessionBus().registerObject(ACCOUNT_PRESENCE_OBJECT_PATH, this)) {
+        qWarning() << "Object registration failed!";
+    } else {
+        if(!QDBusConnection::sessionBus().registerService(ACCOUNT_PRESENCE_SERVICE_NAME)) {
+            qWarning() << "Unable to register account presence service!"
+                       << QDBusConnection::sessionBus().lastError();
         } else {
-            if(!QDBusConnection::sessionBus().registerService(ACCOUNT_PRESENCE_SERVICE_NAME)) {
-                qWarning() << "Unable to register account presence service!"
-                           << QDBusConnection::sessionBus().lastError();
-            } else {
-                m_IsRegistered = true;
-            }
+            m_IsRegistered = true;
         }
+    }
+
+    if (!m_accountManager->isReady()) {
+        // Wait for the account manager to become ready
+        qDebug() << "Waiting for account manager to become ready";
+        Tp::PendingReady *pr = m_accountManager->becomeReady(Tp::AccountManager::FeatureCore);
+        Q_ASSERT(pr);
+        connect(pr, SIGNAL(finished(Tp::PendingOperation *)),
+                this, SLOT(accountManagerReady(Tp::PendingOperation *)));
     }
 }
 
@@ -94,16 +108,10 @@ void AccountPresenceService::setGlobalPresence(int state)
 
 void AccountPresenceService::setGlobalPresenceWithMessage(int state, const QString &message)
 {
-    Tp::Presence presence = presenceValue(state, message);
-    if (presence.isValid()) {
-        // Set all enabled accounts to have the same presence information
-        foreach (Tp::AccountPtr account, m_accountManager->enabledAccounts()->accounts()) {
-            if (!setAccountPresence(account, presence)) {
-                qWarning() << "Unable to set global presence for account:" << account->displayName();
-            }
-        }
+    if (m_accountManager->isReady()) {
+        globalPresenceUpdate(state, message);
     } else {
-        qWarning() << "Unable to set global presence to invalid state:" << state;
+        m_deferredUpdates.append(UpdateDetails(QString(), state, message));
     }
 }
 
@@ -114,18 +122,30 @@ void AccountPresenceService::setAccountPresence(const QString &accountUri, int s
 
 void AccountPresenceService::setAccountPresenceWithMessage(const QString &accountUri, int state, const QString &message)
 {
-    Tp::AccountPtr account = m_accountManager->accountForPath(accountUri);
-    if (account && account->isValidAccount()) {
-        Tp::Presence presence = presenceValue(state, message);
-        if (presence.isValid()) {
-            if (!setAccountPresence(account, presence)) {
-                qWarning() << "Unable to set presence for account:" << account->displayName();
-            }
-        } else {
-            qWarning() << "Unable to set account presence to invalid state:" << state << "for account:" << account->displayName();
-        }
+    if (m_accountManager->isReady()) {
+        accountPresenceUpdate(accountUri, state, message);
     } else {
-        qWarning() << "Unable to identify account to set presence:" << accountUri;
+        m_deferredUpdates.append(UpdateDetails(accountUri, state, message));
+    }
+}
+
+void AccountPresenceService::accountManagerReady(Tp::PendingOperation *)
+{
+    if (m_accountManager->isReady()) {
+        qDebug() << "Account manager is now ready";
+
+        // Process any updates that were previously deferred
+        foreach (const UpdateDetails &details, m_deferredUpdates) {
+            if (!details.accountUri.isNull()) {
+                accountPresenceUpdate(details.accountUri, details.state, details.message);
+            } else {
+                globalPresenceUpdate(details.state, details.message);
+            }
+        }
+
+        m_deferredUpdates.clear();
+    } else {
+        qCritical() << "ERROR: Cannot provide service without Account Manager readiness!";
     }
 }
 
@@ -143,20 +163,52 @@ void AccountPresenceService::pendingOperationCompleted(Tp::PendingOperation *po)
     }
 }
 
-bool AccountPresenceService::setAccountPresence(Tp::AccountPtr account, const Tp::Presence &presence)
+void AccountPresenceService::globalPresenceUpdate(int state, const QString &message)
 {
-    if (account->isOnline()) {
-        // Ignore any error from setting the automatic presence
-        setAccountPresence(account, presence, false);
-        return setAccountPresence(account, presence, true);
+    Tp::Presence presence = presenceValue(state, message);
+    if (presence.isValid()) {
+        // Set all enabled accounts to have the same presence information
+        foreach (Tp::AccountPtr account, m_accountManager->enabledAccounts()->accounts()) {
+            if (!presenceUpdate(account, presence)) {
+                qWarning() << "Unable to set global presence for account:" << account->displayName();
+            }
+        }
     } else {
-        // Ignore any error from setting the current presence
-        setAccountPresence(account, presence, true);
-        return setAccountPresence(account, presence, false);
+        qWarning() << "Unable to set global presence to invalid state:" << state;
     }
 }
 
-bool AccountPresenceService::setAccountPresence(Tp::AccountPtr account, const Tp::Presence &presence, bool current)
+void AccountPresenceService::accountPresenceUpdate(const QString &accountUri, int state, const QString &message)
+{
+    Tp::AccountPtr account = m_accountManager->accountForPath(accountUri);
+    if (account && account->isValidAccount()) {
+        Tp::Presence presence = presenceValue(state, message);
+        if (presence.isValid()) {
+            if (!presenceUpdate(account, presence)) {
+                qWarning() << "Unable to set presence for account:" << account->displayName();
+            }
+        } else {
+            qWarning() << "Unable to set account presence to invalid state:" << state << "for account:" << account->displayName();
+        }
+    } else {
+        qWarning() << "Unable to identify account to set presence:" << accountUri;
+    }
+}
+
+bool AccountPresenceService::presenceUpdate(Tp::AccountPtr account, const Tp::Presence &presence)
+{
+    if (account->isOnline()) {
+        // Ignore any error from setting the automatic presence
+        presenceUpdate(account, presence, false);
+        return presenceUpdate(account, presence, true);
+    } else {
+        // Ignore any error from setting the current presence
+        presenceUpdate(account, presence, true);
+        return presenceUpdate(account, presence, false);
+    }
+}
+
+bool AccountPresenceService::presenceUpdate(Tp::AccountPtr account, const Tp::Presence &presence, bool current)
 {
     Tp::PendingOperation *po = 0;
 
