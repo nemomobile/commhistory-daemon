@@ -135,11 +135,13 @@ int main(int argc, char **argv)
     setupSigtermHandler();
 
     ML10N::MLocale locale;
+    locale.addTranslationPath("/usr/share/translations/");
     locale.installTrCatalog("messaging");
     locale.installTrCatalog("telephony");
     locale.installTrCatalog("mms");
     locale.installTrCatalog("presence");
     locale.installTrCatalog("recipientedit");
+    locale.installTrCatalog("commhistoryd");
     ML10N::MLocale::setDefault(locale);
 
     qDebug() << "Translation catalogs loaded";

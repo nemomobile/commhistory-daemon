@@ -31,7 +31,7 @@ CATALOGNAME = commhistoryd
 SOURCEPATHS = $${_PRO_FILE_PWD_}/../src
 
 # Installation paths:
-QM_INSTALL_PATH = $${INSTALL_PREFIX}/share/l10n/meegotouch/
+QM_INSTALL_PATH = $${INSTALL_PREFIX}/share/translations/
 TS_INSTALL_PATH = $${INSTALL_PREFIX}/share/doc/commhistory-daemon-l10n-engineering-english/
 
 #-----------------------------------------------------------------------------
