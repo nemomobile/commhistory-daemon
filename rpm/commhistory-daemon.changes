@@ -1,0 +1,44 @@
+* Wed Apr 03 2013 John Brooks <john.brooks@jollamobile.com> - 0.4.7
+- Alter the definition of ObservedConversation to allow observing multiple groups
+
+* Wed Mar 20 2013 John Brooks <john.brooks@jollamobile.com> - 0.4.6
+- Provide service to set account presence information (from Matt Vogt)
+
+* Wed Feb 21 2013 Maciej Blomberg <maciej.blomberg@jollamobile.com> - 0.4.5-2
+- fixed pluralization of notifications
+
+* Wed Feb 20 2013 Maciej Blomberg <maciej.blomberg@jollamobile.com> - 0.4.5
+- notifications translation fixed
+- changed qm file installation path
+
+* Thu Feb  7 2013 Reto Zingg <reto.zingg@jollamobile.com> - 0.4.4
+- create -tests package for automated testing
+
+* Tue Jan 15 2013 Vesa Halttunen <vesa.halttunen@jollamobile.com> - 0.4.3
+- Use the proper feedback related hints in notification category definitions
+
+* Thu Nov 15 2012 Vesa Halttunen <vesa.halttunen@jollamobile.com> - 0.4.2
+- Use new lock screen icon IDs for notifications
+
+* Thu Oct 25 2012 John Brooks <john.brooks@jollamobile.com> - 0.4.1
+- Fixes NEMO#484: Use mlite and mlocale instead of libmeegotouch
+
+* Mon Sep 24 2012 John Brooks <john.brooks@dereferenced.net> - 0.4.0
+- Use TelepathyQt/ instead of TelepathyQt4/ for headers
+
+* Wed Sep 12 2012 John Brooks <john.brooks@dereferenced.net> - 0.4.0
+- Imported patches to git and bumped version for fork
+- Fix assertation in ContactAuthorizer caused by lookupContactByHandle fix
+- Use org.nemomobile.qmlmessages for MESSAGING_SERVICE_NAME
+
+* Thu Aug 30 2012 Marko Saukko <marko.saukko@jollamobile.com> - 0.3.2
+- Fix build with new telepathy libs:
+  - 0001-lookupContactByHandle-is-now-private.patch
+  - 0001-Some-defines-renamed-in-new-tp-qt.patch
+
+* Tue Aug 21 2012 Marko Saukko <marko.saukko@jollamobile.com> - 0.3.2
+- Obsolete smshistory and voicecallhistory plugins.
+
+* Tue Jul 31 2012 Tom Swindell <t.swindell@rubyx.co.uk> - 0.3.2
+- Updated sources from git, for libcommhistory and commhistory-daemon packages. 
+
