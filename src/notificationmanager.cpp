@@ -360,10 +360,6 @@ bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& even
                                                   const QString &channelTargetId,
                                                   CommHistory::Group::ChatType chatType)
 {
-    if (m_ObservedChannelLocalId.isNull()
-        || m_ObservedChannelRemoteId.isNull())
-        return false;
-
     // Return false if it's not message event (IM or SMS/MMS)
     CommHistory::Event::EventType eventType = event.type();
     if (eventType != CommHistory::Event::IMEvent
@@ -373,30 +369,36 @@ bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& even
         return false;
     }
 
-    bool remoteIdMatch = false;
-    bool localIdMatch = false;
-    bool chatTypeMatch = false;
-
     // check contextkit property status, if not ready, we assume
     // ui is not observed
-    if (m_ObservedConversation) {
-        if (!m_ObservedConversation->value().isNull()) {
-            QString remoteMatch;
-            if (chatType == CommHistory::Group::ChatTypeP2P)
-                remoteMatch = event.remoteUid();
-            else
-                remoteMatch = channelTargetId;
+    if (!m_ObservedConversation)
+        return false;
 
-            remoteIdMatch = (CommHistory::remoteAddressMatch(remoteMatch,
-                                                             m_ObservedChannelRemoteId));
+    QString remoteMatch;
+    if (chatType == CommHistory::Group::ChatTypeP2P)
+        remoteMatch = event.remoteUid();
+    else
+        remoteMatch = channelTargetId;
 
-            localIdMatch = MAP_MMS_TO_RING(event.localUid()) == m_ObservedChannelLocalId;
+    QVariantList conversations = m_ObservedConversation->value().toList();
+    foreach (const QVariant &conversation, conversations) {
+        QVariantList values = conversation.toList();
+        if (values.size() != 3)
+            continue;
 
-            chatTypeMatch = chatType == m_ObservedChannelChatType;
-        }
+        if (MAP_MMS_TO_RING(event.localUid()) != values[0].toString())
+            continue;
+
+        if (!CommHistory::remoteAddressMatch(remoteMatch, values[1].toString()))
+            continue;
+
+        if (chatType != (CommHistory::Group::ChatType)values[2].toUInt())
+            continue;
+
+        return true;
     }
 
-    return localIdMatch && remoteIdMatch && chatTypeMatch;
+    return false;
 }
 
 void NotificationManager::removeNotifications(const QString &accountPath, bool messagesOnly)
@@ -486,22 +488,14 @@ void NotificationManager::removeConversationNotifications(const QString &localId
 void NotificationManager::slotObservedConversationChanged()
 {
     if (m_ObservedConversation) {
-        QVariant value = m_ObservedConversation->value(QVariant());
-        if (!value.isNull()) {
-            QVariantList values = value.toList();
-            if (values.count() > 1) {
-                m_ObservedChannelLocalId = values.takeFirst().toString();
-                m_ObservedChannelRemoteId = values.takeFirst().toString();
-                m_ObservedChannelChatType = (CommHistory::Group::ChatType)(values.takeFirst().toUInt());
+        QVariantList conversations = m_ObservedConversation->value(QVariant()).toList();
+        foreach (const QVariant &conversation, conversations) {
+            QVariantList values = conversation.toList();
+            if (values.size() != 3)
+                continue;
 
-                removeConversationNotifications(m_ObservedChannelLocalId,
-                                                m_ObservedChannelRemoteId,
-                                                m_ObservedChannelChatType);
-            }
-        } else {
-            m_ObservedChannelLocalId = QString();
-            m_ObservedChannelRemoteId = QString();
-            m_ObservedChannelChatType = CommHistory::Group::ChatTypeP2P;
+            removeConversationNotifications(values[0].toString(), values[1].toString(),
+                                            (CommHistory::Group::ChatType)values[2].toUInt());
         }
     }
 }

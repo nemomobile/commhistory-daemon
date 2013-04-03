@@ -228,9 +228,6 @@ private:
     ContextProperty* m_ObservedInbox;
     ContextProperty* m_FilteredInbox;
     ContextProperty* m_ObservedCallHistory;
-    QString m_ObservedChannelLocalId;
-    QString m_ObservedChannelRemoteId;
-    CommHistory::Group::ChatType m_ObservedChannelChatType;
     QFile m_Storage;
     bool m_Initialised;
 
