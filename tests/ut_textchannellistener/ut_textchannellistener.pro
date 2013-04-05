@@ -62,7 +62,6 @@ SOURCES     += ut_textchannellistener.cpp \
 
 DESTDIR = ../bin
 QT += dbus
-QT -= gui
 
 # End of File
 
