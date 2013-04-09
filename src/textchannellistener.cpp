@@ -1522,7 +1522,27 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
     if (remoteUid.isEmpty())
         qCritical() << "Empty target id";
 
+    int existingEventId = message.header().value("x-commhistory-event-id", QDBusVariant(-1)).variant().toInt();
     qDebug() << "Handling sent message: " << m_Account->objectPath() << "->" << remoteUid << messageText;
+
+    if (existingEventId >= 0) {
+        qDebug() << "Sent message has an existing event" << existingEventId;
+
+        if (eventType() == CommHistory::Event::IMEvent
+            && areRemotePartiesOffline()
+            && m_ShowOfflineChatError) {
+            if (!m_IsGroupChat) {
+                showErrorNote(txt_qtn_msg_general_supports_offline);
+            } else {
+                showErrorNote(txt_qtn_msg_all_participants_offline);
+            }
+            m_ShowOfflineChatError = false;
+        }
+
+        // There may be other properties of the event worth updating here later, but
+        // that depends on how delivery/error reporting works out in the future.
+        return;
+    }
 
     CommHistory::Event event;
     fillEventFromMessage(message, event);
