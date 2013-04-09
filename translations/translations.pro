@@ -32,13 +32,13 @@ SOURCEPATHS = $${_PRO_FILE_PWD_}/../src
 
 # Installation paths:
 QM_INSTALL_PATH = $${INSTALL_PREFIX}/share/translations/
-TS_INSTALL_PATH = $${INSTALL_PREFIX}/share/doc/commhistory-daemon-l10n-engineering-english/
+TS_INSTALL_PATH = $${INSTALL_PREFIX}/share/translations/source/
 
 #-----------------------------------------------------------------------------
 # DO NOT EDIT THIS PART ------------------------------------------------------
 #-----------------------------------------------------------------------------
 
-TEMPLATE =
+TEMPLATE = aux
 SUBDIRS  =
 CONFIG   = warn_on
 
@@ -49,18 +49,12 @@ QMAKE_LFLAGS = --version
 TS_FILENAME = $${_PRO_FILE_PWD_}/$${CATALOGNAME}.ts
 QM_FILENAME = $${_PRO_FILE_PWD_}/$${CATALOGNAME}.qm
 
-# target name
-TARGET       = $${CATALOGNAME}.qm
-QMAKE_TARGET = $${TARGET}
-
 # LUPDATE and LRELEASE --------------------------------------------------------
 LUPDATE_CMD = lupdate \
-              -no-obsolete \
               $${SOURCEPATHS} \
               -ts $${TS_FILENAME} && \
               lrelease \
               -idbased \
-              -markuntranslated \"!! \" \
               $${TS_FILENAME} \
               -qm $${QM_FILENAME}
 

@@ -28,6 +28,13 @@ Group: Development/Libraries
 %description tests
 Unit tests for commhistory-daemon
 
+%package ts-devel
+Summary: Translation source for commhistory-daemon
+Group: System/Applications
+
+%description ts-devel
+Translation source for commhistory-daemon
+
 %description
 Daemon for logging communications (IM, SMS and call) in history database.
 
@@ -41,8 +48,6 @@ make %{?jobs:-j%jobs}
 %install
 rm -rf %{buildroot}
 %qmake_install
-rm %{buildroot}/usr/bin/commhistoryd.qm
-
 
 %files
 %defattr(-,root,root,-)
@@ -51,11 +56,14 @@ rm %{buildroot}/usr/bin/commhistoryd.qm
 %{_datadir}/dbus-1/services/org.freedesktop.Telepathy.Client.CommHistory.service
 %{_datadir}/dbus-1/services/org.nemomobile.AccountPresence.service
 %{_datadir}/translations/commhistoryd.qm
-%{_datadir}/doc/commhistory-daemon-l10n-engineering-english/commhistoryd.ts
 %{_datadir}/lipstick/notificationcategories/*
 %{_datadir}/telepathy/clients/CommHistory.client
 
 %files tests
 %defattr(-,root,root,-)
 /opt/tests/commhistory-daemon/*
+
+%files ts-devel
+%defattr(-,root,root,-)
+%{_datadir}/translations/source/commhistoryd.ts
 
