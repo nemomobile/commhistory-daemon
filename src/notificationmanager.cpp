@@ -38,15 +38,17 @@
 #include <QContactFetchRequest>
 #include <QContactOnlineAccount>
 #include <QContactDetailFilter>
-#include <QContactLocalIdFilter>
 #include <QContactPhoneNumber>
-#include <QContactId>
 #include <QContactName>
 #include <QContactDisplayLabel>
+#ifdef USING_QTPIM
+#include <QContactIdFilter>
+#else
+#include <QContactLocalIdFilter>
+#endif
 
 // ContextKit includes
 #include <contextproperty.h>
-#include <contextpropertyinfo.h>
 
 // CommHistory includes
 #include <CommHistory/commonutils.h>
@@ -63,6 +65,20 @@
 #include "mwilistener.h"
 #include "voicemailhandler.h"
 
+BEGIN_CONTACTS_NAMESPACE
+
+#ifdef USING_QTPIM
+static const int QContactOnlineAccount__FieldAccountPath = (QContactOnlineAccount::FieldSubTypes+1);
+static const int QContactOnlineAccount__FieldAccountIconPath = (QContactOnlineAccount::FieldSubTypes+2);
+static const int QContactOnlineAccount__FieldEnabled = (QContactOnlineAccount::FieldSubTypes+3);
+#else
+Q_DECLARE_LATIN1_CONSTANT(QContactOnlineAccount__FieldAccountPath, "AccountPath") = { "AccountPath" };
+Q_DECLARE_LATIN1_CONSTANT(QContactOnlineAccount__FieldAccountIconPath, "AccountIconPath") = { "AccountIconPath" };
+Q_DECLARE_LATIN1_CONSTANT(QContactOnlineAccount__FieldEnabled, "Enabled") = { "Enabled" };
+#endif
+
+END_CONTACTS_NAMESPACE
+
 using namespace RTComLogger;
 using namespace CommHistory;
 
@@ -70,28 +86,62 @@ NotificationManager* NotificationManager::m_pInstance = 0;
 
 namespace {
 
-QContactFilter createContactFilter(const QString &localId, const QString &remoteId)
+#ifdef USING_QTPIM
+QContactId apiId(const QContact &contact) { return contact.id(); }
+#else
+QContactLocalId apiId(const QContact &contact) { return contact.localId(); }
+#endif
+
+int internalId(const QContact &contact)
 {
-    if (localId == RING_ACCOUNT_PATH || localId == MMS_ACCOUNT_PATH) {
-        return QContactPhoneNumber::match(remoteId);
+#ifdef USING_QTPIM
+    // We need to be able to represent an ID as a 32-bit int; we could use
+    // hashing, but for now we will just extract the integral part of the ID
+    // string produced by qtcontacts-sqlite
+    const QContactId id(contact.id());
+    if (!id.isNull()) {
+        QStringList components = id.toString().split(QChar::fromLatin1(':'));
+        const QString &idComponent = components.isEmpty() ? QString() : components.last();
+        if (idComponent.startsWith(QString::fromLatin1("sql-"))) {
+            return static_cast<int>(idComponent.mid(4).toUInt());
+        }
+    }
+    return 0;
+#else
+    return static_cast<int>(contact.localId());
+#endif
+}
+
+template<typename T, typename F>
+void setFilterDetail(QContactDetailFilter &filter, F field)
+{
+#ifdef USING_QTPIM
+    filter.setDetailType(T::Type, field);
+#else
+    filter.setDetailDefinitionName(T::DefinitionName, field);
+#endif
+}
+
+QContactFilter createContactFilter(const QString &localUid, const QString &remoteUid)
+{
+    if (localUid == RING_ACCOUNT_PATH || localUid == MMS_ACCOUNT_PATH) {
+        return QContactPhoneNumber::match(remoteUid);
     } else {
         QContactDetailFilter filterLocal;
-        filterLocal.setDetailDefinitionName(QContactOnlineAccount::DefinitionName,
-                                            QLatin1String("AccountPath"));
-        filterLocal.setValue(localId);
+        setFilterDetail<QContactOnlineAccount>(filterLocal, QContactOnlineAccount__FieldAccountPath);
+        filterLocal.setValue(localUid);
 
         QContactDetailFilter filterRemote;
-        filterRemote.setDetailDefinitionName(QContactOnlineAccount::DefinitionName,
-                                             QContactOnlineAccount::FieldAccountUri);
-        filterRemote.setValue(remoteId);
+        setFilterDetail<QContactOnlineAccount>(filterRemote, QContactOnlineAccount::FieldAccountUri);
+        filterRemote.setValue(remoteUid);
 
         // for phone calls over SIP/Skype check remote id as a phone number
-        QString number = CommHistory::normalizePhoneNumber(remoteId);
+        QString number = CommHistory::normalizePhoneNumber(remoteUid);
         if (number.isEmpty()) {
             return filterLocal & filterRemote;
         } else {
             return ((filterLocal & filterRemote)
-                    | QContactPhoneNumber::match(remoteId));
+                    | QContactPhoneNumber::match(remoteUid));
         }
     }
 }
@@ -107,17 +157,22 @@ QContactFilter addContactFilter(const QContactFilter &existingFilter,
 
 bool matchContact(const QList<QContactOnlineAccount> &accounts,
                   const QList<QContactPhoneNumber> &phones,
-                  const QString &localId,
-                  const QString &remoteId)
+                  const QString &localUid,
+                  const QString &remoteUid)
 {
     foreach (QContactOnlineAccount account, accounts) {
-        if (localId == account.value("AccountPath")
-            && CommHistory::remoteAddressMatch(remoteId, account.value(QContactOnlineAccount::FieldAccountUri)))
+#ifdef USING_QTPIM
+        if (localUid == account.value<QString>(QContactOnlineAccount__FieldAccountPath)
+            && CommHistory::remoteAddressMatch(remoteUid, account.value<QString>(QContactOnlineAccount::FieldAccountUri)))
+#else
+        if (localUid == account.value(QContactOnlineAccount__FieldAccountPath)
+            && CommHistory::remoteAddressMatch(remoteUid, account.value(QContactOnlineAccount::FieldAccountUri)))
+#endif
             return true;
     }
 
     foreach (QContactPhoneNumber phone, phones) {
-        if (CommHistory::remoteAddressMatch(remoteId, phone.number()))
+        if (CommHistory::remoteAddressMatch(remoteUid, phone.number()))
             return true;
     }
     return false;
@@ -443,8 +498,8 @@ void NotificationManager::removeNotifications(const QString &accountPath, bool m
     }
 }
 
-void NotificationManager::removeConversationNotifications(const QString &localId,
-                                                          const QString &remoteId,
+void NotificationManager::removeConversationNotifications(const QString &localUid,
+                                                          const QString &remoteUid,
                                                           CommHistory::Group::ChatType chatType)
 {
     QSet<NotificationGroup> updatedGroups;
@@ -467,9 +522,9 @@ void NotificationManager::removeConversationNotifications(const QString &localId
                  || eventType == CommHistory::Event::SMSEvent
                  || eventType == CommHistory::Event::MMSEvent
                  || eventType == VOICEMAIL_SMS_EVENT_TYPE)
-                && MAP_MMS_TO_RING(i.value().account()) == localId
+                && MAP_MMS_TO_RING(i.value().account()) == localUid
                 && CommHistory::remoteAddressMatch(notificationRemoteUidStr,
-                                                   remoteId)
+                                                   remoteUid)
                 && (CommHistory::Group::ChatType)(i.value().chatType()) == chatType) {
                 updatedGroups.insert(i.key());
                 i.remove();
@@ -669,7 +724,7 @@ void NotificationManager::resolveEvents()
 
             //set contact id for usage by notification key
             if (!contact.isEmpty())
-                notification.setContactId(contact.localId());
+                notification.setContactId(internalId(contact));
             else if (m_requests.key(cuid) != NULL) // if contact is empty
                 break;                             // but there is pending request for it
                                                    // wait
@@ -834,7 +889,6 @@ void NotificationManager::updateNotificationGroup(const NotificationGroup &group
         // update group
         if (group.type() != CommHistory::Event::VoicemailEvent && group.type() != VOICEMAIL_SMS_EVENT_TYPE)
             name = tempLocale.joinStringList( contactNames(group) );
-            //name = contactNames(group).join(CONTACT_SEPARATOR_IN_NOTIFICATION_GROUP);
 
         updateGroup(group.type(), countNotifications(group), name, message, groupAction);
     } else {
@@ -1054,6 +1108,12 @@ void NotificationManager::requestContact(TpContactUid cuid)
     qDebug() << Q_FUNC_INFO << cuid.first << cuid.second;
 
     m_requests.insert(request, cuid);
+    emit pendingRequestCountChanged();
+}
+
+int NotificationManager::pendingRequestCount() const
+{
+    return m_requests.count();
 }
 
 QContactFetchRequest* NotificationManager::startContactRequest(QContactFilter &filter,
@@ -1072,13 +1132,23 @@ QContactFetchRequest* NotificationManager::startContactRequest(QContactFilter &f
 
     request->setFilter(filter);
 
+    QContactFetchHint hint;
+    hint.setOptimizationHints(QContactFetchHint::NoRelationships);
+
+#ifdef USING_QTPIM
+    QList<QContactDetail::DetailType> details;
+    details << QContactName::Type
+            << QContactOnlineAccount::Type
+            << QContactDisplayLabel::Type;
+    hint.setDetailTypesHint(details);
+#else
     QStringList details;
     details << QContactName::DefinitionName
             << QContactOnlineAccount::DefinitionName
             << QContactDisplayLabel::DefinitionName;
-
-    QContactFetchHint hint;
     hint.setDetailDefinitionsHint(details);
+#endif
+
     request->setFetchHint(hint);
 
     request->start();
@@ -1102,9 +1172,13 @@ void NotificationManager::slotContactRequestTimeout()
 
     if (m_requests.contains(request)) {
         TpContactUid cuid = m_requests.take(request);
+        qDebug() << Q_FUNC_INFO << "aborted request for:" << cuid;
+
         if (!m_contacts.contains(cuid))
             m_contacts.insert(cuid, QContact());
         resolveEvents();
+
+        emit pendingRequestCountChanged();
     }
 
     request->deleteLater();
@@ -1125,17 +1199,24 @@ void NotificationManager::slotResultsAvailable()
                        // there is no contact for the remote id
 
     // show remote id in case of multiple contacts match
-    if (request->contacts().size() == 1 && request->contacts().first().localId() != m_pContactManager->selfContactId()) {
+    if (request->contacts().size() == 1 && apiId(request->contacts().first()) != m_pContactManager->selfContactId()) {
         contact = request->contacts().first();
+#ifdef USING_QTPIM
+        qDebug() << Q_FUNC_INFO << "Using" << contact.detail<QContactDisplayLabel>().label();
+#else
         qDebug() << Q_FUNC_INFO << "Using" << contact.displayLabel();
+#endif
     }
 
     m_contacts.insert(cuid, contact);
 
-    m_requests.remove(request);
-    request->deleteLater();
-
     resolveEvents();
+
+    if (m_requests.remove(request)) {
+        emit pendingRequestCountChanged();
+    }
+
+    request->deleteLater();
 }
 
 QString NotificationManager::contactName(const QString &localUid,
@@ -1149,7 +1230,11 @@ QString NotificationManager::contactName(const QString &localUid,
         QContact contact = m_contacts.value(TpContactUid(localUid, remoteUid));
 
         if (!contact.isEmpty()) {
+#ifdef USING_QTPIM
+            result = contact.detail<QContactDisplayLabel>().label();
+#else
             result = contact.displayLabel();
+#endif
         }
 
         if (result.isEmpty()) {
@@ -1290,11 +1375,20 @@ void NotificationManager::createDataDir()
 QContactManager* NotificationManager::contactManager()
 {
     if(!m_pContactManager){
-        QMap<QString,QString> params;
-        params["contact-types"] = QLatin1String("contact");
-        params["omit-presence-changes"] = QLatin1String(""); // value ignored
-        m_pContactManager = new QContactManager(CONTACT_STORAGE_TYPE, params);
+        // Use the default contact manager
+        m_pContactManager = new QContactManager;
         m_pContactManager->setParent(this);
+#ifdef USING_QTPIM
+        connect(m_pContactManager,
+                SIGNAL(contactsAdded(const QList<QContactId>&)),
+                SLOT(slotContactsAdded(const QList<QContactId>&)));
+        connect(m_pContactManager,
+                SIGNAL(contactsRemoved(const QList<QContactId>&)),
+                SLOT(slotContactsRemoved(const QList<QContactId>&)));
+        connect(m_pContactManager,
+                SIGNAL(contactsChanged(const QList<QContactId>&)),
+                SLOT(slotContactsChanged(const QList<QContactId>&)));
+#else
         connect(m_pContactManager,
                 SIGNAL(contactsAdded(const QList<QContactLocalId>&)),
                 SLOT(slotContactsAdded(const QList<QContactLocalId>&)));
@@ -1304,11 +1398,12 @@ QContactManager* NotificationManager::contactManager()
         connect(m_pContactManager,
                 SIGNAL(contactsChanged(const QList<QContactLocalId>&)),
                 SLOT(slotContactsChanged(const QList<QContactLocalId>&)));
+#endif
     }
     return m_pContactManager;
 }
 
-void NotificationManager::slotContactsAdded(const QList<QContactLocalId> &contactIds)
+void NotificationManager::slotContactsAdded(const QList<ContactIdType> &contactIds)
 {
     if (contactIds.isEmpty())
         return;
@@ -1330,7 +1425,7 @@ void NotificationManager::slotContactsAdded(const QList<QContactLocalId> &contac
     startContactsTimer();
 }
 
-void NotificationManager::slotContactsRemoved(const QList<QContactLocalId> &contactIds)
+void NotificationManager::slotContactsRemoved(const QList<ContactIdType> &contactIds)
 {
     if (contactIds.isEmpty())
         return;
@@ -1346,20 +1441,20 @@ void NotificationManager::slotContactsRemoved(const QList<QContactLocalId> &cont
     }
 
     // update contact cache for notifications
-    QList<QContactLocalId> updatedContactIds;
+    QList<ContactIdType> updatedContactIds;
     QMutableHashIterator<TpContactUid, QContact> i(m_contacts);
     while (i.hasNext()) {
         QContact c = i.next().value();
-        if (!c.isEmpty() && contactIds.contains(c.localId())) {
+        if (!c.isEmpty() && contactIds.contains(apiId(c))) {
             i.setValue(QContact());
-            updatedContactIds << c.localId();
+            updatedContactIds << apiId(c);
         }
     }
 
-    updateNotifcationContacts(updatedContactIds);
+    updateNotificationContacts(updatedContactIds);
 }
 
-void NotificationManager::slotContactsChanged(const QList<QContactLocalId> &contactIds)
+void NotificationManager::slotContactsChanged(const QList<ContactIdType> &contactIds)
 {
     if (contactIds.isEmpty())
         return;
@@ -1373,7 +1468,11 @@ void NotificationManager::slotContactsChanged(const QList<QContactLocalId> &cont
     }
 
     if (!m_contacts.isEmpty() || !m_Notifications.isEmpty()) {
+#ifdef USING_QTPIM
+        QContactIdFilter filter;
+#else
         QContactLocalIdFilter filter;
+#endif
         filter.setIds(contactIds);
         m_ContactFilter = addContactFilter(m_ContactFilter, filter);
 
@@ -1445,7 +1544,7 @@ void NotificationManager::slotResultsAvailableForUnknown()
 
     qDebug() << Q_FUNC_INFO << request->contacts().size() << "contacts";
 
-    QSet<QContactLocalId> updatedContactIds;
+    QSet<ContactIdType> updatedContactIds;
 
     // check notifications contact
     QMutableHashIterator<TpContactUid, QContact> i(m_contacts);
@@ -1457,13 +1556,13 @@ void NotificationManager::slotResultsAvailableForUnknown()
         bool matchedLocalId = false;
 
         foreach (QContact contact, request->contacts()) {
-            if (contact.localId() != m_pContactManager->selfContactId()) {
+            if (apiId(contact) != m_pContactManager->selfContactId()) {
                 QList<QContactOnlineAccount> accounts = contact.details<QContactOnlineAccount>();
                 QList<QContactPhoneNumber> phones = contact.details<QContactPhoneNumber>();
 
                 if (matchContact(accounts, phones, cuid.first, cuid.second))
                     matchedContacts << contact;
-                if (cacheContact.localId() == contact.localId())
+                if (apiId(cacheContact) == apiId(contact))
                     matchedLocalId = true;
             } // if
         }
@@ -1476,10 +1575,10 @@ void NotificationManager::slotResultsAvailableForUnknown()
             i.setValue(QContact());
 
         foreach (QContact c, matchedContacts)
-            updatedContactIds << c.localId();
+            updatedContactIds << apiId(c);
     }
 
-    updateNotifcationContacts(updatedContactIds.toList());
+    updateNotificationContacts(updatedContactIds.toList());
 
     request->deleteLater();
 }
@@ -1499,7 +1598,7 @@ void NotificationManager::slotGroupRemoved(const QModelIndex &index, int start, 
     }
 }
 
-void NotificationManager::updateNotifcationContacts(const QList<QContactLocalId> &contactIds)
+void NotificationManager::updateNotificationContacts(const QList<ContactIdType> &contactIds)
 {
     QMutableHashIterator<NotificationGroup,PersonalNotification> i(m_Notifications);
 
@@ -1514,17 +1613,14 @@ void NotificationManager::updateNotifcationContacts(const QList<QContactLocalId>
                               pn.remoteUid());
 
             QContact c = m_contacts.value(cuid);
-            int localId = 0;
 
-            if (!c.isEmpty())
-                localId = c.localId();
-
-            if (localId != pn.contactId()) {
-                pn.setContactId(c.localId());
+            int id = internalId(c);
+            if (id != pn.contactId()) {
+                pn.setContactId(id);
                 i.setValue(pn);
                 changed = true;
                 updatedGroups << i.key();
-            } else if (contactIds.contains(localId)) {
+            } else if (contactIds.contains(apiId(c))) {
                 updatedGroups << i.key();
             }
         }

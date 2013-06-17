@@ -79,8 +79,6 @@ namespace RTComLogger {
 
 #define TELEPATHY_CHANNEL_INTERFACE_PERSISTENT_ID QLatin1String("com.nokia.Telepathy.Channel.Interface.Persistent.PersistentID")
 
-// DUI didnt define namespace for events, remove this
-#define CONTACT_STORAGE_TYPE QLatin1String("tracker")
 // notification threshold is 3 seconds
 #define NOTIFICATION_THRESHOLD 3000
 // threshold to trigger contact request after added/modified contacts signals

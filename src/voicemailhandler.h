@@ -23,16 +23,14 @@
 #ifndef VOICEMAILHANDLER_H
 #define VOICEMAILHANDLER_H
 
-#include <QWeakPointer>
+#include <QPointer>
 
-#include <qcontact.h>
-QTM_USE_NAMESPACE
+#include <QContact>
+#include <QContactManager>
+#include <QContactFetchRequest>
+#include <QContactFilter>
 
-QTM_BEGIN_NAMESPACE
-class QContactManager;
-class QContactFetchRequest;
-class QContactFilter;
-QTM_END_NAMESPACE
+USE_CONTACTS_NAMESPACE
 
 class QFileSystemWatcher;
 
@@ -47,6 +45,12 @@ class VoiceMailHandler : public QObject
     Q_OBJECT
 
 public:
+#ifdef USING_QTPIM
+    typedef QContactId ContactIdType;
+#else
+    typedef QContactLocalId ContactIdType;
+#endif
+
     /*!
      *  \param QObject parent object
      *  \returns VoiceMailHandler singleton
@@ -63,11 +67,11 @@ public:
     bool isVoiceMailNumber(QString phoneNumber);
 
     /*!
-     * \brief Tells if given QContactLocalId belongs to a voice mail contact or not.
-     * \param QContactLocalId to be checked
+     * \brief Tells if given contact ID belongs to a voice mail contact or not.
+     * \param contact ID to be checked
      * \returns true if given id belongs to a voice mail contact, false if not
      */
-    bool isVoiceMailContact(QContactLocalId localId);
+    bool isVoiceMailContact(const ContactIdType &localId);
 
     /*!
      * \brief Refreshes VoiceMailHandler by fetching possible voice mail contact from tracker based on GUID.
@@ -83,7 +87,7 @@ public:
      * \brief Returns voice mail contact id.
      * \returns voice mail contact's local id
      */
-    QContactLocalId voiceMailContactId();
+    ContactIdType voiceMailContactId();
 
     /*!
      * \brief Starts to listen QFileSystemWatcher for vmid dir and file changes.
@@ -97,13 +101,19 @@ private Q_SLOTS:
 
 private:
     VoiceMailHandler();
-    void init();    
-    QContactFetchRequest* startContactRequest(QContactFilter &filter, QStringList &details, const char *resultSlot);
+    void init();
+    QContactFetchRequest* startContactRequest(QContactFilter &filter,
+#ifdef USING_QTPIM
+                                              const QList<QContactDetail::DetailType> &details,
+#else
+                                              const QStringList &details,
+#endif
+                                              const char *resultSlot);
 
 private:
-    QWeakPointer<QContactManager> m_pContactManager;
+    QPointer<QContactManager> m_pContactManager;
     QStringList m_voiceMailPhoneNumbers;
-    QContactLocalId m_localContactId;
+    ContactIdType m_contactId;
     QFileSystemWatcher *m_pVoiceMailDirWatcher;
 };
 

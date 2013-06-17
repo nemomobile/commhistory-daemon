@@ -45,7 +45,11 @@ using namespace RTComLogger;
 
 namespace {
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+void messageHandler(QtMsgType type, const QMessageLogContext &, const QString &message)
+#else
 void messageHandler(QtMsgType type, const char *msg)
+#endif
 {
 #ifndef QT_DEBUG
     if (!(type == QtCriticalMsg || type == QtFatalMsg))
@@ -72,6 +76,11 @@ void messageHandler(QtMsgType type, const char *msg)
         logLevel = "FATAL: ";
         priority = LOG_ALERT;
     }
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    const QByteArray &msgData(message.toLocal8Bit());
+    const char *msg = msgData.constData();
+#endif
 
     QByteArray timestamp = QDateTime::currentDateTime().toString("ss:zzz").toLocal8Bit();
     syslog(LOG_MAKEPRI(LOG_USER, priority),
@@ -123,7 +132,11 @@ int main(int argc, char **argv)
 
     openlog("COMMHISTORYD", logOption, 0);
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    qInstallMessageHandler(messageHandler);
+#else
     qInstallMsgHandler(messageHandler);
+#endif
 
     qDebug() << "MApplication created";
 

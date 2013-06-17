@@ -79,8 +79,9 @@ bool AccountSpecificCallModel::getEvents(QString accountPath)
 
     d->filterAccountPath = accountPath;
 
-    reset();
+    beginResetModel();
     d->clearEvents();
+    endResetModel();
 
     EventsQuery query(d->propertyMask);
     query.addPattern(QLatin1String("%1 a nmo:Call .")).variable(Event::Id);
@@ -101,8 +102,9 @@ bool AccountSpecificCallModel::getEvents(QDateTime date)
 
     d->filterReferenceDate = date;
 
-    reset();
+    beginResetModel();
     d->clearEvents();
+    endResetModel();
 
     qDebug() << __PRETTY_FUNCTION__ << "Date to compare in database: " << date.toUTC().toString(Qt::ISODate);
 
