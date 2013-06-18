@@ -1376,7 +1376,12 @@ QContactManager* NotificationManager::contactManager()
 {
     if(!m_pContactManager){
         // Use the default contact manager
+#ifdef USING_QTPIM
+        // Temporary override until qtpim supports QTCONTACTS_MANAGER_OVERRIDE
+        m_pContactManager = new QContactManager(QString::fromLatin1("org.nemomobile.contacts.sqlite"));
+#else
         m_pContactManager = new QContactManager;
+#endif
         m_pContactManager->setParent(this);
 #ifdef USING_QTPIM
         connect(m_pContactManager,

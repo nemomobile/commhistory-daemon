@@ -10,7 +10,12 @@ NotificationManager* NotificationManager::m_pInstance = 0;
 NotificationManager::NotificationManager(QObject *parent) :
     QObject(parent)
 {
+#ifdef USING_QTPIM
+    // Temporary override until qtpim supports QTCONTACTS_MANAGER_OVERRIDE
+    m_pContactManager = new QContactManager(QString::fromLatin1("org.nemomobile.contacts.sqlite"));
+#else
     m_pContactManager = new QContactManager;
+#endif
     m_GroupModel = new CommHistory::GroupModel(this);
     m_GroupModel->enableContactChanges(false);
 
