@@ -37,7 +37,7 @@ CONFIG += ordered
 # generate test xml
 #-----------------------------------------------------------------------------
 !system( ./do_tests_xml.sh $${OUT_PWD}/bin \
-                    $${PROJECT_NAME}-tests \
+                    $${PROJECT_NAME} \
                      \"$${SUBDIRS}\" ) : \
      error("Error running do_tests_xml.sh")
 QMAKE_CLEAN += $${OUT_PWD}/bin/tests.xml

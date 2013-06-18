@@ -33,19 +33,23 @@
 #include <QTimer>
 #include <QMultiHash>
 #include <QModelIndex>
-#include <QWeakPointer>
+
+#include <QContact>
+#include <QContactManager>
+#include <QContactFetchRequest>
+#include <QContactFilter>
 
 //QmSystem2
 #include <qmsystem2/qmdisplaystate.h>
 
 #include <CommHistory/Event>
 #include <CommHistory/Group>
-#include <qcontact.h>
-QTM_USE_NAMESPACE
 
 // our includes
 #include "notificationgroup.h"
 #include "personalnotification.h"
+
+USE_CONTACTS_NAMESPACE
 
 class ContextProperty;
 class MNotificationGroup;
@@ -53,12 +57,6 @@ class MNotificationGroup;
 namespace CommHistory {
     class GroupModel;
 }
-
-QTM_BEGIN_NAMESPACE
-class QContactManager;
-class QContactFetchRequest;
-class QContactFilter;
-QTM_END_NAMESPACE
 
 namespace RTComLogger {
 
@@ -75,6 +73,12 @@ class NotificationManager : public QObject
     Q_OBJECT
 
 public:
+#ifdef USING_QTPIM
+    typedef QContactId ContactIdType;
+#else
+    typedef QContactLocalId ContactIdType;
+#endif
+
     /*!
      *  \param QObject parent object
      *  \returns Notification manager singleton
@@ -114,6 +118,11 @@ public:
      */
     QContactManager* contactManager();
 
+    int pendingRequestCount() const;
+
+Q_SIGNALS:
+    void pendingRequestCountChanged();
+
 public Q_SLOTS:
     /*!
      * \brief Removes notifications belonging to a particular account having optionally certain remote uids.
@@ -133,9 +142,15 @@ private Q_SLOTS:
     void slotResultsAvailable();
     void slotResultsAvailableForUnknown();
     void fireNotifications();
+#ifdef USING_QTPIM
+    void slotContactsAdded(const QList<QContactId> &contactIds);
+    void slotContactsRemoved(const QList<QContactId> &contactIds);
+    void slotContactsChanged(const QList<QContactId> &contactIds);
+#else
     void slotContactsAdded(const QList<QContactLocalId> &contactIds);
     void slotContactsRemoved(const QList<QContactLocalId> &contactIds);
     void slotContactsChanged(const QList<QContactLocalId> &contactIds);
+#endif
     void fireUnknownContactsRequest();
     void slotOnModelReady(bool status);
     void slotGroupRemoved(const QModelIndex &index, int start, int end);
@@ -207,7 +222,7 @@ private:
 
     QContactFetchRequest* startContactRequest(QContactFilter &filter,
                                               const char *resultSlot);
-    void updateNotifcationContacts(const QList<QContactLocalId> &contactIds);
+    void updateNotificationContacts(const QList<ContactIdType> &contactIds);
     bool hasMessageNotification() const;
 
     void syncNotifications();

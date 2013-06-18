@@ -4,16 +4,15 @@
 #include <QObject>
 #include <CommHistory/Event>
 #include <CommHistory/Group>
-#include <qcontact.h>
-QTM_USE_NAMESPACE
+
+#include <QContact>
+#include <QContactManager>
+
+USE_CONTACTS_NAMESPACE
 
 namespace CommHistory {
     class GroupModel;
 }
-
-QTM_BEGIN_NAMESPACE
-class QContactManager;
-QTM_END_NAMESPACE
 
 namespace RTComLogger {
 

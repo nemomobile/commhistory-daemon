@@ -24,31 +24,22 @@
 # Project file for test ut_textchannellistener
 #-----------------------------------------------------------------------------
 
-!include( ../../common-project-config.pri ) : error( "Unable to include common-project-config.pri!" )
-!include( ../../common-vars.pri ) : error( "Unable to include common-project-config.pri!" )
-
 #-----------------------------------------------------------------------------
 # common test configuration
 #-----------------------------------------------------------------------------
 !include(../tests.pri) : error( "Unable to include test.pri" )
 
 !include( ../stubs/stubs.pri ) : error("Unable to include stubs/stubs.pri")
-INCLUDEPATH = ../stubs/ \
-    $${INCLUDEPATH}
+INCLUDEPATH = ../stubs/ $${INCLUDEPATH}
 
 #-----------------------------------------------------------------------------
 # test specific configuration
 #-----------------------------------------------------------------------------
 
 TARGET = ut_messagereviver
-CONFIG += link_pkgconfig \
-          mobility
-LIBS += -lQtContacts -lQtVersit
-PKGCONFIG += contextsubscriber-1.0 \
-             mlite
 
 TEST_SOURCES += $$COMMHISTORYDSRCDIR/messagereviver.cpp \
-                connectionutils.cpp
+                $$COMMHISTORYDSRCDIR/connectionutils.cpp
 
 TEST_HEADERS += $$COMMHISTORYDSRCDIR/messagereviver.h \
                 $$COMMHISTORYDSRCDIR/connectionutils.h

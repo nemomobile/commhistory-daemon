@@ -29,13 +29,13 @@
 #include <QTime>
 #include <QSignalSpy>
 
-#include "TelepathyQt/types.h"
-#include "TelepathyQt/account.h"
-#include "TelepathyQt/channel.h"
-#include "TelepathyQt/streamed-media-channel.h"
-#include "TelepathyQt/message.h"
-#include "TelepathyQt/connection.h"
-#include "TelepathyQt/contact-manager.h"
+#include "TelepathyQt/Types"
+#include "TelepathyQt/Account"
+#include "TelepathyQt/Channel"
+#include "TelepathyQt/StreamedMediaChannel"
+#include "TelepathyQt/Message"
+#include "TelepathyQt/Connection"
+#include "TelepathyQt/ContactManager"
 
 #include "streamchannellistener.h"
 #include "notificationmanager.h"
