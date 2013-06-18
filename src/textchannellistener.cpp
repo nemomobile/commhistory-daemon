@@ -54,8 +54,8 @@
 #include <TpExtensions/Constants> // Flash sms
 
 // Contacts
-#include <qmobilityglobal.h>
-#include <qtcontacts.h>
+#include <QContact>
+#include <QContactManager>
 #include <QVersitReader>
 #include <QVersitContactImporter>
 
@@ -128,7 +128,8 @@
 #define RESAVE_INTERVAL 5000 //ms
 
 using namespace RTComLogger;
-QTM_USE_NAMESPACE;
+USE_CONTACTS_NAMESPACE;
+USE_VERSIT_NAMESPACE;
 
 namespace {
 
@@ -1837,12 +1838,18 @@ QString TextChannelListener::fetchContactLabelFromVCard(const QByteArray &vcard)
 
             if (!contacts.isEmpty()) {
                 QContact contact = contacts.first();
+#ifndef USING_QTPIM
                 // Let's ensure the display label is set:
                 QContactManager* manager = NotificationManager::instance()->contactManager();
                 if (manager != 0) { // This should always be the case, but it's better to be cautious :)
                     manager->synthesizeContactDisplayLabel(&contact);
                 }
+#endif
+#ifdef USING_QTPIM
+                QString label = contact.detail<QContactDisplayLabel>().label();
+#else
                 QString label = contact.displayLabel();
+#endif
                 if (label.isEmpty()) {
                     qWarning() << __PRETTY_FUNCTION__ << "The contact has an empty label, dispite our efforts.";
                 }
@@ -1883,7 +1890,7 @@ bool TextChannelListener::storeVCard(const QByteArray &vcard, QString &name)
     while (true) {
         uuid = QUuid::createUuid();
 
-        name = QString("%1/%2.%3").arg(dir_name).arg(uuid).arg(VCARD_EXTENSION);
+        name = QString("%1/%2.%3").arg(dir_name).arg(uuid.toString()).arg(VCARD_EXTENSION);
 
         QFileInfo info(name);
         if (!info.exists()) {

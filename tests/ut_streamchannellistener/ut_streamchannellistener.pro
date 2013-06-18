@@ -24,28 +24,19 @@
 # Project file for test ut_textchannellistener
 #-----------------------------------------------------------------------------
 
-!include( ../../common-project-config.pri ) : error( "Unable to include common-project-config.pri!" )
-!include( ../../common-vars.pri ) : error( "Unable to include common-project-config.pri!" )
-
 #-----------------------------------------------------------------------------
 # common test configuration
 #-----------------------------------------------------------------------------
 !include(../tests.pri) : error( "Unable to include test.pri" )
 
 !include( ../stubs/stubs.pri ) : error("Unable to include stubs/stubs.pri")
-INCLUDEPATH = ../stubs/ \
-    $${INCLUDEPATH}
+INCLUDEPATH = ../stubs/ $${INCLUDEPATH}
 
 #-----------------------------------------------------------------------------
 # test specific configuration
 #-----------------------------------------------------------------------------
 
 TARGET = ut_streamchannellistener
-CONFIG += link_pkgconfig \
-          mobility
-LIBS += -lQtContacts -lQtVersit
-PKGCONFIG += contextsubscriber-1.0 \
-             mlite
 
 TEST_SOURCES += $$COMMHISTORYDSRCDIR/streamchannellistener.cpp \
                 $$COMMHISTORYDSRCDIR/channellistener.cpp

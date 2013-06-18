@@ -24,9 +24,6 @@
 # Project file for test ut_notificationmanager
 #-----------------------------------------------------------------------------
 
-!include( ../../common-project-config.pri ) : error( "Unable to include common-project-config.pri!" )
-!include( ../../common-vars.pri ) : error( "Unable to include common-project-config.pri!" )
-
 #-----------------------------------------------------------------------------
 # common test configuration
 #-----------------------------------------------------------------------------
@@ -36,13 +33,14 @@
 # test specific configuration
 #-----------------------------------------------------------------------------
 TARGET = ut_notificationmanager
-CONFIG += link_pkgconfig \
-          mobility \
-          mlocale
-PKGCONFIG += contextsubscriber-1.0 \
-             mlite \
-             TelepathyQt4 \
-             qmsystem2
+
+equals(QT_MAJOR_VERSION, 4) {
+    CONFIG += mlocale
+    PKGCONFIG += qmsystem2 TelepathyQt4
+}
+equals(QT_MAJOR_VERSION, 5) {
+    PKGCONFIG += mlocale5 qmsystem2-qt5 TelepathyQt5
+}
 
 TEST_SOURCES += $$COMMHISTORYDSRCDIR/notificationmanager.cpp \
                 $$COMMHISTORYDSRCDIR/notificationgroup.cpp \

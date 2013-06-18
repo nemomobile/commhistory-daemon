@@ -1,5 +1,5 @@
 <set description="commhistory-daemon-tests:ut_notificationmanager" name="ut_notificationmanager">
     <case description="commhistory-daemon-tests:ut_notificationmanager" name="notificationmanager">
-        <step expected_result="0">/opt/tests/commhistory-daemon/ut_notificationmanager</step>
+        <step expected_result="0">/opt/tests/@PROJECT_NAME@/ut_notificationmanager</step>
     </case>
 </set>

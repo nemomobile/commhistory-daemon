@@ -420,7 +420,7 @@ void ContactAuthorizer::fireAuthorisationRequest()
             id = request.contact->id();
             filename = request.filename;
             message = request.message;
-            transactionId = request.transactionId;
+            transactionId = request.transactionId.toString();
         } else {
             m_authRequests.removeOne(request);
             continue;

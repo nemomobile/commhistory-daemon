@@ -20,17 +20,28 @@
 #
 ###############################################################################
 
+!include( ../common-project-config.pri ) : error( "Unable to include common-project-config.pri!" )
+!include( ../common-vars.pri ) : error( "Unable to include common-vars.pri!" )
+
 DEFINES -= QT_NO_DEBUG QT_NO_DEBUG_OUTPUT QT_NO_WARNING_OUTPUT
 DEFINES += UNIT_TEST
 QT          += testlib dbus sql gui
 TEMPLATE     = app
 INCLUDEPATH += . .. \
                ../../src
-MOBILITY += contacts versit
-CONFIG += mobility
+
+equals(QT_MAJOR_VERSION, 4) {
+    CONFIG += mobility
+    MOBILITY += contacts versit
+    PKGCONFIG += contextsubscriber-1.0 mlite commhistory
+}
+equals(QT_MAJOR_VERSION, 5) {
+    PKGCONFIG += Qt5Contacts Qt5Versit
+    PKGCONFIG += contextkit-statefs mlite5 commhistory-qt5
+}
+
 COMMHISTORYDSRCDIR = ../../src
 DEPENDPATH  += $${INCLUDEPATH}
-PKGCONFIG += mlite commhistory
 
 !include( ../common-installs-config.pri ) : \
     error( "Unable to include common-installs-config.pri!" )

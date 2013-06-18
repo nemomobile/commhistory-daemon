@@ -22,20 +22,20 @@
 ###############################################################################
 
 TARGET_FILE=${1/%\//}/tests.xml
-TEST_PKG_NAME=${2}
+PROJECT_NAME=${2}
 TEST_FOLDERS=${3}
 
 # we need exactly 3 arguments
 if [ ! "$#" = "3" ]
 then
-    echo "usage: do_tests_xml.sh <tests.xml target path> <test package name> <list of test folders>"
+    echo "usage: do_tests_xml.sh <tests.xml target path> <package name> <list of test folders>"
     exit 1
 fi
 
 cat > ${TARGET_FILE} << EOF
 <?xml version="1.0" encoding="ISO-8859-1"?>
     <testdefinition version="0.1">
-    <suite name="${TEST_PKG_NAME}">
+    <suite name="${PROJECT_NAME}-tests">
 EOF
 
 echo "Copying test_set.xml files from the following test folders $TEST_FOLDERS for target $TARGET_FILE"
@@ -48,7 +48,7 @@ do
     if [ -f "${TEST_SET_FILE}" ]
     then
         echo " Adding test set descriptions for ${test_folder}..."
-        cat ${TEST_SET_FILE} >> ${TARGET_FILE}
+        sed -e "s:@PROJECT_NAME@:${PROJECT_NAME}:g" ${TEST_SET_FILE} >> ${TARGET_FILE}
     fi
 done
 

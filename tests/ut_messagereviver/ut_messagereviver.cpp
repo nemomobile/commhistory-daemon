@@ -31,9 +31,9 @@
 
 #include <CommHistory/EventModel>
 
-#include "TelepathyQt/types.h"
-#include "TelepathyQt/account.h"
-#include "TelepathyQt/connection.h"
+#include "TelepathyQt/Types"
+#include "TelepathyQt/Account"
+#include "TelepathyQt/Connection"
 #include "TpExtensions/Connection"
 
 #include "connectionutils.h"
