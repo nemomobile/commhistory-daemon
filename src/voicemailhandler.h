@@ -30,7 +30,7 @@
 #include <QContactFetchRequest>
 #include <QContactFilter>
 
-USE_CONTACTS_NAMESPACE
+QTCONTACTS_USE_NAMESPACE
 
 class QFileSystemWatcher;
 
@@ -45,11 +45,6 @@ class VoiceMailHandler : public QObject
     Q_OBJECT
 
 public:
-#ifdef USING_QTPIM
-    typedef QContactId ContactIdType;
-#else
-    typedef QContactLocalId ContactIdType;
-#endif
 
     /*!
      *  \param QObject parent object
@@ -71,7 +66,7 @@ public:
      * \param contact ID to be checked
      * \returns true if given id belongs to a voice mail contact, false if not
      */
-    bool isVoiceMailContact(const ContactIdType &localId);
+    bool isVoiceMailContact(const QContactId &localId);
 
     /*!
      * \brief Refreshes VoiceMailHandler by fetching possible voice mail contact from tracker based on GUID.
@@ -87,7 +82,7 @@ public:
      * \brief Returns voice mail contact id.
      * \returns voice mail contact's local id
      */
-    ContactIdType voiceMailContactId();
+    QContactId voiceMailContactId();
 
     /*!
      * \brief Starts to listen QFileSystemWatcher for vmid dir and file changes.
@@ -103,17 +98,13 @@ private:
     VoiceMailHandler();
     void init();
     QContactFetchRequest* startContactRequest(QContactFilter &filter,
-#ifdef USING_QTPIM
                                               const QList<QContactDetail::DetailType> &details,
-#else
-                                              const QStringList &details,
-#endif
                                               const char *resultSlot);
 
 private:
     QPointer<QContactManager> m_pContactManager;
     QStringList m_voiceMailPhoneNumbers;
-    ContactIdType m_contactId;
+    QContactId m_contactId;
     QFileSystemWatcher *m_pVoiceMailDirWatcher;
 };
 

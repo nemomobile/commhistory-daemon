@@ -41,11 +41,7 @@
 #include <QContactPhoneNumber>
 #include <QContactName>
 #include <QContactDisplayLabel>
-#ifdef USING_QTPIM
 #include <QContactIdFilter>
-#else
-#include <QContactLocalIdFilter>
-#endif
 
 // ContextKit includes
 #include <contextproperty.h>
@@ -65,19 +61,13 @@
 #include "mwilistener.h"
 #include "voicemailhandler.h"
 
-BEGIN_CONTACTS_NAMESPACE
+QT_BEGIN_NAMESPACE_CONTACTS
 
-#ifdef USING_QTPIM
 static const int QContactOnlineAccount__FieldAccountPath = (QContactOnlineAccount::FieldSubTypes+1);
 static const int QContactOnlineAccount__FieldAccountIconPath = (QContactOnlineAccount::FieldSubTypes+2);
 static const int QContactOnlineAccount__FieldEnabled = (QContactOnlineAccount::FieldSubTypes+3);
-#else
-Q_DECLARE_LATIN1_CONSTANT(QContactOnlineAccount__FieldAccountPath, "AccountPath") = { "AccountPath" };
-Q_DECLARE_LATIN1_CONSTANT(QContactOnlineAccount__FieldAccountIconPath, "AccountIconPath") = { "AccountIconPath" };
-Q_DECLARE_LATIN1_CONSTANT(QContactOnlineAccount__FieldEnabled, "Enabled") = { "Enabled" };
-#endif
 
-END_CONTACTS_NAMESPACE
+QT_END_NAMESPACE_CONTACTS
 
 using namespace RTComLogger;
 using namespace CommHistory;
@@ -86,15 +76,10 @@ NotificationManager* NotificationManager::m_pInstance = 0;
 
 namespace {
 
-#ifdef USING_QTPIM
 QContactId apiId(const QContact &contact) { return contact.id(); }
-#else
-QContactLocalId apiId(const QContact &contact) { return contact.localId(); }
-#endif
 
 int internalId(const QContact &contact)
 {
-#ifdef USING_QTPIM
     // We need to be able to represent an ID as a 32-bit int; we could use
     // hashing, but for now we will just extract the integral part of the ID
     // string produced by qtcontacts-sqlite
@@ -107,19 +92,12 @@ int internalId(const QContact &contact)
         }
     }
     return 0;
-#else
-    return static_cast<int>(contact.localId());
-#endif
 }
 
 template<typename T, typename F>
 void setFilterDetail(QContactDetailFilter &filter, F field)
 {
-#ifdef USING_QTPIM
     filter.setDetailType(T::Type, field);
-#else
-    filter.setDetailDefinitionName(T::DefinitionName, field);
-#endif
 }
 
 QContactFilter createContactFilter(const QString &localUid, const QString &remoteUid)
@@ -161,13 +139,8 @@ bool matchContact(const QList<QContactOnlineAccount> &accounts,
                   const QString &remoteUid)
 {
     foreach (QContactOnlineAccount account, accounts) {
-#ifdef USING_QTPIM
         if (localUid == account.value<QString>(QContactOnlineAccount__FieldAccountPath)
             && CommHistory::remoteAddressMatch(remoteUid, account.value<QString>(QContactOnlineAccount::FieldAccountUri)))
-#else
-        if (localUid == account.value(QContactOnlineAccount__FieldAccountPath)
-            && CommHistory::remoteAddressMatch(remoteUid, account.value(QContactOnlineAccount::FieldAccountUri)))
-#endif
             return true;
     }
 
@@ -1135,19 +1108,11 @@ QContactFetchRequest* NotificationManager::startContactRequest(QContactFilter &f
     QContactFetchHint hint;
     hint.setOptimizationHints(QContactFetchHint::NoRelationships);
 
-#ifdef USING_QTPIM
     QList<QContactDetail::DetailType> details;
     details << QContactName::Type
             << QContactOnlineAccount::Type
             << QContactDisplayLabel::Type;
     hint.setDetailTypesHint(details);
-#else
-    QStringList details;
-    details << QContactName::DefinitionName
-            << QContactOnlineAccount::DefinitionName
-            << QContactDisplayLabel::DefinitionName;
-    hint.setDetailDefinitionsHint(details);
-#endif
 
     request->setFetchHint(hint);
 
@@ -1201,11 +1166,7 @@ void NotificationManager::slotResultsAvailable()
     // show remote id in case of multiple contacts match
     if (request->contacts().size() == 1 && apiId(request->contacts().first()) != m_pContactManager->selfContactId()) {
         contact = request->contacts().first();
-#ifdef USING_QTPIM
         qDebug() << Q_FUNC_INFO << "Using" << contact.detail<QContactDisplayLabel>().label();
-#else
-        qDebug() << Q_FUNC_INFO << "Using" << contact.displayLabel();
-#endif
     }
 
     m_contacts.insert(cuid, contact);
@@ -1230,11 +1191,7 @@ QString NotificationManager::contactName(const QString &localUid,
         QContact contact = m_contacts.value(TpContactUid(localUid, remoteUid));
 
         if (!contact.isEmpty()) {
-#ifdef USING_QTPIM
             result = contact.detail<QContactDisplayLabel>().label();
-#else
-            result = contact.displayLabel();
-#endif
         }
 
         if (result.isEmpty()) {
@@ -1376,14 +1333,9 @@ QContactManager* NotificationManager::contactManager()
 {
     if(!m_pContactManager){
         // Use the default contact manager
-#ifdef USING_QTPIM
         // Temporary override until qtpim supports QTCONTACTS_MANAGER_OVERRIDE
         m_pContactManager = new QContactManager(QString::fromLatin1("org.nemomobile.contacts.sqlite"));
-#else
-        m_pContactManager = new QContactManager;
-#endif
         m_pContactManager->setParent(this);
-#ifdef USING_QTPIM
         connect(m_pContactManager,
                 SIGNAL(contactsAdded(const QList<QContactId>&)),
                 SLOT(slotContactsAdded(const QList<QContactId>&)));
@@ -1393,22 +1345,11 @@ QContactManager* NotificationManager::contactManager()
         connect(m_pContactManager,
                 SIGNAL(contactsChanged(const QList<QContactId>&)),
                 SLOT(slotContactsChanged(const QList<QContactId>&)));
-#else
-        connect(m_pContactManager,
-                SIGNAL(contactsAdded(const QList<QContactLocalId>&)),
-                SLOT(slotContactsAdded(const QList<QContactLocalId>&)));
-        connect(m_pContactManager,
-                SIGNAL(contactsRemoved(const QList<QContactLocalId>&)),
-                SLOT(slotContactsRemoved(const QList<QContactLocalId>&)));
-        connect(m_pContactManager,
-                SIGNAL(contactsChanged(const QList<QContactLocalId>&)),
-                SLOT(slotContactsChanged(const QList<QContactLocalId>&)));
-#endif
     }
     return m_pContactManager;
 }
 
-void NotificationManager::slotContactsAdded(const QList<ContactIdType> &contactIds)
+void NotificationManager::slotContactsAdded(const QList<QContactId> &contactIds)
 {
     if (contactIds.isEmpty())
         return;
@@ -1430,7 +1371,7 @@ void NotificationManager::slotContactsAdded(const QList<ContactIdType> &contactI
     startContactsTimer();
 }
 
-void NotificationManager::slotContactsRemoved(const QList<ContactIdType> &contactIds)
+void NotificationManager::slotContactsRemoved(const QList<QContactId> &contactIds)
 {
     if (contactIds.isEmpty())
         return;
@@ -1446,7 +1387,7 @@ void NotificationManager::slotContactsRemoved(const QList<ContactIdType> &contac
     }
 
     // update contact cache for notifications
-    QList<ContactIdType> updatedContactIds;
+    QList<QContactId> updatedContactIds;
     QMutableHashIterator<TpContactUid, QContact> i(m_contacts);
     while (i.hasNext()) {
         QContact c = i.next().value();
@@ -1459,7 +1400,7 @@ void NotificationManager::slotContactsRemoved(const QList<ContactIdType> &contac
     updateNotificationContacts(updatedContactIds);
 }
 
-void NotificationManager::slotContactsChanged(const QList<ContactIdType> &contactIds)
+void NotificationManager::slotContactsChanged(const QList<QContactId> &contactIds)
 {
     if (contactIds.isEmpty())
         return;
@@ -1473,11 +1414,7 @@ void NotificationManager::slotContactsChanged(const QList<ContactIdType> &contac
     }
 
     if (!m_contacts.isEmpty() || !m_Notifications.isEmpty()) {
-#ifdef USING_QTPIM
         QContactIdFilter filter;
-#else
-        QContactLocalIdFilter filter;
-#endif
         filter.setIds(contactIds);
         m_ContactFilter = addContactFilter(m_ContactFilter, filter);
 
@@ -1549,7 +1486,7 @@ void NotificationManager::slotResultsAvailableForUnknown()
 
     qDebug() << Q_FUNC_INFO << request->contacts().size() << "contacts";
 
-    QSet<ContactIdType> updatedContactIds;
+    QSet<QContactId> updatedContactIds;
 
     // check notifications contact
     QMutableHashIterator<TpContactUid, QContact> i(m_contacts);
@@ -1603,7 +1540,7 @@ void NotificationManager::slotGroupRemoved(const QModelIndex &index, int start, 
     }
 }
 
-void NotificationManager::updateNotificationContacts(const QList<ContactIdType> &contactIds)
+void NotificationManager::updateNotificationContacts(const QList<QContactId> &contactIds)
 {
     QMutableHashIterator<NotificationGroup,PersonalNotification> i(m_Notifications);
 

@@ -27,7 +27,6 @@
 // Qt
 #include <QDBusInterface>
 #include <QDBusPendingCallWatcher>
-#include <QMessageBox>
 #include <QUuid>
 
 // MeeGo
@@ -542,13 +541,13 @@ void ContactAuthorizer::slotDialogDismissed(const QString& dialogId, int result)
 
         qDebug() << "DIALOG DISMISSED WITH RESULT = " << result;
         switch (result) {
-        case QMessageBox::Yes:
+        case 1:
             authorizeContact(m_ongoingRequest.contact);
             break;
-        case QMessageBox::No:
+        case -1:
             blockContact(m_ongoingRequest.contact);
             break;
-        case QMessageBox::Ignore:
+        case 0:
             removeNotificationForOngoingRequest();
             m_ongoingRequest = Request();
             break;

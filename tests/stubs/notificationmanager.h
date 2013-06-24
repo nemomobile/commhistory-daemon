@@ -8,7 +8,7 @@
 #include <QContact>
 #include <QContactManager>
 
-USE_CONTACTS_NAMESPACE
+QTCONTACTS_USE_NAMESPACE
 
 namespace CommHistory {
     class GroupModel;

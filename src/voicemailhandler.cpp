@@ -73,7 +73,7 @@ bool VoiceMailHandler::isVoiceMailNumber(QString phoneNumber)
     return match;
 }
 
-bool VoiceMailHandler::isVoiceMailContact(const ContactIdType &id)
+bool VoiceMailHandler::isVoiceMailContact(const QContactId &id)
 {
     return (m_contactId == id);
 }
@@ -83,20 +83,11 @@ void VoiceMailHandler::fetchVoiceMailContact()
     qDebug() << Q_FUNC_INFO;
 
     QContactDetailFilter filter;
-#ifdef USING_QTPIM
     filter.setDetailType(QContactGuid::Type, QContactGuid::FieldGuid);
-#else
-    filter.setDetailDefinitionName(QContactGuid::DefinitionName, QContactGuid::FieldGuid);
-#endif
     filter.setValue(VOICEMAIL_CONTACT_GUID);
 
-#ifdef USING_QTPIM
     QList<QContactDetail::DetailType> details;
     details << QContactPhoneNumber::Type;
-#else
-    QStringList details;
-    details << QContactPhoneNumber::DefinitionName;
-#endif
 
     startContactRequest(filter, details, SLOT(slotVoiceMailContactsAvailable()));
 }
@@ -105,11 +96,11 @@ void VoiceMailHandler::clear()
 {
     qDebug() << Q_FUNC_INFO;
 
-    m_contactId = ContactIdType();
+    m_contactId = QContactId();
     m_voiceMailPhoneNumbers.clear();
 }
 
-VoiceMailHandler::ContactIdType VoiceMailHandler::voiceMailContactId()
+QContactId VoiceMailHandler::voiceMailContactId()
 {
     qDebug() << Q_FUNC_INFO;
 
@@ -122,7 +113,6 @@ VoiceMailHandler::ContactIdType VoiceMailHandler::voiceMailContactId()
 //
 VoiceMailHandler::VoiceMailHandler()
         : QObject(QCoreApplication::instance())
-        , m_contactId(ContactIdType())
         , m_pVoiceMailDirWatcher(0)
 {
     qDebug() << Q_FUNC_INFO;
@@ -169,11 +159,7 @@ void VoiceMailHandler::init()
 }
 
 QContactFetchRequest* VoiceMailHandler::startContactRequest(QContactFilter &filter,
-#ifdef USING_QTPIM
                                                             const QList<QContactDetail::DetailType> &details,
-#else
-                                                            const QStringList &details,
-#endif
                                                             const char *resultSlot)
 {
     qDebug() << Q_FUNC_INFO;
@@ -194,11 +180,7 @@ QContactFetchRequest* VoiceMailHandler::startContactRequest(QContactFilter &filt
         QContactFetchHint hint;
         hint.setOptimizationHints(QContactFetchHint::NoRelationships);
 
-#ifdef USING_QTPIM
         hint.setDetailTypesHint(details);
-#else
-        hint.setDetailDefinitionsHint(details);
-#endif
 
         request->setFetchHint(hint);
         request->start();
@@ -235,12 +217,7 @@ void VoiceMailHandler::slotVoiceMailContactsAvailable()
         // There should be just one voice mail contact (that can have multiple numbers).
         QContact voiceMailContact = contacts.first();
         if (!voiceMailContact.isEmpty()) {
-#ifdef USING_QTPIM
             m_contactId = voiceMailContact.id();
-#else
-            m_contactId = voiceMailContact.localId();
-#endif
-            qDebug() << __PRETTY_FUNCTION__ << "Local id of voice mail contact is: " << m_contactId;
             QList<QContactPhoneNumber> phoneNumbers = voiceMailContact.details<QContactPhoneNumber>();
 
             m_voiceMailPhoneNumbers.clear();
