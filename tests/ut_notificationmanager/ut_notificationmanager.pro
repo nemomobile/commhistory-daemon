@@ -34,13 +34,7 @@
 #-----------------------------------------------------------------------------
 TARGET = ut_notificationmanager
 
-equals(QT_MAJOR_VERSION, 4) {
-    CONFIG += mlocale
-    PKGCONFIG += qmsystem2 TelepathyQt4
-}
-equals(QT_MAJOR_VERSION, 5) {
-    PKGCONFIG += mlocale5 qmsystem2-qt5 TelepathyQt5
-}
+PKGCONFIG += mlocale5 qmsystem2-qt5 TelepathyQt5
 
 TEST_SOURCES += $$COMMHISTORYDSRCDIR/notificationmanager.cpp \
                 $$COMMHISTORYDSRCDIR/notificationgroup.cpp \

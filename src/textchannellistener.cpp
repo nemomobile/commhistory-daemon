@@ -128,8 +128,8 @@
 #define RESAVE_INTERVAL 5000 //ms
 
 using namespace RTComLogger;
-USE_CONTACTS_NAMESPACE;
-USE_VERSIT_NAMESPACE;
+QTCONTACTS_USE_NAMESPACE
+QTVERSIT_USE_NAMESPACE
 
 namespace {
 
@@ -1838,18 +1838,7 @@ QString TextChannelListener::fetchContactLabelFromVCard(const QByteArray &vcard)
 
             if (!contacts.isEmpty()) {
                 QContact contact = contacts.first();
-#ifndef USING_QTPIM
-                // Let's ensure the display label is set:
-                QContactManager* manager = NotificationManager::instance()->contactManager();
-                if (manager != 0) { // This should always be the case, but it's better to be cautious :)
-                    manager->synthesizeContactDisplayLabel(&contact);
-                }
-#endif
-#ifdef USING_QTPIM
                 QString label = contact.detail<QContactDisplayLabel>().label();
-#else
-                QString label = contact.displayLabel();
-#endif
                 if (label.isEmpty()) {
                     qWarning() << __PRETTY_FUNCTION__ << "The contact has an empty label, dispite our efforts.";
                 }

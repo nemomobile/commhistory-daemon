@@ -26,29 +26,17 @@ include( ../common-vars.pri )
 # -----------------------------------------------------------------------------
 # target setup
 # -----------------------------------------------------------------------------
-equals(QT_MAJOR_VERSION, 4): TARGET = commhistoryd
-equals(QT_MAJOR_VERSION, 5): TARGET = commhistoryd-qt5
+TARGET = commhistoryd
 
 # -----------------------------------------------------------------------------
 # dependencies
 # -----------------------------------------------------------------------------
-QT += sql gui
-equals(QT_MAJOR_VERSION, 5): QT += widgets
+QT += sql gui dbus contacts versit
 
 CONFIG += debug
 
-equals(QT_MAJOR_VERSION, 4) {
-    CONFIG += mobility mlocale qdbus
-    MOBILITY += contacts versit
-    PKGCONFIG += contextsubscriber-1.0 qmsystem2
-    PKGCONFIG += TelepathyQt4 commhistory mlite
-}
-equals(QT_MAJOR_VERSION, 5) {
-    QT *= dbus
-    PKGCONFIG += Qt5Contacts Qt5Versit
-    PKGCONFIG += contextkit-statefs qmsystem2-qt5
-    PKGCONFIG += TelepathyQt5 commhistory-qt5 mlite5 mlocale5
-}
+PKGCONFIG += contextkit-statefs qmsystem2-qt5
+PKGCONFIG += TelepathyQt5 commhistory-qt5 mlite5 mlocale5
 
 # -----------------------------------------------------------------------------
 # input

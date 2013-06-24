@@ -27,8 +27,7 @@
 # Project name (used e.g. in include file and doc install path).
 # remember to update debian/* files if you changes this
 # -----------------------------------------------------------------------------
-equals(QT_MAJOR_VERSION, 4): PROJECT_NAME = commhistory-daemon
-equals(QT_MAJOR_VERSION, 5): PROJECT_NAME = commhistory-daemon-qt5
+PROJECT_NAME = commhistory-daemon
 
 # -----------------------------------------------------------------------------
 # Project version
@@ -44,5 +43,3 @@ DEFINES += COMMHISTORYD_DATADIR="\\\"$$COMMHISTORYD_DATADIR\\\""
 DEFINES += COMMHISTORYD_VCARDSDIR="\\\"$$COMMHISTORYD_DATADIR/vcards\\\""
 DEFINES += COMMHISTORYD_NOTIFICATIONSDIR="\\\"/$$COMMHISTORYD_DATADIR/notifications\\\""
 DEFINES += COMMHISTORYD_NOTIFICATIONSSTORAGE="\\\"/$$COMMHISTORYD_DATADIR/notifications/storage.dat\\\""
-
-include(contacts-namespace.pri)

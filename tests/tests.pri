@@ -25,20 +25,12 @@
 
 DEFINES -= QT_NO_DEBUG QT_NO_DEBUG_OUTPUT QT_NO_WARNING_OUTPUT
 DEFINES += UNIT_TEST
-QT          += testlib dbus sql gui
+QT          += testlib dbus sql gui contacts versit
 TEMPLATE     = app
 INCLUDEPATH += . .. \
                ../../src
 
-equals(QT_MAJOR_VERSION, 4) {
-    CONFIG += mobility
-    MOBILITY += contacts versit
-    PKGCONFIG += contextsubscriber-1.0 mlite commhistory
-}
-equals(QT_MAJOR_VERSION, 5) {
-    PKGCONFIG += Qt5Contacts Qt5Versit
-    PKGCONFIG += contextkit-statefs mlite5 commhistory-qt5
-}
+PKGCONFIG += contextkit-statefs mlite5 commhistory-qt5
 
 COMMHISTORYDSRCDIR = ../../src
 DEPENDPATH  += $${INCLUDEPATH}

@@ -25,8 +25,7 @@ include( ../common-installs-config.pri )
 # CONFIG PARAMS --------------------------------------------------------------
 
 # Name of the catalog:
-equals(QT_MAJOR_VERSION, 4): CATALOGNAME = commhistoryd
-equals(QT_MAJOR_VERSION, 5): CATALOGNAME = commhistoryd-qt5
+CATALOGNAME = commhistoryd
 
 # Paths of source code files:
 SOURCEPATHS = $${_PRO_FILE_PWD_}/../src
