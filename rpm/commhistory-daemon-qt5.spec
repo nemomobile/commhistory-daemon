@@ -57,6 +57,7 @@ rm -rf %{buildroot}
 %{_datadir}/dbus-1/services/com.nokia.CommHistory.service
 %{_datadir}/dbus-1/services/org.freedesktop.Telepathy.Client.CommHistory.service
 %{_datadir}/dbus-1/services/org.nemomobile.AccountPresence.service
+%{_datadir}/dbus-1/services/org.nemomobile.VoiceCounters.service
 %{_datadir}/translations/commhistoryd-qt5.qm
 %{_datadir}/lipstick/notificationcategories/*
 %{_datadir}/telepathy/clients/CommHistory.client

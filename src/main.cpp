@@ -40,6 +40,8 @@
 #include "accountoperationsobserver.h"
 #include "olddatadeleter.h"
 #include "voicemailhandler.h"
+#include "voicecountersservice.h"
+#include "voicecountersifadaptor.h"
 
 using namespace RTComLogger;
 
@@ -166,6 +168,14 @@ int main(int argc, char **argv)
     }
     new CommHistoryIfAdaptor(chService);
     qDebug() << "CommHistoryService created";
+
+    VoiceCountersService *vcService = new VoiceCountersService(&app);
+    if (!vcService->isRegistered()) {
+        qCritical() << "VoiceCountersService registration failed (already running or DBus not found), exiting";
+        _exit(1);
+    }
+    new VoiceCountersIfAdaptor(vcService);
+    qDebug() << "VoiceCountersService created";
 
     ConnectionUtils *utils = new ConnectionUtils(&app);
 

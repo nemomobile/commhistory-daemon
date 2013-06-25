@@ -39,10 +39,12 @@ INCLUDEPATH = ../stubs/ $${INCLUDEPATH}
 TARGET = ut_streamchannellistener
 
 TEST_SOURCES += $$COMMHISTORYDSRCDIR/streamchannellistener.cpp \
-                $$COMMHISTORYDSRCDIR/channellistener.cpp
+                $$COMMHISTORYDSRCDIR/channellistener.cpp \
+                $$COMMHISTORYDSRCDIR/voicecountersservice.cpp
 
 TEST_HEADERS += $$COMMHISTORYDSRCDIR/streamchannellistener.h \
-                $$COMMHISTORYDSRCDIR/channellistener.h
+                $$COMMHISTORYDSRCDIR/channellistener.h \
+                $$COMMHISTORYDSRCDIR/voicecountersservice.h
 
 HEADERS     += ut_streamchannellistener.h \
             $$TEST_HEADERS

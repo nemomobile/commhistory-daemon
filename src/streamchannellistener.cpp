@@ -22,6 +22,7 @@
 
 #include "streamchannellistener.h"
 #include "notificationmanager.h"
+#include "voicecountersservice.h"
 
 // Qt
 #include <QDebug>
@@ -335,6 +336,16 @@ void StreamChannelListener::timerEvent(QTimerEvent *event)
     }
 }
 
+void StreamChannelListener::updateVoiceCounters()
+{
+    VoiceCountersService *vcService = VoiceCountersService::instance();
+    if (!vcService)
+        return;
+
+    if (m_CallStarted)
+        vcService->addCall(m_Event, m_CallEnded);
+}
+
 bool StreamChannelListener::addEvent()
 {
     qDebug() << __PRETTY_FUNCTION__;
@@ -344,6 +355,7 @@ bool StreamChannelListener::addEvent()
     if (m_EventAdded) {
         m_eventCommitted = false;
         result = eventModel().modifyEvent(m_Event);
+        updateVoiceCounters();
     } else {
         result = eventModel().addEvent(m_Event);
         m_EventAdded = result;
