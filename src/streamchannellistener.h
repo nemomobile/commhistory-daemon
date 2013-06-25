@@ -74,6 +74,7 @@ private:
     void callStarted();
     void callEnded();
     void timerEvent(QTimerEvent *event);
+    void updateVoiceCounters();
 
 private:
     bool m_CallStarted;

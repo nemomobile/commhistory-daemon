@@ -35,7 +35,7 @@ equals(QT_MAJOR_VERSION, 5): TARGET = commhistoryd-qt5
 QT += sql gui
 equals(QT_MAJOR_VERSION, 5): QT += widgets
 
-CONFIG += debug
+CONFIG += debug qtsparql
 
 equals(QT_MAJOR_VERSION, 4) {
     CONFIG += mobility mlocale qdbus
@@ -77,7 +77,9 @@ HEADERS += logger.h \
            accountpresenceifadaptor.h \
            accountpresenceservice.h \
            olddatadeleter.h \
-           voicemailhandler.h
+           voicemailhandler.h \
+           voicecountersifadaptor.h \
+           voicecountersservice.h
 
 SOURCES += main.cpp \
            logger.cpp \
@@ -101,7 +103,9 @@ SOURCES += main.cpp \
            accountpresenceifadaptor.cpp \
            accountpresenceservice.cpp \
            olddatadeleter.cpp \
-           voicemailhandler.cpp
+           voicemailhandler.cpp \
+           voicecountersifadaptor.cpp \
+           voicecountersservice.cpp
 
 # -----------------------------------------------------------------------------
 # Telepathy extensions.
