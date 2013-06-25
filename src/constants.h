@@ -71,6 +71,14 @@ namespace RTComLogger {
 #define CSD_SIM_STATUS_REMOVED     QLatin1String("Removed")
 #define CSD_SIM_STATUS_NO_SIM      QLatin1String("NoSIM")
 
+#define VOICE_COUNTERS_SERVICE_NAME QLatin1String("org.nemomobile.VoiceCounters")
+#define VOICE_COUNTERS_OBJECT_PATH  QLatin1String("/org/nemomobile/VoiceCounters")
+#define VOICE_COUNTERS_INTERFACE    QLatin1String("org.nemomobile.VoiceCountersIf")
+#define VOICE_COUNTERS_GROUP        QLatin1String("Voice Counters")
+#define VOICE_COUNTERS_DIALLED      QLatin1String("Dialled")
+#define VOICE_COUNTERS_RECEIVED     QLatin1String("Received")
+#define VOICE_COUNTERS_LASTUPDATED  QLatin1String("LastUpdated")
+
 #define RING_ACCOUNT_PATH QLatin1String("/org/freedesktop/Telepathy/Account/ring/tel/ring")
 #define MMS_ACCOUNT_PATH  QLatin1String("/org/freedesktop/Telepathy/Account/mmscm/mms/mms0")
 #define MAP_MMS_TO_RING(x) ((x) == MMS_ACCOUNT_PATH ? RING_ACCOUNT_PATH : (x))

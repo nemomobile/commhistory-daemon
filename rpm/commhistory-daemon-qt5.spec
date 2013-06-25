@@ -14,6 +14,7 @@ BuildRequires:  pkgconfig(TelepathyQt5)
 BuildRequires:  pkgconfig(mlite5)
 BuildRequires:  pkgconfig(mlocale5)
 BuildRequires:  pkgconfig(qmsystem2-qt5)
+BuildRequires:  pkgconfig(Qt5Sparql)
 BuildRequires:  python
 
 Obsoletes: smshistory <= 0.1.8
@@ -57,6 +58,7 @@ rm -rf %{buildroot}
 %{_datadir}/dbus-1/services/com.nokia.CommHistory.service
 %{_datadir}/dbus-1/services/org.freedesktop.Telepathy.Client.CommHistory.service
 %{_datadir}/dbus-1/services/org.nemomobile.AccountPresence.service
+%{_datadir}/dbus-1/services/org.nemomobile.VoiceCounters.service
 %{_datadir}/translations/commhistoryd-qt5.qm
 %{_datadir}/lipstick/notificationcategories/*
 %{_datadir}/telepathy/clients/CommHistory.client
