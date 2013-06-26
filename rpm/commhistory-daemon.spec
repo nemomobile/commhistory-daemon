@@ -7,7 +7,10 @@ License:    LGPL
 URL:        https://github.com/nemomobile/commhistory-daemon
 Source0:    %{name}-%{version}.tar.bz2
 BuildRequires:  pkgconfig(Qt5Core)
+BuildRequires:  pkgconfig(Qt5DBus)
 BuildRequires:  pkgconfig(Qt5Contacts)
+BuildRequires:  pkgconfig(Qt5Versit)
+BuildRequires:  pkgconfig(Qt5Test)
 BuildRequires:  pkgconfig(commhistory-qt5)
 BuildRequires:  pkgconfig(contextkit-statefs)
 BuildRequires:  pkgconfig(TelepathyQt5)

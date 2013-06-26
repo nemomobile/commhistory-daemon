@@ -25,7 +25,7 @@
 
 DEFINES -= QT_NO_DEBUG QT_NO_DEBUG_OUTPUT QT_NO_WARNING_OUTPUT
 DEFINES += UNIT_TEST
-QT          += testlib dbus sql gui contacts versit
+QT          += testlib dbus contacts versit
 TEMPLATE     = app
 INCLUDEPATH += . .. \
                ../../src
