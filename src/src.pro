@@ -31,7 +31,7 @@ TARGET = commhistoryd
 # -----------------------------------------------------------------------------
 # dependencies
 # -----------------------------------------------------------------------------
-QT += sql gui dbus contacts versit
+QT += dbus contacts versit
 
 CONFIG += debug
 
