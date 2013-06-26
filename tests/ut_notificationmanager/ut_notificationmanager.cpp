@@ -43,17 +43,13 @@
 #define DUT_ACCOUNT_PATH QLatin1String("/org/freedesktop/Telepathy/Account/gabble/jabber/dut_40localhost0")
 #define MESSAGE_TEXT QLatin1String("Testing notifications!")
 
-BEGIN_CONTACTS_NAMESPACE
+QT_BEGIN_NAMESPACE_CONTACTS
 
-#ifdef USING_QTPIM
 static const int QContactOnlineAccount__FieldAccountPath = (QContactOnlineAccount::FieldSubTypes+1);
-#else
-Q_DECLARE_LATIN1_CONSTANT(QContactOnlineAccount__FieldAccountPath, "AccountPath") = { "AccountPath" };
-#endif
 
-END_CONTACTS_NAMESPACE
+QT_END_NAMESPACE_CONTACTS
 
-USE_CONTACTS_NAMESPACE
+QTCONTACTS_USE_NAMESPACE
 
 using namespace RTComLogger;
 
@@ -64,7 +60,6 @@ namespace {
 
     int internalId(const QContact &contact)
     {
-#ifdef USING_QTPIM
         // We need to be able to represent an ID as a 32-bit int; we could use
         // hashing, but for now we will just extract the integral part of the ID
         // string produced by qtcontacts-sqlite
@@ -77,9 +72,6 @@ namespace {
             }
         }
         return 0;
-#else
-        return static_cast<int>(contact.localId());
-#endif
     }
 
 #ifndef QTRY_COMPARE

@@ -6,14 +6,14 @@ Group:      Communications/Telephony and IM
 License:    LGPL
 URL:        https://github.com/nemomobile/commhistory-daemon
 Source0:    %{name}-%{version}.tar.bz2
-BuildRequires:  pkgconfig(QtCore) >= 4.7.0
-BuildRequires:  pkgconfig(QtContacts)
-BuildRequires:  pkgconfig(commhistory)
-BuildRequires:  pkgconfig(contextsubscriber-1.0)
-BuildRequires:  pkgconfig(TelepathyQt4)
-BuildRequires:  pkgconfig(mlite)
-BuildRequires:  pkgconfig(mlocale)
-BuildRequires:  qmsystem-devel
+BuildRequires:  pkgconfig(Qt5Core)
+BuildRequires:  pkgconfig(Qt5Contacts)
+BuildRequires:  pkgconfig(commhistory-qt5)
+BuildRequires:  pkgconfig(contextkit-statefs)
+BuildRequires:  pkgconfig(TelepathyQt5)
+BuildRequires:  pkgconfig(mlite5)
+BuildRequires:  pkgconfig(mlocale5)
+BuildRequires:  pkgconfig(qmsystem2-qt5)
 BuildRequires:  python
 
 Obsoletes: smshistory <= 0.1.8
@@ -43,11 +43,11 @@ Daemon for logging communications (IM, SMS and call) in history database.
 
 %build
 unset LD_AS_NEEDED
-%qmake 
+%qmake5
 make %{?jobs:-j%jobs}
 %install
 rm -rf %{buildroot}
-%qmake_install
+%qmake5_install
 
 %files
 %defattr(-,root,root,-)
