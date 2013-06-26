@@ -30,7 +30,7 @@ TEMPLATE     = app
 INCLUDEPATH += . .. \
                ../../src
 
-PKGCONFIG += contextkit-statefs mlite5 commhistory-qt5
+PKGCONFIG += contextkit-statefs mlite5 commhistory-qt5 qmsystem2-qt5
 
 COMMHISTORYDSRCDIR = ../../src
 DEPENDPATH  += $${INCLUDEPATH}

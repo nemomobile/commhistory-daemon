@@ -40,7 +40,7 @@
 #include <QContactFilter>
 
 //QmSystem2
-#include <qmsystem2/qmdisplaystate.h>
+#include <qmdisplaystate.h>
 
 #include <CommHistory/Event>
 #include <CommHistory/Group>
