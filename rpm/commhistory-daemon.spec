@@ -17,6 +17,8 @@ BuildRequires:  pkgconfig(TelepathyQt5)
 BuildRequires:  pkgconfig(mlite5)
 BuildRequires:  pkgconfig(mlocale5)
 BuildRequires:  pkgconfig(qmsystem2-qt5)
+BuildRequires:  qt5-qttools
+BuildRequires:  qt5-qttools-linguist
 BuildRequires:  python
 
 Obsoletes: smshistory <= 0.1.8
