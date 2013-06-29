@@ -22,8 +22,6 @@
 
 TEMPLATE  = subdirs
 SUBDIRS   = src data tests translations
-CONFIG   += ordered
-
 
 # End of File
 
