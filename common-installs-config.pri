@@ -31,13 +31,8 @@
 INSTALL_PREFIX = /usr  # default installation prefix
 
 # default prefix can be overriden by defining PREFIX when running qmake
-isEmpty( PREFIX ) {
-    message("====")
-    message("==== NOTE: To override the installation path run: `qmake PREFIX=/custom/path'")
-    message("==== (current installation path is `$${INSTALL_PREFIX}')")
-} else {
+!isEmpty( PREFIX ) {
     INSTALL_PREFIX = $${PREFIX}
-    message("====")
     message("==== install prefix set to `$${INSTALL_PREFIX}'")
 }
 
@@ -48,8 +43,6 @@ isEmpty( PREFIX ) {
 contains( TEMPLATE, app ) {
     target.path  = $${INSTALL_PREFIX}/bin
     INSTALLS    += target
-    message("====")
-    message("==== INSTALLS += target")
 }
 
 #-----------------------------------------------------------------------------
@@ -59,23 +52,15 @@ contains( TEMPLATE, lib ) {
 
     target.path  = $${INSTALL_PREFIX}/lib
     INSTALLS    += target
-    message("====")
-    message("==== INSTALLS += target")
 
 
     #-------------------------------------------------------------------------
     # target for pkg-config file
     #-------------------------------------------------------------------------
     CONFIG *= create_prl create_pc
-    message("====")
-    message("==== Generating new pkg-config metadata file: $${TARGET}.pc")
-    message("==== NOTE: Remember to verify the `prefix' path in your .pc file!")
-    message("==== (it should be $${INSTALL_PREFIX})")
     pkgconfig.files  = $${TARGET}.pc
     pkgconfig.path   = $${INSTALL_PREFIX}/lib/pkgconfig
     INSTALLS        += pkgconfig
-    message("====")
-    message("==== INSTALLS += pkgconfig")
 
     # reset the .pc file's `prefix' variable
     include( tools/fix-pc-prefix.pri )
@@ -88,11 +73,6 @@ contains( TEMPLATE, lib ) {
 !isEmpty( headers.files ) {
     headers.path  = $${INSTALL_PREFIX}/include/$${TARGET}
     INSTALLS     += headers
-    message("====")
-    message("==== INSTALLS += headers")
-} else {
-    message("====")
-    message("==== NOTE: Remember to add your API headers into `headers.files' for installation!")
 }
 
 
