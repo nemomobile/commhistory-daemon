@@ -27,7 +27,6 @@ SUBDIRS = ut_notificationmanager \
           ut_textchannellistener \
           ut_streamchannellistener \
           ut_messagereviver
-CONFIG += ordered
 
 # make sure the destination path exists
 !system( mkdir -p $${OUT_PWD}/bin ) : \
