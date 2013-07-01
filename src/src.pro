@@ -64,7 +64,6 @@ HEADERS += logger.h \
            accountspecificcallmodel.h \
            accountpresenceifadaptor.h \
            accountpresenceservice.h \
-           olddatadeleter.h \
            voicemailhandler.h
 
 SOURCES += main.cpp \
@@ -88,7 +87,6 @@ SOURCES += main.cpp \
            accountspecificcallmodel.cpp \
            accountpresenceifadaptor.cpp \
            accountpresenceservice.cpp \
-           olddatadeleter.cpp \
            voicemailhandler.cpp
 
 # -----------------------------------------------------------------------------
