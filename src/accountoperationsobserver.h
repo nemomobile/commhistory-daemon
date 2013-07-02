@@ -36,11 +36,6 @@ namespace CommHistory
 
 namespace RTComLogger
 {
-    class AccountSpecificCallModel;
-}
-
-namespace RTComLogger
-{
 /**
 \class AccountOperationsObserver
 \brief Listens telepathy accounts being removed and when that happens, removes both
@@ -114,7 +109,7 @@ private Q_SLOTS:
      */
     void slotDeleteCalls();
     /*!
-     * \brief Slot getting called when a row is deleted from AccountSpecificCallModel.
+     * \brief Slot getting called when a row is deleted from the call model.
      *
      * \param index Parent item under which the rows are being removed.
      * \param start Starting row for removal.
@@ -135,7 +130,7 @@ private:
     CommHistory::GroupModel *m_pGroupModel;
     Tp::AccountManagerPtr m_AccountManager;
     QList<QString> m_accountPathsForConvs; // Conversations of these account paths should be removed.
-    QMap<QString,RTComLogger::AccountSpecificCallModel*> m_accountPathsForCalls; // Calls of these account paths should be removed.
+    QMap<QString,CommHistory::CallModel*> m_accountPathsForCalls; // Calls of these account paths should be removed.
     QMap<QString, Tp::AccountPtr> m_accounts;
 };
 
