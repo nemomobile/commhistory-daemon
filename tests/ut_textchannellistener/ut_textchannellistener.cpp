@@ -170,7 +170,7 @@ CommHistory::Event Ut_TextChannelListener::fetchEvent(int eventId)
     CommHistory::SingleEventModel model;
     QSignalSpy modelReady(&model, SIGNAL(modelReady(bool)));
 
-    model.getEventByUri(CommHistory::Event::idToUrl(eventId));
+    model.getEventById(eventId);
     if(!waitSignal(modelReady, 5000))
         goto end;
 

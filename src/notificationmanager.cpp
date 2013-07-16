@@ -370,7 +370,7 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
 
         TpContactUid cuid(event.localUid(),
                           event.remoteUid());
-        if (!event.remoteUid().isEmpty() // private number
+        if (event.remoteUid() != QLatin1String("<hidden>") // private number
             && !m_contacts.contains(cuid)
             && chatName.isEmpty())
             requestContact(cuid);
@@ -1185,7 +1185,7 @@ QString NotificationManager::contactName(const QString &localUid,
 {
     QString result;
 
-    if (remoteUid.isEmpty()) {
+    if (remoteUid == QLatin1String("<hidden>")) {
         result = txt_qtn_call_type_private;
     } else {
         QContact contact = m_contacts.value(TpContactUid(localUid, remoteUid));

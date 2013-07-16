@@ -25,7 +25,6 @@
 #include <sys/socket.h>
 #include <syslog.h>
 
-#include <CommHistory/trackerio.h>
 #include <MLocale>
 
 #include "logger.h"
@@ -38,7 +37,6 @@
 #include "contactauthorizationlistener.h"
 #include "connectionutils.h"
 #include "accountoperationsobserver.h"
-#include "olddatadeleter.h"
 #include "voicemailhandler.h"
 
 using namespace RTComLogger;
@@ -169,13 +167,6 @@ int main(int argc, char **argv)
     new AccountPresenceIfAdaptor(apService);
     qDebug() << "AccountPresenceService created";
 
-    // ids.dat might not always be restored from backup as commhistoryd
-    // runs in the background and can overwrite it; force it to be
-    // recreated based on tracker contents.
-    //
-    // TODO: get rid of the ids.dat file.
-    CommHistory::TrackerIO::instance()->recreateIds();
-
     MessageReviver *reviver = new MessageReviver(utils, &app);
     qDebug() << "Message reviver created, starting main loop";
 
@@ -193,8 +184,6 @@ int main(int argc, char **argv)
 
     // Init account operations observer to monitor account removals and to react to them.
     new AccountOperationsObserver(utils->accountManager(), &app);
-
-    new OldDataDeleter(&app);
 
     int result = app.exec();
 

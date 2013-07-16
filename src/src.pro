@@ -37,6 +37,8 @@ CONFIG += debug
 
 PKGCONFIG += contextkit-statefs qmsystem2-qt5
 PKGCONFIG += TelepathyQt5 commhistory-qt5 mlite5 mlocale5
+# clock_gettime
+LIBS += -lrt
 
 # -----------------------------------------------------------------------------
 # input
@@ -60,11 +62,8 @@ HEADERS += logger.h \
            mwilistener.h \
            constants.h \
            accountoperationsobserver.h \
-           accountspecificcallmodel_p.h \
-           accountspecificcallmodel.h \
            accountpresenceifadaptor.h \
            accountpresenceservice.h \
-           olddatadeleter.h \
            voicemailhandler.h
 
 SOURCES += main.cpp \
@@ -85,10 +84,8 @@ SOURCES += main.cpp \
            contactauthorizer.cpp \
            mwilistener.cpp \
            accountoperationsobserver.cpp \
-           accountspecificcallmodel.cpp \
            accountpresenceifadaptor.cpp \
            accountpresenceservice.cpp \
-           olddatadeleter.cpp \
            voicemailhandler.cpp
 
 # -----------------------------------------------------------------------------

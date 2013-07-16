@@ -36,7 +36,7 @@
 #include <CommHistory/commonutils.h>
 #include <CommHistory/ClassZeroSMSModel>
 #include <CommHistory/SingleEventModel>
-#include <CommHistory/TrackerIO>
+#include <CommHistory/DatabaseIO>
 #include <CommHistory/ConversationModel>
 
 // Telepathy
@@ -314,11 +314,7 @@ bool TextChannelListener::checkStoredMessagesIf()
         return result;
     }
 
-    if (m_Connection->hasInterface(CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName())) {
-        eventModel().setSyncMode(true);
-        result = true;
-    }
-    return result;
+    return m_Connection->hasInterface(CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName());
 }
 
 void TextChannelListener::requestConversationId()
@@ -949,7 +945,7 @@ void TextChannelListener::slotConvModelReady(bool success)
     if (success && !m_replaceEvents.isEmpty()) {
         CommHistory::Event event = m_replaceEvents.takeFirst();
 
-        // Model should inform us when event that we add is committed into tracker.
+        // Model should inform us when event that we add is committed into the database.
         connect(&conversationModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event> &, bool)),
                 this, SLOT(slotConvEventsCommitted(const QList<CommHistory::Event> &, bool)));
 
@@ -1641,7 +1637,7 @@ void TextChannelListener::saveNewMessage(CommHistory::Event &event)
 
 void TextChannelListener::expungeMessage(const QString &token)
 {
-    if (eventModel().syncMode() && !token.isEmpty()) {
+    if (checkStoredMessagesIf() && !token.isEmpty()) {
         if (m_expungeTokens.isEmpty()) {
             QTimer::singleShot(0, this, SLOT(slotExpungeMessages()));
         }
@@ -1673,12 +1669,12 @@ void TextChannelListener::updateGroupChatName(ChangedChannelProperty changedChan
 
             if (m_GroupModel) {
 
-                // Group is already in tracker
+                // Group is already in the database
                 CommHistory::Group modGroup;
                 modGroup.setId(m_Group.id());
                 modGroup.setChatName(m_Group.chatName());
                 if (!m_GroupModel->modifyGroup(modGroup))
-                    qCritical() << "failed to modify group in tracker";
+                    qCritical() << "failed to modify group in database";
 
                 if (suppressGroupChatEvents) {
                     qDebug() << Q_FUNC_INFO << "NOT creating group chat event";

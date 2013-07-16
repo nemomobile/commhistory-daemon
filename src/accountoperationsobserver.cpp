@@ -20,7 +20,6 @@
 **
 ******************************************************************************/
 
-#include "accountspecificcallmodel.h"
 #include "accountoperationsobserver.h"
 #include "notificationmanager.h"
 
@@ -146,10 +145,11 @@ void AccountOperationsObserver::slotAccountRemoved()
            are really handled. */
         m_accountPathsForConvs.append(accountPath);
 
-        AccountSpecificCallModel *callModel = new AccountSpecificCallModel(this);
+        CommHistory::CallModel *callModel = new CommHistory::CallModel(this);
         callModel->setPropertyMask(CommHistory::Event::PropertySet()
                                    << CommHistory::Event::Type
                                    << CommHistory::Event::LocalUid);
+        callModel->setFilterAccount(accountPath);
 
         connect(callModel,
                 SIGNAL(modelReady(bool)),
@@ -163,7 +163,7 @@ void AccountOperationsObserver::slotAccountRemoved()
                 SLOT(slotRowsRemoved(const QModelIndex&,int,int)),
                 Qt::UniqueConnection);
 
-        callModel->getEvents(accountPath);
+        callModel->getEvents();
         m_accountPathsForCalls.insert(accountPath, callModel);
 
         if (!m_pGroupModel) {
@@ -213,7 +213,7 @@ void AccountOperationsObserver::slotDeleteConversations()
     }
 
     if (!groupsToBeDeleted.isEmpty()) {
-        if (!m_pGroupModel->deleteGroups(groupsToBeDeleted, true)) {
+        if (!m_pGroupModel->deleteGroups(groupsToBeDeleted)) {
             qWarning() << "Error while deleting groups: " << groupsToBeDeleted;
         }
     }
@@ -227,10 +227,10 @@ void AccountOperationsObserver::slotDeleteCalls()
 {
     qDebug() << Q_FUNC_INFO << "START";
 
-    AccountSpecificCallModel *callModel = qobject_cast<AccountSpecificCallModel *>(sender());
+    CommHistory::CallModel *callModel = qobject_cast<CommHistory::CallModel *>(sender());
 
     if (!callModel) {
-        qWarning() << "Null AccountSpecificCallModel!";
+        qWarning() << "Null CallModel!";
         return;
     }
 
@@ -254,7 +254,7 @@ void AccountOperationsObserver::slotDeleteCalls()
 
     if (callsToBeDeleted.isEmpty()) {
         QString accountPath = m_accountPathsForCalls.key(callModel);
-        qDebug() << Q_FUNC_INFO << "No calls to be deleted for " << accountPath << ". We can delete the AccountSpecificCallModel.";
+        qDebug() << Q_FUNC_INFO << "No calls to be deleted for " << accountPath << ". We can delete the CallModel.";
         m_accountPathsForCalls.take(accountPath)->deleteLater();
 
         // delete notifcations of this account
@@ -270,15 +270,15 @@ void AccountOperationsObserver::slotRowsRemoved(const QModelIndex& index, int st
 
     qDebug() << Q_FUNC_INFO << "start: " << start << " end: " << end;
 
-    AccountSpecificCallModel *callModel = qobject_cast<AccountSpecificCallModel *>(sender());
+    CommHistory::CallModel *callModel = qobject_cast<CommHistory::CallModel *>(sender());
 
     if (!callModel) {
-        qWarning() << "Null AccountSpecificCallModel!";
+        qWarning() << "Null CallModel!";
         return;
     }
 
     if (callModel->rowCount() == 0) {
-        qDebug() << Q_FUNC_INFO << "Last event in AccountSpecificCallModel deleted. We can delete the model.";
+        qDebug() << Q_FUNC_INFO << "Last event in CallModel deleted. We can delete the model.";
         QString accountPath = m_accountPathsForCalls.key(callModel);
         m_accountPathsForCalls.take(accountPath)->deleteLater();
 
