@@ -21,7 +21,7 @@
 ******************************************************************************/
 
 #include <CommHistory/EventModel>
-#include <CommHistory/TrackerIO>
+#include <CommHistory/DatabaseIO>
 
 #include <TpExtensions/Connection> // stored messages if
 
@@ -153,7 +153,7 @@ void MessageReviver::handleMessages(Tp::ConnectionPtr &connection)
 
     foreach (QString token, messageTokens) {
         Event event;
-        if (model.trackerIO().getEventByMessageToken(token, event)) {
+        if (model.databaseIO().getEventByMessageToken(token, event)) {
             qDebug() << "bury " << token;
             toBury << token;
         } else {

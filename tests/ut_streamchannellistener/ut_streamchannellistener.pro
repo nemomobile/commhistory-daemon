@@ -52,6 +52,7 @@ SOURCES     += ut_streamchannellistener.cpp \
 
 DESTDIR = ../bin
 QT += dbus
+LIBS += -lrt
 
 # End of File
 

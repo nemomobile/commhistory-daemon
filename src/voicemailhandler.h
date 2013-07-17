@@ -69,7 +69,7 @@ public:
     bool isVoiceMailContact(const QContactId &localId);
 
     /*!
-     * \brief Refreshes VoiceMailHandler by fetching possible voice mail contact from tracker based on GUID.
+     * \brief Refreshes VoiceMailHandler by fetching possible voice mail contact based on GUID.
      */
     void fetchVoiceMailContact();
 
