@@ -9,8 +9,8 @@
  * before re-generating it.
  */
 
-#ifndef COMMHISTORYIFADAPTOR_H_1374205543
-#define COMMHISTORYIFADAPTOR_H_1374205543
+#ifndef COMMHISTORYIFADAPTOR_H_1374205692
+#define COMMHISTORYIFADAPTOR_H_1374205692
 
 #include <QtCore/QObject>
 #include <QtDBus/QtDBus>
@@ -24,14 +24,14 @@ class QVariant;
 QT_END_NAMESPACE
 
 /*
- * Adaptor class for interface com.nokia.CommHistoryIf
+ * Adaptor class for interface org.nemomobile.CommHistoryIf
  */
 class CommHistoryIfAdaptor: public QDBusAbstractAdaptor
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "com.nokia.CommHistoryIf")
+    Q_CLASSINFO("D-Bus Interface", "org.nemomobile.CommHistoryIf")
     Q_CLASSINFO("D-Bus Introspection", ""
-"  <interface name=\"com.nokia.CommHistoryIf\">\n"
+"  <interface name=\"org.nemomobile.CommHistoryIf\">\n"
 "    <method name=\"activateNotification\">\n"
 "      <arg direction=\"in\" type=\"i\" name=\"groupId\"/>\n"
 "      <arg direction=\"in\" type=\"s\" name=\"remoteActionString\"/>\n"

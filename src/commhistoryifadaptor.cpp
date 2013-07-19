@@ -35,31 +35,31 @@ CommHistoryIfAdaptor::~CommHistoryIfAdaptor()
 
 void CommHistoryIfAdaptor::activateNotification(int groupId, const QString &remoteActionString)
 {
-    // handle method call com.nokia.CommHistoryIf.activateNotification
+    // handle method call org.nemomobile.CommHistoryIf.activateNotification
     QMetaObject::invokeMethod(parent(), "activateNotification", Q_ARG(int, groupId), Q_ARG(QString, remoteActionString));
 }
 
 void CommHistoryIfAdaptor::setCallHistoryObserved(bool observed)
 {
-    // handle method call com.nokia.CommHistoryIf.setCallHistoryObserved
+    // handle method call org.nemomobile.CommHistoryIf.setCallHistoryObserved
     QMetaObject::invokeMethod(parent(), "setCallHistoryObserved", Q_ARG(bool, observed));
 }
 
 void CommHistoryIfAdaptor::setInboxObserved(bool observed, const QString &filterAccount)
 {
-    // handle method call com.nokia.CommHistoryIf.setInboxObserved
+    // handle method call org.nemomobile.CommHistoryIf.setInboxObserved
     QMetaObject::invokeMethod(parent(), "setInboxObserved", Q_ARG(bool, observed), Q_ARG(QString, filterAccount));
 }
 
 void CommHistoryIfAdaptor::setInboxObserved(bool observed)
 {
-    // handle method call com.nokia.CommHistoryIf.setInboxObserved
+    // handle method call org.nemomobile.CommHistoryIf.setInboxObserved
     QMetaObject::invokeMethod(parent(), "setInboxObserved", Q_ARG(bool, observed));
 }
 
 void CommHistoryIfAdaptor::setObservedConversations(const QVariantList &conversations)
 {
-    // handle method call com.nokia.CommHistoryIf.setObservedConversations
+    // handle method call org.nemomobile.CommHistoryIf.setObservedConversations
     QMetaObject::invokeMethod(parent(), "setObservedConversations", Q_ARG(QVariantList, conversations));
 }
 
