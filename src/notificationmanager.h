@@ -51,7 +51,6 @@
 
 QTCONTACTS_USE_NAMESPACE
 
-class ContextProperty;
 class MNotificationGroup;
 
 namespace CommHistory {
@@ -130,9 +129,9 @@ private Q_SLOTS:
      * Initialises notification manager instance
      */
     void init();
-    void slotObservedConversationChanged();
-    void slotObservedInboxChanged();
-    void slotObservedCallHistoryChanged();
+    void slotObservedConversationsChanged(const QVariantList &conversations);
+    void slotInboxObservedChanged();
+    void slotCallHistoryObservedChanged(bool observed);
     void slotResultsAvailable();
     void slotResultsAvailableForUnknown();
     void fireNotifications();
@@ -227,10 +226,6 @@ private:
     static NotificationManager* m_pInstance;
     QMultiHash<NotificationGroup,PersonalNotification> m_Notifications;
     QHash<int, MNotificationGroup*> m_MgtGroups;
-    ContextProperty* m_ObservedConversation;
-    ContextProperty* m_ObservedInbox;
-    ContextProperty* m_FilteredInbox;
-    ContextProperty* m_ObservedCallHistory;
     QFile m_Storage;
     bool m_Initialised;
 

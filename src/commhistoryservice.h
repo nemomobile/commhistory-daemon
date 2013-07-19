@@ -24,14 +24,23 @@
 #define COMMHISTORYSERVICE_H
 
 #include <QObject>
+#include <QVariantList>
 
 class CommHistoryService : public QObject
 {
     Q_OBJECT
 
 public:
-    CommHistoryService( QObject* parent = 0 );
     ~CommHistoryService();
+
+    static CommHistoryService *instance();
+
+    bool isRegistered();
+
+    bool callHistoryObserved() const { return m_callHistoryObserved; }
+    bool inboxObserved() const { return m_inboxObserved; }
+    QString inboxFilterAccount() const { return m_inboxFilterAccount; }
+    QVariantList observedConversations() const { return m_observedConversations; }
 
 public Q_SLOTS:
     /*! \brief emits signal that authorisation dialog should be shown for contact */
@@ -39,8 +48,9 @@ public Q_SLOTS:
                                const QString& filename, const QString& message,
                                const QString& transactionId,
                                const QString& accountUniqueIdentifier);
-
-    bool isRegistered();
+    void setCallHistoryObserved(bool observed);
+    void setInboxObserved(bool observed, const QString &filterAccount = QString());
+    void setObservedConversations(const QVariantList &conversations);
 
 Q_SIGNALS:
     void showAuthorizationDialog(const QString& contactId,
@@ -49,9 +59,18 @@ Q_SIGNALS:
                                  const QString& message,
                                  const QString& transactionId,
                                  const QString& accountUniqueIdentifier);
+    void callHistoryObservedChanged(bool observed);
+    void inboxObservedChanged(bool observed, const QString &filterAccount);
+    void observedConversationsChanged(const QVariantList &conversations);
 
 private:
     bool m_IsRegistered;
+    bool m_callHistoryObserved;
+    bool m_inboxObserved;
+    QString m_inboxFilterAccount;
+    QVariantList m_observedConversations;
+
+    CommHistoryService( QObject* parent = 0 );
 };
 
 #endif // COMMHISTORYSERVICE_H

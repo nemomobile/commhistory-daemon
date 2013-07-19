@@ -5,5 +5,18 @@
       <arg name="groupId" type="i" direction="in"/>
       <arg name="remoteActionString" type="s" direction="in"/>
     </method>
+    <method name="setInboxObserved">
+      <arg name="observed" type="b"/>
+    </method>
+    <method name="setInboxObserved">
+      <arg name="observed" type="b"/>
+      <arg name="filterAccount" type="s"/>
+    </method>
+    <method name="setObservedConversations">
+      <arg name="conversations" type="av"/>
+    </method>
+    <method name="setCallHistoryObserved">
+      <arg name="observed" type="b"/>
+    </method>
   </interface>
 </node>

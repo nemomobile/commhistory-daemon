@@ -27,11 +27,6 @@
 
 namespace RTComLogger {
 
-#define OBSERVED_CONVERSATION_KEY QLatin1String("Messaging.ObservedConversation")
-#define OBSERVED_INBOX_KEY QLatin1String("Messaging.ObservedInbox")
-#define FILTERED_INBOX_KEY QLatin1String("Messaging.FilteredInbox")
-#define CALL_HISTORY_KEY QLatin1String("CallHistory.Inbox")
-
 // Used to generate duiremoteaction strings
 #define OBJECT_PATH QLatin1String("/")
 
