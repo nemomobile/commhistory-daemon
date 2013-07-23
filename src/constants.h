@@ -27,17 +27,12 @@
 
 namespace RTComLogger {
 
-#define OBSERVED_CONVERSATION_KEY QLatin1String("Messaging.ObservedConversation")
-#define OBSERVED_INBOX_KEY QLatin1String("Messaging.ObservedInbox")
-#define FILTERED_INBOX_KEY QLatin1String("Messaging.FilteredInbox")
-#define CALL_HISTORY_KEY QLatin1String("CallHistory.Inbox")
-
 // Used to generate duiremoteaction strings
 #define OBJECT_PATH QLatin1String("/")
 
-#define COMM_HISTORY_SERVICE_NAME    QLatin1String("com.nokia.CommHistory")
-#define COMM_HISTORY_OBJECT_PATH     QLatin1String("/com/nokia/CommHistory")
-#define COMM_HISTORY_INTERFACE       QLatin1String("com.nokia.CommHistoryIf")
+#define COMM_HISTORY_SERVICE_NAME    QLatin1String("org.nemomobile.CommHistory")
+#define COMM_HISTORY_OBJECT_PATH     QLatin1String("/org/nemomobile/CommHistory")
+#define COMM_HISTORY_INTERFACE       QLatin1String("org.nemomobile.CommHistoryIf")
 
 #define ACCOUNT_PRESENCE_SERVICE_NAME    QLatin1String("org.nemomobile.AccountPresence")
 #define ACCOUNT_PRESENCE_OBJECT_PATH     QLatin1String("/org/nemomobile/AccountPresence")
