@@ -21,12 +21,23 @@
 ******************************************************************************/
 
 #include <QtDBus>
+#include <QCoreApplication>
 #include "commhistoryservice.h"
 #include "constants.h"
 
+CommHistoryService *CommHistoryService::instance()
+{
+    static CommHistoryService *obj = 0;
+    if (!obj)
+        obj = new CommHistoryService(qApp);
+    return obj;
+}
+
 CommHistoryService::CommHistoryService( QObject* parent )
     : QObject(parent),
-      m_IsRegistered(false)
+      m_IsRegistered(false),
+      m_callHistoryObserved(false),
+      m_inboxObserved(false)
 {
     if (!QDBusConnection::sessionBus().isConnected()) {
         qCritical() << "ERROR: No DBus session bus found!";
@@ -62,6 +73,43 @@ void CommHistoryService::activateAuthorization(const QString& contactId,
 {
     Q_EMIT showAuthorizationDialog(contactId, accountPath, filename, message,
                                   transactionId, accountUniqueIdentifier);
+}
+
+void CommHistoryService::setCallHistoryObserved(bool observed)
+{
+    if (observed != m_callHistoryObserved) {
+        m_callHistoryObserved = observed;
+        emit callHistoryObservedChanged(observed);
+    }
+}
+
+void CommHistoryService::setInboxObserved(bool observed, const QString &filterAccount)
+{
+    if (observed != m_inboxObserved || filterAccount != m_inboxFilterAccount) {
+        m_inboxObserved = observed;
+        m_inboxFilterAccount = filterAccount;
+        emit inboxObservedChanged(observed, filterAccount);
+    }
+}
+
+void CommHistoryService::setObservedConversations(const QVariantList &arg)
+{
+    QVariantList conversations;
+    foreach (const QVariant &v1, arg) {
+        const QDBusArgument arg2 = v1.value<QDBusArgument>();
+        arg2.beginArray();
+        QVariantList values;
+        while (!arg2.atEnd()) {
+            QVariant v2;
+            arg2 >> v2;
+            values.append(v2);
+        }
+        arg2.endArray();
+        conversations << QVariant(values);
+    }
+
+    m_observedConversations = conversations;
+    emit observedConversationsChanged(conversations);
 }
 
 bool CommHistoryService::isRegistered()

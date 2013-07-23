@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 
     qDebug() << "Translation catalogs loaded";
 
-    CommHistoryService *chService = new CommHistoryService(&app);
+    CommHistoryService *chService = CommHistoryService::instance();
     if (!chService->isRegistered()) {
         qCritical() << "CommHistoryService registration failed (already running or DBus not found), exiting";
         _exit(1);

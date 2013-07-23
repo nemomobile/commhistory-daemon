@@ -43,9 +43,6 @@
 #include <QContactDisplayLabel>
 #include <QContactIdFilter>
 
-// ContextKit includes
-#include <contextproperty.h>
-
 // CommHistory includes
 #include <CommHistory/commonutils.h>
 #include <CommHistory/GroupModel>
@@ -60,6 +57,7 @@
 #include "constants.h"
 #include "mwilistener.h"
 #include "voicemailhandler.h"
+#include "commhistoryservice.h"
 
 QT_BEGIN_NAMESPACE_CONTACTS
 
@@ -157,10 +155,6 @@ bool matchContact(const QList<QContactOnlineAccount> &accounts,
 //
 NotificationManager::NotificationManager(QObject* parent)
         : QObject(parent)
-        , m_ObservedConversation(new ContextProperty(OBSERVED_CONVERSATION_KEY, this))
-        , m_ObservedInbox(new ContextProperty(OBSERVED_INBOX_KEY, this))
-        , m_FilteredInbox(new ContextProperty(FILTERED_INBOX_KEY, this))
-        , m_ObservedCallHistory(new ContextProperty(CALL_HISTORY_KEY, this))
         , m_Storage(QDir::homePath() + COMMHISTORYD_NOTIFICATIONSSTORAGE)
         , m_Initialised(false)
         , m_pContactManager(0)
@@ -200,30 +194,16 @@ void NotificationManager::init()
     loadState();
     syncNotifications();
 
-    m_ObservedConversation->subscribe();
-    connect(m_ObservedConversation,
-            SIGNAL(valueChanged()),
-            SLOT(slotObservedConversationChanged()));
-
-    m_ObservedInbox->subscribe();
-    connect(m_ObservedInbox,
-            SIGNAL(valueChanged()),
-            SLOT(slotObservedInboxChanged()));
-
-    m_FilteredInbox->subscribe();
-    connect(m_FilteredInbox,
-            SIGNAL(valueChanged()),
-            SLOT(slotObservedInboxChanged()));
-
-    m_ObservedCallHistory->subscribe();
-    connect(m_ObservedCallHistory,
-            SIGNAL(valueChanged()),
-            SLOT(slotObservedCallHistoryChanged()));
+    CommHistoryService *service = CommHistoryService::instance();
+    connect(service, SIGNAL(inboxObservedChanged(bool,QString)), SLOT(slotInboxObservedChanged()));
+    connect(service, SIGNAL(callHistoryObservedChanged(bool)), SLOT(slotCallHistoryObservedChanged(bool)));
+    connect(service, SIGNAL(observedConversationsChanged(QVariantList)),
+                     SLOT(slotObservedConversationsChanged(QVariantList)));
 
     m_NotificationTimer.setSingleShot(true);
     m_NotificationTimer.setInterval(NOTIFICATION_THRESHOLD);
     connect(&m_NotificationTimer, SIGNAL(timeout()), this, SLOT(fireNotifications()));
-    connect(&m_NotificationTimer, SIGNAL(timeout()), this, SLOT(slotObservedInboxChanged()));
+    connect(&m_NotificationTimer, SIGNAL(timeout()), this, SLOT(slotInboxObservedChanged()));
 
     m_ContactsTimer.setSingleShot(true);
     m_ContactsTimer.setInterval(CONTACT_REQUEST_THRESHOLD);
@@ -397,18 +377,13 @@ bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& even
         return false;
     }
 
-    // check contextkit property status, if not ready, we assume
-    // ui is not observed
-    if (!m_ObservedConversation)
-        return false;
-
     QString remoteMatch;
     if (chatType == CommHistory::Group::ChatTypeP2P)
         remoteMatch = event.remoteUid();
     else
         remoteMatch = channelTargetId;
 
-    QVariantList conversations = m_ObservedConversation->value().toList();
+    QVariantList conversations = CommHistoryService::instance()->observedConversations();
     foreach (const QVariant &conversation, conversations) {
         QVariantList values = conversation.toList();
         if (values.size() != 3)
@@ -513,98 +488,61 @@ void NotificationManager::removeConversationNotifications(const QString &localUi
     }
 }
 
-void NotificationManager::slotObservedConversationChanged()
+void NotificationManager::slotObservedConversationsChanged(const QVariantList &conversations)
 {
-    if (m_ObservedConversation) {
-        QVariantList conversations = m_ObservedConversation->value(QVariant()).toList();
-        foreach (const QVariant &conversation, conversations) {
-            QVariantList values = conversation.toList();
-            if (values.size() != 3)
-                continue;
+    foreach (const QVariant &conversation, conversations) {
+        QVariantList values = conversation.toList();
+        if (values.size() != 3)
+            continue;
 
-            removeConversationNotifications(values[0].toString(), values[1].toString(),
-                                            (CommHistory::Group::ChatType)values[2].toUInt());
-        }
+        removeConversationNotifications(values[0].toString(), values[1].toString(),
+                                        (CommHistory::Group::ChatType)values[2].toUInt());
     }
 }
 
-void NotificationManager::slotObservedInboxChanged()
+void NotificationManager::slotInboxObservedChanged()
 {
     qDebug() << Q_FUNC_INFO;
 
-    if (m_ObservedInbox) {
-        QVariant value = m_ObservedInbox->value(QVariant());
-        if (!value.isNull()) {
-            bool observed = value.toBool();
-            qDebug() << Q_FUNC_INFO << "inbox observed? " << observed;
-            if (observed) {
-                // No filtering, we can remove all messaging related notifications:
-                if (!isFilteredInbox()) {
-                    // remove sms, mms and im notification groups and save state
-                    // remove meegotouch groups
-                    bool save = false;
-                    save = removeNotificationGroup(CommHistory::Event::IMEvent) || save;
-                    save = removeNotificationGroup(CommHistory::Event::SMSEvent) || save;
-                    save = removeNotificationGroup(CommHistory::Event::MMSEvent) || save;
-                    save = removeNotificationGroup(VOICEMAIL_SMS_EVENT_TYPE) || save;
-                    if (save)
-                        saveState();
-                } else {
-                    // Filtering is in use, remove only notifications of that account whose threads are visible in inbox:
-                    QString filteredAccountPath = filteredInboxAccountPath();
-                    qDebug() << Q_FUNC_INFO << "Removing only notifications belonging to account " << filteredAccountPath;
-                    if (!filteredAccountPath.isEmpty())
-                        removeNotifications(filteredAccountPath, true);
-                }
-            }
+    // Cannot be passed as a parameter, because this slot is also used for m_notificationTimer
+    bool observed = CommHistoryService::instance()->inboxObserved();
+    if (observed) {
+        if (!isFilteredInbox()) {
+            // remove sms, mms and im notification groups and save state
+            // remove meegotouch groups
+            bool save = false;
+            save = removeNotificationGroup(CommHistory::Event::IMEvent) || save;
+            save = removeNotificationGroup(CommHistory::Event::SMSEvent) || save;
+            save = removeNotificationGroup(CommHistory::Event::MMSEvent) || save;
+            save = removeNotificationGroup(VOICEMAIL_SMS_EVENT_TYPE) || save;
+            if (save)
+                saveState();
         } else {
-            qDebug() << Q_FUNC_INFO << "Context property value for observing inbox is NULL!";
+            // Filtering is in use, remove only notifications of that account whose threads are visible in inbox:
+            QString filteredAccountPath = filteredInboxAccountPath();
+            qDebug() << Q_FUNC_INFO << "Removing only notifications belonging to account " << filteredAccountPath;
+            if (!filteredAccountPath.isEmpty())
+                removeNotifications(filteredAccountPath, true);
         }
     }
 }
 
-void NotificationManager::slotObservedCallHistoryChanged()
+void NotificationManager::slotCallHistoryObservedChanged(bool observed)
 {
-    if (m_ObservedCallHistory) {
-        QVariant value = m_ObservedCallHistory->value(QVariant());
-        if (!value.isNull()) {
-            bool inbox = value.toBool();
-            qDebug() << Q_FUNC_INFO << " call history inbox? " << inbox;
-            if (inbox) {
-                if (removeNotificationGroup(CommHistory::Event::CallEvent))
-                    saveState();
-            }
-        }
+    if (observed) {
+        if (removeNotificationGroup(CommHistory::Event::CallEvent))
+            saveState();
     }
 }
 
 bool NotificationManager::isFilteredInbox()
 {
-    qDebug() << Q_FUNC_INFO;
-
-    if (m_FilteredInbox)
-        if (m_FilteredInbox->value(QVariant()).isNull()) return false;
-
-    return true;
+    return !CommHistoryService::instance()->inboxFilterAccount().isEmpty();
 }
 
 QString NotificationManager::filteredInboxAccountPath()
 {
-    qDebug() << Q_FUNC_INFO;
-
-    QString filteredAccount;
-
-    if (m_FilteredInbox) {
-        QVariant value = m_FilteredInbox->value(QVariant());
-        if (!value.isNull()) {
-            filteredAccount = value.toString();
-        } else {
-            // We do not have filtering on.
-            qDebug() << Q_FUNC_INFO << "Context property value for inbox filtering is not set.";
-        }
-    }
-
-    return filteredAccount;
+    return CommHistoryService::instance()->inboxFilterAccount();
 }
 
 void NotificationManager::clearContactsCache()
