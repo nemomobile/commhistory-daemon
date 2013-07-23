@@ -92,8 +92,22 @@ void CommHistoryService::setInboxObserved(bool observed, const QString &filterAc
     }
 }
 
-void CommHistoryService::setObservedConversations(const QVariantList &conversations)
+void CommHistoryService::setObservedConversations(const QVariantList &arg)
 {
+    QVariantList conversations;
+    foreach (const QVariant &v1, arg) {
+        const QDBusArgument arg2 = v1.value<QDBusArgument>();
+        arg2.beginArray();
+        QVariantList values;
+        while (!arg2.atEnd()) {
+            QVariant v2;
+            arg2 >> v2;
+            values.append(v2);
+        }
+        arg2.endArray();
+        conversations << QVariant(values);
+    }
+
     m_observedConversations = conversations;
     emit observedConversationsChanged(conversations);
 }
