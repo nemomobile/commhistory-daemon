@@ -692,12 +692,7 @@ void TextChannelListener::handleMessages()
                     modifyTokens[groupId].insertMulti(event.id(), token);
 
                 } else {
-                    // recovered message should be added
-                    addEvents << event;
-                    addMessages << message;
-                    // expunging of added message will fail, but it's harmless
-                    // and we don't need to expung this delivery report cause
-                    // tp-ring do it automatically if the status is accepted
+                    qDebug() << __PRETTY_FUNCTION__ << "Ignoring recovered message from delivery echo";
                 }
 
                 break;
