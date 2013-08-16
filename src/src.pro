@@ -35,7 +35,7 @@ QT += dbus contacts versit
 
 CONFIG += debug
 
-PKGCONFIG += qmsystem2-qt5
+PKGCONFIG += qmsystem2-qt5 ngf-qt5
 PKGCONFIG += TelepathyQt5 commhistory-qt5 mlite5 mlocale5
 # clock_gettime
 LIBS += -lrt

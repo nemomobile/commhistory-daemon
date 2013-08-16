@@ -57,6 +57,10 @@ namespace CommHistory {
     class GroupModel;
 }
 
+namespace Ngf {
+    class Client;
+}
+
 namespace RTComLogger {
 
 class MWIListener;
@@ -144,6 +148,7 @@ private Q_SLOTS:
     void slotMWICountChanged(int count);
     void slotContactRequestTimeout();
     void slotGroupDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
+    void slotNgfEventFinished(quint32 id);
 
 private:
 
@@ -244,6 +249,8 @@ private:
 
     MWIListener *m_pMWIListener;
     MeeGo::QmDisplayState *m_pDisplayState;
+    Ngf::Client *m_ngfClient;
+    quint32 m_ngfEvent;
 
 #ifdef UNIT_TEST
     friend class Ut_NotificationManager;
