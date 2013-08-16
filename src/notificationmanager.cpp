@@ -51,6 +51,9 @@
 // Telepathy includes
 #include <TelepathyQt/Constants>
 
+// NGF-Qt includes
+#include <NgfClient>
+
 // Our includes
 #include "notificationmanager.h"
 #include "locstrings.h"
@@ -160,6 +163,8 @@ NotificationManager::NotificationManager(QObject* parent)
         , m_pContactManager(0)
         , m_GroupModel(0)
         , m_pDisplayState(0)
+        , m_ngfClient(0)
+        , m_ngfEvent(0)
 {
     qRegisterMetaType<RTComLogger::NotificationGroup>("RTComLogger::NotificationGroup");
     qRegisterMetaTypeStreamOperators<RTComLogger::NotificationGroup>("RTComLogger::NotificationGroup");
@@ -187,6 +192,10 @@ void NotificationManager::init()
     if (m_Initialised) {
         return;
     }
+
+    m_ngfClient = new Ngf::Client(this);
+    connect(m_ngfClient, SIGNAL(eventFailed(quint32)), SLOT(slotNgfEventFinished(quint32)));
+    connect(m_ngfClient, SIGNAL(eventCompleted(quint32)), SLOT(slotNgfEventFinished(quint32)));
 
     // creates data directory
     createDataDir();
@@ -360,6 +369,16 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
         if (event.type() == CommHistory::Event::SMSEvent ||
             event.type() == CommHistory::Event::MMSEvent) {
             undimScreen();
+        }
+    } else {
+        if (!m_ngfClient->isConnected())
+            m_ngfClient->connect();
+
+        if (!m_ngfEvent) {
+            if (event.type() == CommHistory::Event::SMSEvent || event.type() == CommHistory::Event::MMSEvent)
+                m_ngfEvent = m_ngfClient->play(QLatin1Literal("sms_fg"));
+            else
+                m_ngfEvent = m_ngfClient->play(QLatin1Literal("chat_fg"));
         }
     }
 }
@@ -1633,3 +1652,10 @@ void NotificationManager::slotGroupDataChanged(const QModelIndex &topLeft, const
         }
     }
 }
+
+void NotificationManager::slotNgfEventFinished(quint32 id)
+{
+    if (id == m_ngfEvent)
+        m_ngfEvent = 0;
+}
+
