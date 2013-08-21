@@ -25,9 +25,11 @@
 
 #include <TpExtensions/Connection> // stored messages if
 
+// Our includes
 #include "constants.h"
 #include "messagereviver.h"
 #include "connectionutils.h"
+#include "debug.h"
 
 using namespace RTComLogger;
 using namespace CommHistory;
@@ -101,7 +103,7 @@ void MessageReviver::updateTokens(const QStringList &tokens,
     bool modified = false;
 
     if (connection.isNull() || !connection->isValid()) {
-        qDebug() << "Connection is not valid anymore, abort";
+        DEBUG() << "Connection is not valid anymore, abort";
         return;
     }
 
@@ -154,10 +156,10 @@ void MessageReviver::handleMessages(Tp::ConnectionPtr &connection)
     foreach (QString token, messageTokens) {
         Event event;
         if (model.databaseIO().getEventByMessageToken(token, event)) {
-            qDebug() << "bury " << token;
+            DEBUG() << "bury " << token;
             toBury << token;
         } else {
-            qDebug() << "revive " << token;
+            DEBUG() << "revive " << token;
             toRevive << token;
         }
     }

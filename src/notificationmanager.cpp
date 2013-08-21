@@ -23,7 +23,6 @@
 // Qt includes
 #include <QCoreApplication>
 #include <QDBusReply>
-#include <QDebug>
 #include <QTimer>
 #include <QDir>
 
@@ -61,6 +60,7 @@
 #include "mwilistener.h"
 #include "voicemailhandler.h"
 #include "commhistoryservice.h"
+#include "debug.h"
 
 QT_BEGIN_NAMESPACE_CONTACTS
 
@@ -317,7 +317,7 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
                                            const QString& channelTargetId,
                                            CommHistory::Group::ChatType chatType)
 {
-    qDebug() << Q_FUNC_INFO << event.id() << channelTargetId << chatType;
+    DEBUG() << Q_FUNC_INFO << event.id() << channelTargetId << chatType;
 
     bool observed = isCurrentlyObservedByUI(event, channelTargetId, chatType);
     if (!event.isRead() && !observed) {
@@ -336,7 +336,7 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
                     chatName = group.chatName();
                     if (chatName.isEmpty())
                         chatName = txt_qtn_msg_group_chat;
-                    qDebug() << Q_FUNC_INFO << "Using chatName:" << chatName;
+                    DEBUG() << Q_FUNC_INFO << "Using chatName:" << chatName;
                     break;
                 }
             }
@@ -425,7 +425,7 @@ bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& even
 
 void NotificationManager::removeNotifications(const QString &accountPath, bool messagesOnly)
 {
-    qDebug() << Q_FUNC_INFO << "Removing notifications of account " << accountPath;
+    DEBUG() << Q_FUNC_INFO << "Removing notifications of account " << accountPath;
 
     QSet<NotificationGroup> updatedGroups;
 
@@ -439,13 +439,13 @@ void NotificationManager::removeNotifications(const QString &accountPath, bool m
         // that belong to messaging-ui area:
         if (messagesOnly && (eventType != CommHistory::Event::IMEvent && eventType != CommHistory::Event::SMSEvent
              && eventType != CommHistory::Event::MMSEvent && eventType != VOICEMAIL_SMS_EVENT_TYPE)) {
-            qDebug() << Q_FUNC_INFO << "Skipping " << eventType << " type of notification";
+            DEBUG() << Q_FUNC_INFO << "Skipping " << eventType << " type of notification";
             continue;
         }
 
         // Remove only a notification matching to the account:
         if (i.key().isValid() && MAP_MMS_TO_RING(i.value().account()) == accountPath) {
-            qDebug() << Q_FUNC_INFO << "Removing notification: accountPath: " << i.value().account() << " remoteUid: " << i.value().targetId();
+            DEBUG() << Q_FUNC_INFO << "Removing notification: accountPath: " << i.value().account() << " remoteUid: " << i.value().targetId();
             // record notification group id
             updatedGroups.insert(i.key());
             // no need to resolve events anymore -> remove personal notification from queue
@@ -521,7 +521,7 @@ void NotificationManager::slotObservedConversationsChanged(const QVariantList &c
 
 void NotificationManager::slotInboxObservedChanged()
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     // Cannot be passed as a parameter, because this slot is also used for m_notificationTimer
     bool observed = CommHistoryService::instance()->inboxObserved();
@@ -539,7 +539,7 @@ void NotificationManager::slotInboxObservedChanged()
         } else {
             // Filtering is in use, remove only notifications of that account whose threads are visible in inbox:
             QString filteredAccountPath = filteredInboxAccountPath();
-            qDebug() << Q_FUNC_INFO << "Removing only notifications belonging to account " << filteredAccountPath;
+            DEBUG() << Q_FUNC_INFO << "Removing only notifications belonging to account " << filteredAccountPath;
             if (!filteredAccountPath.isEmpty())
                 removeNotifications(filteredAccountPath, true);
         }
@@ -582,7 +582,7 @@ void NotificationManager::clearContactsCache()
     while (contactIt.hasNext()) {
         contactIt.next();
         if (!tpContactUids.contains(contactIt.key())) {
-            qDebug() << Q_FUNC_INFO << "Removing contact " << contactIt.key().second;
+            DEBUG() << Q_FUNC_INFO << "Removing contact " << contactIt.key().second;
             contactIt.remove();
         }
     }
@@ -590,7 +590,7 @@ void NotificationManager::clearContactsCache()
 
 bool NotificationManager::removeNotificationGroup(int type)
 {
-    qDebug() << Q_FUNC_INFO << type;
+    DEBUG() << Q_FUNC_INFO << type;
 
     NotificationGroup group(type);
     removeGroup(type);
@@ -617,7 +617,7 @@ NotificationGroup NotificationManager::notificationGroup(int type)
 
 void NotificationManager::addNotification(PersonalNotification notification)
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     uint eventType;
 
@@ -669,7 +669,7 @@ void NotificationManager::resolveEvents()
 
 void NotificationManager::fireNotifications()
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     // if we cant show notification
     // return
@@ -754,7 +754,7 @@ void NotificationManager::removeNotPendingEvents(const NotificationGroup &group)
 void NotificationManager::showLatestNotification(const NotificationGroup &group,
                                                  PersonalNotification &notification)
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     MNotificationGroup *mgroup = m_MgtGroups.value(group.type());
     if (mgroup) {
@@ -801,7 +801,7 @@ void NotificationManager::showLatestNotification(const NotificationGroup &group,
 
 void NotificationManager::updateNotificationGroup(const NotificationGroup &group)
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     if (m_Notifications.contains(group)) {
         const PersonalNotification notification = m_Notifications.value(group);
@@ -1003,7 +1003,7 @@ int NotificationManager::countContacts(const NotificationGroup& group)
 
 int NotificationManager::countNotifications(const NotificationGroup& group)
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     // If we have more than one new message from same sender and messages have
     // same SMS replace number, then we count all those messages as one.
@@ -1022,8 +1022,8 @@ int NotificationManager::countNotifications(const NotificationGroup& group)
             pnsCounted.append(pn);
     }
 
-    qDebug() << Q_FUNC_INFO << "Notification count with replace typed messages taken into account: " << pnsCounted.count();
-    qDebug() << Q_FUNC_INFO << "Absolute notification count: " << m_Notifications.count(group);
+    DEBUG() << Q_FUNC_INFO << "Notification count with replace typed messages taken into account: " << pnsCounted.count();
+    DEBUG() << Q_FUNC_INFO << "Absolute notification count: " << m_Notifications.count(group);
 
     return pnsCounted.count();
 }
@@ -1035,7 +1035,7 @@ void NotificationManager::requestContact(TpContactUid cuid)
     QContactFetchRequest* request = startContactRequest(filter,
                                                         SLOT(slotResultsAvailable()));
 
-    qDebug() << Q_FUNC_INFO << cuid.first << cuid.second;
+    DEBUG() << Q_FUNC_INFO << cuid.first << cuid.second;
 
     m_requests.insert(request, cuid);
     emit pendingRequestCountChanged();
@@ -1094,7 +1094,7 @@ void NotificationManager::slotContactRequestTimeout()
 
     if (m_requests.contains(request)) {
         TpContactUid cuid = m_requests.take(request);
-        qDebug() << Q_FUNC_INFO << "aborted request for:" << cuid;
+        DEBUG() << Q_FUNC_INFO << "aborted request for:" << cuid;
 
         if (!m_contacts.contains(cuid))
             m_contacts.insert(cuid, QContact());
@@ -1114,7 +1114,7 @@ void NotificationManager::slotResultsAvailable()
         return;
     }
 
-    qDebug() << Q_FUNC_INFO << request->contacts().size() << "contacts";
+    DEBUG() << Q_FUNC_INFO << request->contacts().size() << "contacts";
 
     TpContactUid cuid = m_requests.value(request);
     QContact contact;  // insert empty contact to indicate
@@ -1123,7 +1123,7 @@ void NotificationManager::slotResultsAvailable()
     // show remote id in case of multiple contacts match
     if (request->contacts().size() == 1 && apiId(request->contacts().first()) != m_pContactManager->selfContactId()) {
         contact = request->contacts().first();
-        qDebug() << Q_FUNC_INFO << "Using" << contact.detail<QContactDisplayLabel>().label();
+        DEBUG() << Q_FUNC_INFO << "Using" << contact.detail<QContactDisplayLabel>().label();
     }
 
     m_contacts.insert(cuid, contact);
@@ -1161,7 +1161,7 @@ QString NotificationManager::contactName(const QString &localUid,
         }
     }
 
-    qDebug() << Q_FUNC_INFO << localUid << remoteUid << result;
+    DEBUG() << Q_FUNC_INFO << localUid << remoteUid << result;
     return result;
 }
 
@@ -1216,7 +1216,7 @@ void NotificationManager::updateGroup(int eventType,
             group->setCount(notificationCount);
             group->publish();
         } else {
-            qDebug() << Q_FUNC_INFO << "Suppressing unneccessary notification update";
+            DEBUG() << Q_FUNC_INFO << "Suppressing unneccessary notification update";
         }
     } else {
         qWarning() << Q_FUNC_INFO << "No group for event type" << eventType;
@@ -1225,10 +1225,10 @@ void NotificationManager::updateGroup(int eventType,
 
 void NotificationManager::saveState()
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     if( !openStorageFile(QIODevice::WriteOnly) ) {
-        qDebug() << "Cant open storage for saving";
+        DEBUG() << "Cant open storage for saving";
         return;
     }
 
@@ -1236,7 +1236,7 @@ void NotificationManager::saveState()
 
     QDataStream out(&m_Storage);
     if( out.status() ) {
-        qDebug() << "Corrupted data file";
+        DEBUG() << "Corrupted data file";
         return;
     }
     out.setVersion(QDataStream::Qt_4_6);
@@ -1247,13 +1247,13 @@ void NotificationManager::saveState()
 void NotificationManager::loadState()
 {
     if( !openStorageFile(QIODevice::ReadOnly) ) {
-        qDebug() << "Cant open storage for reading";
+        DEBUG() << "Cant open storage for reading";
         return;
     }
 
     QDataStream in(&m_Storage);
     if( in.status() ) {
-        qDebug() << "Corrupted data file";
+        DEBUG() << "Corrupted data file";
         return;
     }
     in.setVersion(QDataStream::Qt_4_6);
@@ -1266,7 +1266,7 @@ bool NotificationManager::openStorageFile(QIODevice::OpenModeFlag flag)
     if(!m_Storage.isOpen() || m_Storage.openMode() != flag) {
         m_Storage.close();
         if(!m_Storage.open(flag)) {
-            qDebug() << "Cannot open storage file";
+            DEBUG() << "Cannot open storage file";
             return false;
         }
     }
@@ -1311,7 +1311,7 @@ void NotificationManager::slotContactsAdded(const QList<QContactId> &contactIds)
     if (contactIds.isEmpty())
         return;
 
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     // we can't match contactIds with local unknown contacts
     // therefore request all unknown contacts from notification contacts
@@ -1333,11 +1333,11 @@ void NotificationManager::slotContactsRemoved(const QList<QContactId> &contactId
     if (contactIds.isEmpty())
         return;
 
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     if (contactIds.contains(VoiceMailHandler::instance()->voiceMailContactId())) {
         // If removed contact is a voice mail one, then clear its data from VoiceMailHandler:
-        qDebug() << Q_FUNC_INFO << "Voice mail contact removed!";
+        DEBUG() << Q_FUNC_INFO << "Voice mail contact removed!";
         VoiceMailHandler::instance()->clear();
         // Start listening vmc file changes in order to be notified about new voice mail contact addings.
         VoiceMailHandler::instance()->startObservingVmcFile();
@@ -1362,11 +1362,11 @@ void NotificationManager::slotContactsChanged(const QList<QContactId> &contactId
     if (contactIds.isEmpty())
         return;
 
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     if (contactIds.contains(VoiceMailHandler::instance()->voiceMailContactId())) {
         // If changed contact is a voice mail one, then refresh its data in VoiceMailHandler:
-        qDebug() << Q_FUNC_INFO << "Voice mail contact changed!";
+        DEBUG() << Q_FUNC_INFO << "Voice mail contact changed!";
         VoiceMailHandler::instance()->fetchVoiceMailContact();
     }
 
@@ -1424,7 +1424,7 @@ void NotificationManager::fireUnknownContactsRequest()
         return;
     }
 
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     if (m_ContactFilter != QContactFilter()) {
         startContactRequest(m_ContactFilter,
@@ -1441,7 +1441,7 @@ void NotificationManager::slotResultsAvailableForUnknown()
         return;
     }
 
-    qDebug() << Q_FUNC_INFO << request->contacts().size() << "contacts";
+    DEBUG() << Q_FUNC_INFO << request->contacts().size() << "contacts";
 
     QSet<QContactId> updatedContactIds;
 
@@ -1484,7 +1484,7 @@ void NotificationManager::slotResultsAvailableForUnknown()
 
 void NotificationManager::slotGroupRemoved(const QModelIndex &index, int start, int end)
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
     for (int i = start; i <= end; i++) {
         QModelIndex row = m_GroupModel->index(i, 0, index);
         Group group = m_GroupModel->group(row);
@@ -1540,7 +1540,7 @@ void NotificationManager::showVoicemailNotification(int count)
 
 void NotificationManager::slotMWICountChanged(int count)
 {
-    qDebug() << Q_FUNC_INFO << count;
+    DEBUG() << Q_FUNC_INFO << count;
 
     if (count < -1) {
         qCritical() << "Invalid voicemail count" << count;
@@ -1597,7 +1597,7 @@ void NotificationManager::undimScreen()
 
 QString NotificationManager::notificationName(const PersonalNotification &notification)
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     if (!notification.chatName().isEmpty())
         return notification.chatName();
@@ -1607,7 +1607,7 @@ QString NotificationManager::notificationName(const PersonalNotification &notifi
 
 void NotificationManager::slotGroupDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     QSet<NotificationGroup> updatedGroups;
 
@@ -1634,7 +1634,7 @@ void NotificationManager::slotGroupDataChanged(const QModelIndex &topLeft, const
                             newChatName = group.chatName();
 
                         if (!newChatName.isEmpty()) {
-                            qDebug() << Q_FUNC_INFO << "Changing chat name to" << newChatName;
+                            DEBUG() << Q_FUNC_INFO << "Changing chat name to" << newChatName;
                             pn.setChatName(newChatName);
                             changed = true;
                             i.setValue(pn);

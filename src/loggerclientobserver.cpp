@@ -20,8 +20,10 @@
 **
 ******************************************************************************/
 
+// Our includes
 #include "loggerclientobserver.h"
 #include "logger.h"
+#include "debug.h"
 
 #include <TelepathyQt/Channel>
 
@@ -49,7 +51,7 @@ void LoggerClientObserver::observeChannels(const Tp::MethodInvocationContextPtr<
     Q_UNUSED(observerInfo)
     Q_UNUSED(connection)
 
-    qDebug() << "LoggerClientObserver::observeChannels";
+    DEBUG() << "LoggerClientObserver::observeChannels";
 
     if(m_pLogger) {
         foreach(Tp::ChannelPtr channel, channels) {

@@ -64,7 +64,8 @@ HEADERS += logger.h \
            accountoperationsobserver.h \
            accountpresenceifadaptor.h \
            accountpresenceservice.h \
-           voicemailhandler.h
+           voicemailhandler.h \
+           debug.h
 
 SOURCES += main.cpp \
            logger.cpp \
