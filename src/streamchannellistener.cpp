@@ -22,9 +22,7 @@
 
 #include "streamchannellistener.h"
 #include "notificationmanager.h"
-
-// Qt
-#include <QDebug>
+#include "debug.h"
 
 // libcommhistory
 #include <CommHistory/EventModel>
@@ -54,7 +52,7 @@ StreamChannelListener::StreamChannelListener(const Tp::AccountPtr &account,
       m_eventCommitted(false),
       m_pProxy(0)
 {
-    qDebug() << __PRETTY_FUNCTION__;
+    DEBUG() << __PRETTY_FUNCTION__;
 
     invocationContextFinished();
 
@@ -86,7 +84,7 @@ StreamChannelListener::StreamChannelListener(const Tp::AccountPtr &account,
     if (spProp.isValid()) {
         const Tp::ServicePoint sp = qdbus_cast<Tp::ServicePoint>(spProp);
         if (sp.servicePointType == Tp::ServicePointTypeEmergency) {
-            qDebug() << Q_FUNC_INFO << "*** EMERGENCY CALL, service =" << sp.service;
+            DEBUG() << Q_FUNC_INFO << "*** EMERGENCY CALL, service =" << sp.service;
             m_Event.setIsEmergencyCall(true);
         }
     }
@@ -102,7 +100,7 @@ StreamChannelListener::~StreamChannelListener()
 
 void StreamChannelListener::callStarted()
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     if (m_CallStarted)
         return;
@@ -116,7 +114,7 @@ void StreamChannelListener::callStarted()
     clock_gettime(CLOCK_MONOTONIC, &tp);
     m_callStartTime = tp.tv_sec;
 
-    qDebug() << Q_FUNC_INFO << m_Event.startTime();
+    DEBUG() << Q_FUNC_INFO << m_Event.startTime();
 
     if (addEvent())
         m_LoggingTimerId = startTimer(SAVING_INTERVAL);
@@ -124,7 +122,7 @@ void StreamChannelListener::callStarted()
 
 void StreamChannelListener::callEnded()
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     m_CallEnded = true;
 
@@ -147,7 +145,7 @@ void StreamChannelListener::callEnded()
 
 void StreamChannelListener::channelReady()
 {
-    qDebug() << __PRETTY_FUNCTION__;
+    DEBUG() << __PRETTY_FUNCTION__;
 
     Tp::StreamedMediaChannelPtr mediaChannel = Tp::StreamedMediaChannelPtr::dynamicCast(m_Channel);
 
@@ -179,7 +177,7 @@ void StreamChannelListener::channelReady()
                 const Tp::ServicePoint sp = servicePointIf->property(
                         CURRENT_SERVICE_POINT_PROPERTY_NAME).value<Tp::ServicePoint>();
                 if (sp.servicePointType == Tp::ServicePointTypeEmergency) {
-                    qDebug() << Q_FUNC_INFO << "*** EMERGENCY CALL, service =" << sp.service;
+                    DEBUG() << Q_FUNC_INFO << "*** EMERGENCY CALL, service =" << sp.service;
                     m_Event.setIsEmergencyCall(true);
                 }
             }
@@ -200,7 +198,7 @@ void StreamChannelListener::slotGroupMembersChanged(
     Q_UNUSED(groupRemotePendingMembersAdded)
     Q_UNUSED(details)
 
-    qDebug() << __PRETTY_FUNCTION__;
+    DEBUG() << __PRETTY_FUNCTION__;
 
     Tp::StreamedMediaChannelPtr mediaChannel = Tp::StreamedMediaChannelPtr::dynamicCast(m_Channel);
 
@@ -231,7 +229,7 @@ void StreamChannelListener::slotGroupMembersChanged(
 
                 if ( (locallyMissed || remotelyMissed)
                     && m_Direction == CommHistory::Event::Inbound) {
-                    qDebug() << "call missed";
+                    DEBUG() << "call missed";
                     m_Event.setIsMissedCall(true);
                 }
 
@@ -283,7 +281,7 @@ void StreamChannelListener::slotStreamStateChanged(const Tp::StreamedMediaStream
 void StreamChannelListener::invalidated(Tp::DBusProxy *proxy,
             const QString &errorName, const QString &errorMessage)
 {
-    qDebug() << __PRETTY_FUNCTION__ << errorName << errorMessage;
+    DEBUG() << __PRETTY_FUNCTION__ << errorName << errorMessage;
 
     QDateTime currentTime = QDateTime::currentDateTime();
 
@@ -337,7 +335,7 @@ void StreamChannelListener::timerEvent(QTimerEvent *event)
 
 bool StreamChannelListener::addEvent()
 {
-    qDebug() << __PRETTY_FUNCTION__;
+    DEBUG() << __PRETTY_FUNCTION__;
 
     bool result = false;
 
@@ -358,10 +356,10 @@ bool StreamChannelListener::addEvent()
 
 void StreamChannelListener::slotServicePointChanged(const Tp::ServicePoint &servicePoint)
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     if (servicePoint.servicePointType == Tp::ServicePointTypeEmergency) {
-        qDebug() << Q_FUNC_INFO << "*** EMERGENCY CALL, service =" << servicePoint.service;
+        DEBUG() << Q_FUNC_INFO << "*** EMERGENCY CALL, service =" << servicePoint.service;
         m_Event.setIsEmergencyCall(true);
     }
 }
@@ -371,7 +369,7 @@ void StreamChannelListener::slotEventsCommitted(QList<CommHistory::Event> events
     Q_UNUSED(events);
     Q_UNUSED(successful);
 
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     if (m_pProxy) {
         ChannelListener::invalidated(m_pProxy, m_errorName, m_errorMessage);

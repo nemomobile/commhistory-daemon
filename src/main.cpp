@@ -27,6 +27,7 @@
 
 #include <MLocale>
 
+// Our includes
 #include "logger.h"
 #include "notificationmanager.h"
 #include "commhistoryservice.h"
@@ -38,6 +39,7 @@
 #include "connectionutils.h"
 #include "accountoperationsobserver.h"
 #include "voicemailhandler.h"
+#include "debug.h"
 
 using namespace RTComLogger;
 
@@ -126,7 +128,7 @@ int main(int argc, char **argv)
 
     qInstallMessageHandler(messageHandler);
 
-    qDebug() << "MApplication created";
+    DEBUG() << "MApplication created";
 
     if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sigtermFd))
        qFatal("Couldn't create TERM socketpair");
@@ -145,7 +147,7 @@ int main(int argc, char **argv)
     locale.installTrCatalog("commhistoryd");
     ML10N::MLocale::setDefault(locale);
 
-    qDebug() << "Translation catalogs loaded";
+    DEBUG() << "Translation catalogs loaded";
 
     CommHistoryService *chService = CommHistoryService::instance();
     if (!chService->isRegistered()) {
@@ -153,7 +155,7 @@ int main(int argc, char **argv)
         _exit(1);
     }
     new CommHistoryIfAdaptor(chService);
-    qDebug() << "CommHistoryService created";
+    DEBUG() << "CommHistoryService created";
 
     ConnectionUtils *utils = new ConnectionUtils(&app);
 
@@ -165,22 +167,22 @@ int main(int argc, char **argv)
         _exit(1);
     }
     new AccountPresenceIfAdaptor(apService);
-    qDebug() << "AccountPresenceService created";
+    DEBUG() << "AccountPresenceService created";
 
     MessageReviver *reviver = new MessageReviver(utils, &app);
-    qDebug() << "Message reviver created, starting main loop";
+    DEBUG() << "Message reviver created, starting main loop";
 
     new Logger(utils->accountManager(),
                reviver,
                &app);
-    qDebug() << "Logger created";
+    DEBUG() << "Logger created";
 
     NotificationManager::instance();
-    qDebug() << "NotificationManager created";
+    DEBUG() << "NotificationManager created";
 
 
     VoiceMailHandler::instance();
-    qDebug() << "VoiceMailHandler created";
+    DEBUG() << "VoiceMailHandler created";
 
     // Init account operations observer to monitor account removals and to react to them.
     new AccountOperationsObserver(utils->accountManager(), &app);
@@ -190,7 +192,7 @@ int main(int argc, char **argv)
     close(sigtermFd[0]);
     close(sigtermFd[1]);
 
-    qDebug() << "exit";
+    DEBUG() << "exit";
 
     return result;
 }

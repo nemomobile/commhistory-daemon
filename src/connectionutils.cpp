@@ -26,11 +26,13 @@
 #include <TelepathyQt/PendingReady>
 #include <TelepathyQt/AccountSet>
 
+#include "debug.h"
+
 using namespace RTComLogger;
 
 ConnectionUtils::ConnectionUtils(QObject* parent) : QObject(parent)
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     Tp::registerTypes();
 
@@ -53,7 +55,7 @@ Tp::AccountManagerPtr ConnectionUtils::accountManager() const
 
 void ConnectionUtils::prepareAccounts()
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     if(!m_AccountManager.isNull() && m_AccountManager->isReady()){
         // connect to new account signals
@@ -71,7 +73,7 @@ void ConnectionUtils::prepareAccounts()
 
 void ConnectionUtils::slotAccountManagerReady(Tp::PendingOperation *op)
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     if (!op->isError() && m_AccountManager->isReady()) {
         prepareAccounts();
@@ -135,7 +137,7 @@ void ConnectionUtils::prepareConnection(const Tp::AccountPtr &account)
     Tp::ConnectionPtr connection = account->connection();
 
     if(!connection.isNull()) {
-        qDebug() << Q_FUNC_INFO << "Connection object exists";
+        DEBUG() << Q_FUNC_INFO << "Connection object exists";
         connect(connection->becomeReady(Tp::Connection::FeatureSimplePresence),
                 SIGNAL(finished(Tp::PendingOperation*)),
                 SLOT(slotConnectionReady(Tp::PendingOperation*)));
@@ -148,13 +150,13 @@ void ConnectionUtils::prepareConnection(const Tp::AccountPtr &account)
 
 void ConnectionUtils::slotConnectionChanged(const Tp::ConnectionPtr &connection)
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     Tp::Account *account = qobject_cast<Tp::Account *>(sender());
 
     if(account != 0 && account->isValid()) {
         if(!connection.isNull()) {
-            qDebug() << Q_FUNC_INFO << "Connection object exists";
+            DEBUG() << Q_FUNC_INFO << "Connection object exists";
             connect(connection->becomeReady(Tp::Connection::FeatureSimplePresence),
                     SIGNAL(finished(Tp::PendingOperation*)),
                     SLOT(slotConnectionReady(Tp::PendingOperation*)));
@@ -164,7 +166,7 @@ void ConnectionUtils::slotConnectionChanged(const Tp::ConnectionPtr &connection)
 
 void ConnectionUtils::slotConnectionReady(Tp::PendingOperation* operation)
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     if(operation && !operation->isError()) {
         Tp::PendingReady *pr = qobject_cast<Tp::PendingReady*>(operation);
