@@ -22,8 +22,8 @@
 
 #include "channellistener.h"
 #include "constants.h"
+#include "debug.h"
 
-#include <QDebug>
 #include <CommHistory/EventModel>
 
 #include <TelepathyQt/PendingReady>
@@ -52,7 +52,7 @@ ChannelListener::ChannelListener(const Tp::AccountPtr &account,
 
 void ChannelListener::slotChannelReady(Tp::PendingOperation* operation)
 {
-    qDebug() << __PRETTY_FUNCTION__ << channel();
+    DEBUG() << __PRETTY_FUNCTION__ << channel();
 
     if (!checkIfError(operation) && m_Channel) {
         m_Direction = m_Channel->isRequested() ?
@@ -82,7 +82,7 @@ bool ChannelListener::checkIfError(Tp::PendingOperation* operation)
 void ChannelListener::invalidated(Tp::DBusProxy *proxy,
             const QString &errorName, const QString &errorMessage)
 {
-    qDebug() << __PRETTY_FUNCTION__ << proxy->objectPath();
+    DEBUG() << __PRETTY_FUNCTION__ << proxy->objectPath();
 
     Q_UNUSED(proxy)
     finishedWithError(errorName, errorMessage);
@@ -112,7 +112,7 @@ QString ChannelListener::channel() const
 
 void ChannelListener::closed()
 {
-    qDebug() << "channelClosed";
+    DEBUG() << "channelClosed";
     emit channelClosed(this);
 }
 
@@ -170,5 +170,5 @@ QString ChannelListener::targetId() const
 
 void ChannelListener::channelReady()
 {
-    qDebug() << Q_FUNC_INFO << "not implemented";
+    DEBUG() << Q_FUNC_INFO << "not implemented";
 }

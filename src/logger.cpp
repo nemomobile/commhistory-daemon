@@ -21,7 +21,6 @@
 ******************************************************************************/
 
 #include <QtDBus/QtDBus>
-#include <QDebug>
 
 #include <TelepathyQt/ClientRegistrar>
 #include <TelepathyQt/Debug>
@@ -34,6 +33,7 @@
 #include "streamchannellistener.h"
 #include "loggerclientobserver.h"
 #include "messagereviver.h"
+#include "debug.h"
 
 #define COMMHISTORY_CHANNEL_OBSERVER QLatin1String("CommHistory")
 
@@ -46,7 +46,7 @@ Logger::Logger(const Tp::AccountManagerPtr &accountManager,
     : QObject(parent), m_Reviver(reviver)
 {
     Tp::registerTypes();
-#ifdef QT_DEBUG
+#ifdef DEBUG_COMMHISTORY
     Tp::enableDebug(true);
     Tp::enableWarnings(true);
 #endif
@@ -65,7 +65,7 @@ Logger::Logger(const Tp::AccountManagerPtr &accountManager,
       COMMHISTORY_CHANNEL_OBSERVER);
 
     if(registered) {
-        qDebug() << "commhistoryd: started";
+        DEBUG() << "commhistoryd: started";
     } else {
         qCritical() << "commhistoryd: observer registration failed";
     }
@@ -80,7 +80,7 @@ void Logger::createChannelListener(const QString &channelType,
                                    const Tp::AccountPtr &account,
                                    const Tp::ChannelPtr &channel)
 {
-    qDebug() << __PRETTY_FUNCTION__;
+    DEBUG() << __PRETTY_FUNCTION__;
 
     QString channelObjectPath = channel->objectPath();
 
@@ -96,7 +96,7 @@ void Logger::createChannelListener(const QString &channelType,
             this,
             SLOT( slotInvalidated(Tp::DBusProxy*, const QString&, const QString& ) ) );
 
-    qDebug() << "creating listener for: " << channelObjectPath << " type " << channelType;
+    DEBUG() << "creating listener for: " << channelObjectPath << " type " << channelType;
 
     ChannelListener* listener = 0;
     if( channelType == QLatin1String(TP_QT_IFACE_CHANNEL_TYPE_TEXT) ) {
@@ -116,7 +116,7 @@ void Logger::createChannelListener(const QString &channelType,
 
 void Logger::channelClosed(ChannelListener *listener)
 {
-    qDebug() << __FUNCTION__ << "Got channelClosed signal from listener. Deleting listener.";
+    DEBUG() << __FUNCTION__ << "Got channelClosed signal from listener. Deleting listener.";
 
     if(listener) {
         listener->deleteLater();
@@ -127,7 +127,7 @@ void Logger::channelClosed(ChannelListener *listener)
 void Logger::slotInvalidated(Tp::DBusProxy *proxy,
             const QString &errorName, const QString &errorMessage)
 {
-    qDebug() << __PRETTY_FUNCTION__ << proxy->objectPath();
+    DEBUG() << __PRETTY_FUNCTION__ << proxy->objectPath();
 
     Q_UNUSED(proxy)
     Q_UNUSED(errorName)
@@ -135,7 +135,7 @@ void Logger::slotInvalidated(Tp::DBusProxy *proxy,
 
     Tp::Channel *channel = qobject_cast<Tp::Channel *>(sender());
     if (channel) {
-        qDebug() << __PRETTY_FUNCTION__ << "Removing " << channel->objectPath() << " from channels list";
+        DEBUG() << __PRETTY_FUNCTION__ << "Removing " << channel->objectPath() << " from channels list";
         m_Channels.removeAll(channel->objectPath());
     }
 

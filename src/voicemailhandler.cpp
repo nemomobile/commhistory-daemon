@@ -22,7 +22,6 @@
 
 // Qt includes
 #include <QCoreApplication>
-#include <QDebug>
 #include <QDir>
 #include <QFileSystemWatcher>
 
@@ -40,6 +39,7 @@
 #include "notificationmanager.h"
 #include "locstrings.h"
 #include "constants.h"
+#include "debug.h"
 
 using namespace RTComLogger;
 
@@ -47,7 +47,7 @@ using namespace RTComLogger;
 
 VoiceMailHandler* VoiceMailHandler::instance()
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     static QPointer<VoiceMailHandler> instance;
 
@@ -65,7 +65,7 @@ bool VoiceMailHandler::isVoiceMailNumber(QString phoneNumber)
 
     foreach (QString numberInStore, m_voiceMailPhoneNumbers) {
         if (CommHistory::remoteAddressMatch(numberInStore, phoneNumber)) {
-            qDebug() << Q_FUNC_INFO << "MATCH: " << numberInStore << " : " << phoneNumber;
+            DEBUG() << Q_FUNC_INFO << "MATCH: " << numberInStore << " : " << phoneNumber;
             match = true;
             break;
         }
@@ -80,7 +80,7 @@ bool VoiceMailHandler::isVoiceMailContact(const QContactId &id)
 
 void VoiceMailHandler::fetchVoiceMailContact()
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     QContactDetailFilter filter;
     filter.setDetailType(QContactGuid::Type, QContactGuid::FieldGuid);
@@ -94,7 +94,7 @@ void VoiceMailHandler::fetchVoiceMailContact()
 
 void VoiceMailHandler::clear()
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     m_contactId = QContactId();
     m_voiceMailPhoneNumbers.clear();
@@ -102,7 +102,7 @@ void VoiceMailHandler::clear()
 
 QContactId VoiceMailHandler::voiceMailContactId()
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     return m_contactId;
 }
@@ -115,20 +115,20 @@ VoiceMailHandler::VoiceMailHandler()
         : QObject(QCoreApplication::instance())
         , m_pVoiceMailDirWatcher(0)
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 }
 
 // destructor
 //
 VoiceMailHandler::~VoiceMailHandler()
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
     delete m_pVoiceMailDirWatcher;
 }
 
 void VoiceMailHandler::init()
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     QDir mainDir = QDir(VOICEMAIL_CONTACT_VMID_MAIN);
     if (!mainDir.exists(VOICEMAIL_CONTACT_VMID_DIR)) {
@@ -149,7 +149,7 @@ void VoiceMailHandler::init()
 
     // If vmid file already exists in /dev/shm/contacts directory then add it to watcher:
     if (QFile::exists(voiceMailFile)) {
-        qDebug() << Q_FUNC_INFO << "Voice mail file " << voiceMailFile << " exists. Start monitoring it.";
+        DEBUG() << Q_FUNC_INFO << "Voice mail file " << voiceMailFile << " exists. Start monitoring it.";
         m_pVoiceMailDirWatcher->addPath(voiceMailFile);
     }
 
@@ -162,7 +162,7 @@ QContactFetchRequest* VoiceMailHandler::startContactRequest(QContactFilter &filt
                                                             const QList<QContactDetail::DetailType> &details,
                                                             const char *resultSlot)
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     QContactFetchRequest* request = 0;
 
@@ -191,7 +191,7 @@ QContactFetchRequest* VoiceMailHandler::startContactRequest(QContactFilter &filt
 
 void VoiceMailHandler::startObservingVmcFile()
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     connect(m_pVoiceMailDirWatcher, SIGNAL(directoryChanged(QString)), SLOT(slotVoiceMailDirectoryChanged(QString)), Qt::UniqueConnection);
     connect(m_pVoiceMailDirWatcher, SIGNAL(fileChanged(QString)), SLOT(slotVoiceMailFileChanged(QString)), Qt::UniqueConnection);
@@ -201,7 +201,7 @@ void VoiceMailHandler::startObservingVmcFile()
 
 void VoiceMailHandler::slotVoiceMailContactsAvailable()
 {
-    qDebug() << Q_FUNC_INFO;
+    DEBUG() << Q_FUNC_INFO;
 
     QContactFetchRequest *request = qobject_cast<QContactFetchRequest *>(sender());
 
@@ -211,7 +211,7 @@ void VoiceMailHandler::slotVoiceMailContactsAvailable()
 
     QList<QContact> contacts = request->contacts();
 
-    qDebug() << __PRETTY_FUNCTION__ << "Number of voice mail contacts returned: " << contacts.size();
+    DEBUG() << __PRETTY_FUNCTION__ << "Number of voice mail contacts returned: " << contacts.size();
 
     if (!contacts.isEmpty()) {
         // There should be just one voice mail contact (that can have multiple numbers).
@@ -225,7 +225,7 @@ void VoiceMailHandler::slotVoiceMailContactsAvailable()
             foreach (QContactPhoneNumber phoneNumber, phoneNumbers) {
                 m_voiceMailPhoneNumbers << phoneNumber.number();
             }
-            qDebug() << __PRETTY_FUNCTION__ << "Voice mail phone numbers are: " << m_voiceMailPhoneNumbers;
+            DEBUG() << __PRETTY_FUNCTION__ << "Voice mail phone numbers are: " << m_voiceMailPhoneNumbers;
 
             // We have voice mail contact data now, we can disconnect listening vmc file and dir changes until vmc is removed.
             disconnect(m_pVoiceMailDirWatcher, SIGNAL(directoryChanged(QString)), this, SLOT(slotVoiceMailDirectoryChanged(QString)));
@@ -238,32 +238,34 @@ void VoiceMailHandler::slotVoiceMailContactsAvailable()
 
 void VoiceMailHandler::slotVoiceMailFileChanged(QString path)
 {
+    Q_UNUSED(path)
     // File can change for example when new voice mail contact is added. File can exist also when there is no voice mail contact.
-    qDebug() << Q_FUNC_INFO << path;
+    DEBUG() << Q_FUNC_INFO << path;
 
     fetchVoiceMailContact();
 }
 
 void VoiceMailHandler::slotVoiceMailDirectoryChanged(QString path)
 {
-    qDebug() << Q_FUNC_INFO << path;
+    Q_UNUSED(path)
+    DEBUG() << Q_FUNC_INFO << path;
 
     QString voiceMailFile  = QString("%1/%2/%3").arg(VOICEMAIL_CONTACT_VMID_MAIN).arg(VOICEMAIL_CONTACT_VMID_DIR).arg(VOICEMAIL_CONTACT_VMID_FILE);
 
     bool vmIdFileFound = QFile::exists(voiceMailFile);
 
     if (vmIdFileFound) {
-        qDebug() << Q_FUNC_INFO << "Voicemail file exists.";
+        DEBUG() << Q_FUNC_INFO << "Voicemail file exists.";
         // If voice mail file is not yet monitored:
         if (m_pVoiceMailDirWatcher->files().isEmpty()) {
-            qDebug() << Q_FUNC_INFO << "Start monitoring voicemail file.";
+            DEBUG() << Q_FUNC_INFO << "Start monitoring voicemail file.";
             m_pVoiceMailDirWatcher->addPath(voiceMailFile);
             fetchVoiceMailContact();
         }
         // else something else was changed in dir
     } else {
         // Voicemail file either removed or something else done with dir (other file added etc. although this should not happen AFAIK)
-        qDebug() << Q_FUNC_INFO << "Voicemail file not found, could have been removed manually, remove from file watcher.";
+        DEBUG() << Q_FUNC_INFO << "Voicemail file not found, could have been removed manually, remove from file watcher.";
         m_pVoiceMailDirWatcher->removePath(voiceMailFile);
     }
 }

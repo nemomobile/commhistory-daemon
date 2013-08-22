@@ -27,6 +27,7 @@
 
 #include <CommHistory/GroupModel>
 #include <CommHistory/CallModel>
+#include "debug.h"
 
 using namespace RTComLogger;
 
@@ -35,16 +36,16 @@ AccountOperationsObserver::AccountOperationsObserver(Tp::AccountManagerPtr accou
     m_pGroupModel(0),
     m_AccountManager(accountManager)
 {
-    qDebug() << Q_FUNC_INFO << "START";
+    DEBUG() << Q_FUNC_INFO << "START";
 
     if (!m_AccountManager.isNull()) {
         if (!m_AccountManager->isReady()) {
-            qDebug() << Q_FUNC_INFO << "Account manager is not ready. Making it ready...";
+            DEBUG() << Q_FUNC_INFO << "Account manager is not ready. Making it ready...";
             connect(m_AccountManager->becomeReady(),
                 SIGNAL(finished(Tp::PendingOperation *)),
                 SLOT(slotAccountManagerReady(Tp::PendingOperation *)));
         } else {
-            qDebug() << Q_FUNC_INFO << "Account manager is already ready.";
+            DEBUG() << Q_FUNC_INFO << "Account manager is already ready.";
             connectToAccounts();
         }
     } else {
@@ -57,12 +58,12 @@ AccountOperationsObserver::AccountOperationsObserver(Tp::AccountManagerPtr accou
             SLOT(removeNotifications(QString)),
             Qt::UniqueConnection);
 
-    qDebug() << Q_FUNC_INFO << "END";
+    DEBUG() << Q_FUNC_INFO << "END";
 }
 
 void AccountOperationsObserver::connectToAccounts()
 {
-    qDebug() << Q_FUNC_INFO << "START";
+    DEBUG() << Q_FUNC_INFO << "START";
 
     // First of all we must connect to listen removed()-signals of the accounts created in the future:
     connect(m_AccountManager.data(),
@@ -75,14 +76,14 @@ void AccountOperationsObserver::connectToAccounts()
         slotConnectToSignals(account);
     }
 
-    qDebug() << Q_FUNC_INFO << "END";
+    DEBUG() << Q_FUNC_INFO << "END";
 }
 
 // S L O T S
 
 void AccountOperationsObserver::slotAccountManagerReady(Tp::PendingOperation *op)
 {
-    qDebug() << Q_FUNC_INFO << "START";
+    DEBUG() << Q_FUNC_INFO << "START";
 
     if (op->isError()) {
         qWarning() << "Account manager cannot become ready:" << op->errorName() << "-" << op->errorMessage();
@@ -91,12 +92,12 @@ void AccountOperationsObserver::slotAccountManagerReady(Tp::PendingOperation *op
 
     connectToAccounts();
 
-    qDebug() << Q_FUNC_INFO << "END";
+    DEBUG() << Q_FUNC_INFO << "END";
 }
 
 void AccountOperationsObserver::slotConnectToSignals(const Tp::AccountPtr &account)
 {
-    qDebug() << Q_FUNC_INFO << "START";
+    DEBUG() << Q_FUNC_INFO << "START";
 
     if (!account.isNull()) {
         m_accounts.insert(account->objectPath(), account);
@@ -113,12 +114,12 @@ void AccountOperationsObserver::slotConnectToSignals(const Tp::AccountPtr &accou
                 Qt::UniqueConnection);
     }
 
-    qDebug() << Q_FUNC_INFO << "END";
+    DEBUG() << Q_FUNC_INFO << "END";
 }
 
 void AccountOperationsObserver::slotAccountStateChanged(bool isEnabled)
 {
-    qDebug() << Q_FUNC_INFO << isEnabled;
+    DEBUG() << Q_FUNC_INFO << isEnabled;
 
     if (!isEnabled) {
 
@@ -130,13 +131,13 @@ void AccountOperationsObserver::slotAccountStateChanged(bool isEnabled)
 
 void AccountOperationsObserver::slotAccountRemoved()
 {
-    qDebug() << Q_FUNC_INFO << "START";
+    DEBUG() << Q_FUNC_INFO << "START";
 
     Tp::Account *account = qobject_cast<Tp::Account *>(sender());
 
     if (account) {
         QString accountPath = account->objectPath();
-        qDebug() << Q_FUNC_INFO << "Account " << accountPath << " removed.";
+        DEBUG() << Q_FUNC_INFO << "Account " << accountPath << " removed.";
 
         m_accounts.remove(accountPath);
 
@@ -182,12 +183,12 @@ void AccountOperationsObserver::slotAccountRemoved()
         }
     }
 
-    qDebug() << Q_FUNC_INFO << "END";
+    DEBUG() << Q_FUNC_INFO << "END";
 }
 
 void AccountOperationsObserver::slotDeleteConversations()
 {
-    qDebug() << Q_FUNC_INFO << "START";
+    DEBUG() << Q_FUNC_INFO << "START";
 
     if (!m_pGroupModel)
         return;
@@ -202,7 +203,7 @@ void AccountOperationsObserver::slotDeleteConversations()
                 int groupId = group.id();
                 QString localId = group.localUid();
                 if (localId == accountPath) {
-                    qDebug() << Q_FUNC_INFO << "Group " << groupId << " to be deleted";
+                    DEBUG() << Q_FUNC_INFO << "Group " << groupId << " to be deleted";
                     groupsToBeDeleted.append(groupId);
                 }
             }
@@ -220,12 +221,12 @@ void AccountOperationsObserver::slotDeleteConversations()
 
     m_accountPathsForConvs.clear();
 
-    qDebug() << Q_FUNC_INFO << "END";
+    DEBUG() << Q_FUNC_INFO << "END";
 }
 
 void AccountOperationsObserver::slotDeleteCalls()
 {
-    qDebug() << Q_FUNC_INFO << "START";
+    DEBUG() << Q_FUNC_INFO << "START";
 
     CommHistory::CallModel *callModel = qobject_cast<CommHistory::CallModel *>(sender());
 
@@ -240,7 +241,7 @@ void AccountOperationsObserver::slotDeleteCalls()
         QModelIndex index = callModel->index(i,0);
         if (index.isValid()) {
             CommHistory::Event callEvent = callModel->event(index);
-            qDebug() << Q_FUNC_INFO << "Call " << callEvent.id() << " to be deleted";
+            DEBUG() << Q_FUNC_INFO << "Call " << callEvent.id() << " to be deleted";
             callsToBeDeleted.append(callEvent);
         }
      }
@@ -254,21 +255,23 @@ void AccountOperationsObserver::slotDeleteCalls()
 
     if (callsToBeDeleted.isEmpty()) {
         QString accountPath = m_accountPathsForCalls.key(callModel);
-        qDebug() << Q_FUNC_INFO << "No calls to be deleted for " << accountPath << ". We can delete the CallModel.";
+        DEBUG() << Q_FUNC_INFO << "No calls to be deleted for " << accountPath << ". We can delete the CallModel.";
         m_accountPathsForCalls.take(accountPath)->deleteLater();
 
         // delete notifcations of this account
         emit removeAccountNotifications(accountPath);
     }
 
-    qDebug() << Q_FUNC_INFO << "END";
+    DEBUG() << Q_FUNC_INFO << "END";
 }
 
 void AccountOperationsObserver::slotRowsRemoved(const QModelIndex& index, int start, int end)
 {
     Q_UNUSED(index)
+    Q_UNUSED(start)
+    Q_UNUSED(end)
 
-    qDebug() << Q_FUNC_INFO << "start: " << start << " end: " << end;
+    DEBUG() << Q_FUNC_INFO << "start: " << start << " end: " << end;
 
     CommHistory::CallModel *callModel = qobject_cast<CommHistory::CallModel *>(sender());
 
@@ -278,7 +281,7 @@ void AccountOperationsObserver::slotRowsRemoved(const QModelIndex& index, int st
     }
 
     if (callModel->rowCount() == 0) {
-        qDebug() << Q_FUNC_INFO << "Last event in CallModel deleted. We can delete the model.";
+        DEBUG() << Q_FUNC_INFO << "Last event in CallModel deleted. We can delete the model.";
         QString accountPath = m_accountPathsForCalls.key(callModel);
         m_accountPathsForCalls.take(accountPath)->deleteLater();
 
@@ -286,5 +289,5 @@ void AccountOperationsObserver::slotRowsRemoved(const QModelIndex& index, int st
         emit removeAccountNotifications(accountPath);
     }
 
-    qDebug() << Q_FUNC_INFO << "END";
+    DEBUG() << Q_FUNC_INFO << "END";
 }

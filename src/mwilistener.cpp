@@ -20,13 +20,14 @@
 **
 ******************************************************************************/
 
-#include <QDebug>
 #include <QDBusConnection>
 #include <QDBusPendingReply>
 #include <QCoreApplication>
 
+// Our includes
 #include "mwilistener.h"
 #include "constants.h"
+#include "debug.h"
 
 using namespace RTComLogger;
 
@@ -67,7 +68,7 @@ void MWIListener::onGetSIMStatus(QDBusPendingCallWatcher *call)
     } else {
         QString simStatus = reply.value();
 
-        qDebug() << Q_FUNC_INFO << simStatus;
+        DEBUG() << Q_FUNC_INFO << simStatus;
 
         if (simStatus == CSD_SIM_STATUS_OK)
             loadMWI();
@@ -78,7 +79,7 @@ void MWIListener::onGetSIMStatus(QDBusPendingCallWatcher *call)
 
 void MWIListener::onSIMStatusChanged(const QString &simStatus)
 {
-    qDebug() << Q_FUNC_INFO << simStatus;
+    DEBUG() << Q_FUNC_INFO << simStatus;
 
     if (simStatus == CSD_SIM_STATUS_REMOVED
         || simStatus == CSD_SIM_STATUS_NO_SIM)
@@ -89,7 +90,7 @@ void MWIListener::onSIMStatusChanged(const QString &simStatus)
 
 void MWIListener::saveMWI(int count)
 {
-    qDebug() << Q_FUNC_INFO << count;
+    DEBUG() << Q_FUNC_INFO << count;
 
     updateCount(count);
 
@@ -121,7 +122,7 @@ void MWIListener::onSetMWICount(QDBusPendingCallWatcher *call)
     QDBusPendingReply<> reply = *call;
 
     if (reply.isError()) {
-        qDebug() << "Failed to set MWI counts" << reply.error();
+        DEBUG() << "Failed to set MWI counts" << reply.error();
     }
 
     call->deleteLater();
@@ -142,7 +143,7 @@ void MWIListener::onGetMWICount(QDBusPendingCallWatcher *call)
     QDBusPendingReply<int,int,int,int> reply = *call;
 
     if (reply.isError()) {
-        qDebug() << "Failed to get MWI counts" << reply.error();
+        DEBUG() << "Failed to get MWI counts" << reply.error();
         updateCount(0);
     } else {
         updateCount(reply.argumentAt<0>());
@@ -162,7 +163,7 @@ void MWIListener::onGetMWICount(QDBusPendingCallWatcher *call)
 
 int MWIListener::MWICount() const
 {
-    qDebug() << Q_FUNC_INFO << m_counts.voicemail;
+    DEBUG() << Q_FUNC_INFO << m_counts.voicemail;
 
     return m_counts.voicemail;
 }
