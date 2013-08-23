@@ -15,7 +15,7 @@ BuildRequires:  pkgconfig(commhistory-qt5)
 BuildRequires:  pkgconfig(TelepathyQt5)
 BuildRequires:  pkgconfig(mlite5)
 BuildRequires:  pkgconfig(mlocale5)
-BuildRequires:  pkgconfig(qmsystem2-qt5)
+BuildRequires:  pkgconfig(mce)
 BuildRequires:  pkgconfig(ngf-qt5)
 BuildRequires:  qt5-qttools
 BuildRequires:  qt5-qttools-linguist
