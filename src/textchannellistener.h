@@ -168,7 +168,7 @@ private:
                           int groupId, CommHistory::Event &event);
     bool getEventById(int eventId, CommHistory::Event &event);
 
-    void saveNewMessage(CommHistory::Event &event);
+    void saveMessage(CommHistory::Event &event);
     virtual void finishedWithError(const QString& errorName, const QString& errorMessage);
 
     bool hasPendingOperations() const;

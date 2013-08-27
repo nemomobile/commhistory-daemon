@@ -1227,7 +1227,7 @@ void TextChannelListener::slotSingleModelReady(bool status)
                 i.remove();
                 model->deleteLater();
                 if (addMessage)
-                    saveNewMessage(event);
+                    saveMessage(event);
             } else {
                 break;
             }
@@ -1498,32 +1498,17 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
     int existingEventId = message.header().value("x-commhistory-event-id", QDBusVariant(-1)).variant().toInt();
     DEBUG() << "Handling sent message: " << m_Account->objectPath() << "->" << remoteUid << messageText;
 
-    if (existingEventId >= 0) {
-        DEBUG() << "Sent message has an existing event" << existingEventId;
-
-        if (eventType() == CommHistory::Event::IMEvent
-            && areRemotePartiesOffline()
-            && m_ShowOfflineChatError) {
-            if (!m_IsGroupChat) {
-                showErrorNote(txt_qtn_msg_general_supports_offline);
-            } else {
-                showErrorNote(txt_qtn_msg_all_participants_offline);
-            }
-            m_ShowOfflineChatError = false;
-        }
-
-        // There may be other properties of the event worth updating here later, but
-        // that depends on how delivery/error reporting works out in the future.
-        return;
-    }
-
     CommHistory::Event event;
-    fillEventFromMessage(message, event);
-    event.setIsRead(true);
-    event.setDirection(CommHistory::Event::Outbound);
-    event.setRemoteUid(remoteUid);
-    if (message.messageType() == Tp::ChannelTextMessageTypeAction)
-        event.setIsAction(true);
+    if (existingEventId >= 0 && getEventById(existingEventId, event)) {
+        DEBUG() << "Sent message has an existing event" << existingEventId;
+    } else {
+        fillEventFromMessage(message, event);
+        event.setIsRead(true);
+        event.setDirection(CommHistory::Event::Outbound);
+        event.setRemoteUid(remoteUid);
+        if (message.messageType() == Tp::ChannelTextMessageTypeAction)
+            event.setIsAction(true);
+    }
 
     QDateTime sentTime;
     if (message.sent().isValid()) {
@@ -1550,15 +1535,15 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
         event.setReportDelivery(true);
     }
 
+    if (event.type() == CommHistory::Event::IMEvent
+        && areRemotePartiesOffline()) {
+        event.setStatus(CommHistory::Event::TemporarilyFailedOfflineStatus);
+    }
+
     QStringList recipients;
     recipients <<  event.toList() << event.ccList() << event.bccList();
     if (recipients.isEmpty()) {
         recipients << event.remoteUid();
-    }
-
-    if (event.type() == CommHistory::Event::IMEvent
-        && areRemotePartiesOffline()) {
-        event.setStatus(CommHistory::Event::TemporarilyFailedOfflineStatus);
     }
 
     foreach (const QString& recipient, recipients) {
@@ -1568,6 +1553,7 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
 
             event.setRemoteUid(recipient);
             event.setGroupId(groupId);
+            event.setId(-1);
 
             CommHistory::SingleEventModel *request = new CommHistory::SingleEventModel(this);
             if (request->getEventByTokens(event.messageToken(),
@@ -1583,7 +1569,7 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
         }
 
         if (addMessage)
-            saveNewMessage(event);
+            saveMessage(event);
     }
 
     if (event.type() == CommHistory::Event::IMEvent
@@ -1598,16 +1584,20 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
     }
 }
 
-void TextChannelListener::saveNewMessage(CommHistory::Event &event)
+void TextChannelListener::saveMessage(CommHistory::Event &event)
 {
     DEBUG() << Q_FUNC_INFO << event.toString();
 
-    if (eventModel().addEvent(event)) {
-        m_pendingGroups.append(event.groupId());
-        if (!event.messageToken().isEmpty())
-            m_commitingEvents.insert(event.messageToken());
+    if (event.id() >= 0) {
+        if (!eventModel().modifyEvent(event)) {
+            qWarning() << "failed to modify event";
+            return;
+        }
     } else {
-        qWarning() << "failed to add event";
+        if (!eventModel().addEvent(event)) {
+            qWarning() << "failed to add event";
+            return;
+        }
     }
 }
 
