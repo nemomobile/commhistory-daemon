@@ -164,10 +164,9 @@ private:
 
     CommHistory::Event::EventType eventType() const;
     void checkVCard(const Tp::MessagePartList &parts, CommHistory::Event &event);
-    DeliveryHandlingStatus getEventForToken(const QString &token,
-                                            const QString &mmsId,
-                                            int groupId,
-                                            CommHistory::Event &event);
+    bool getEventForToken(const QString &token, const QString &mmsId,
+                          int groupId, CommHistory::Event &event);
+    bool getEventById(int eventId, CommHistory::Event &event);
 
     void saveNewMessage(CommHistory::Event &event);
     virtual void finishedWithError(const QString& errorName, const QString& errorMessage);
@@ -223,9 +222,6 @@ private:
 
     // internal copy of message queue
     QList<Tp::ReceivedMessage> m_messageQueue;
-    // messageToken -> messageRequest map
-    // used when looking up event when handling delivery report
-    QHash<QString, CommHistory::SingleEventModel*> m_pendingEvents;
      // serately handle mms saving as it needs event lookup before saving
     QHash<CommHistory::SingleEventModel*, CommHistory::Event> m_sendMms;
     // flag to destroy listener as soon as all pending operations (updating events, expunging) complete

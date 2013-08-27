@@ -712,13 +712,10 @@ void TextChannelListener::handleMessages()
            CommHistory::Event mmsNotification;
 
            if (m_Account->protocolName() == PROTOCOL_MMS) {
-               if (getEventForToken(message.messageToken(),
-                                    QString(), // mmsId
-                                    -1, // groupId could differ for mms notifications
-                                    mmsNotification) == DeliveryHandlingPending) {
-                   wait = true;
-                   break;
-               }
+               getEventForToken(message.messageToken(),
+                                QString(), // mmsId
+                                -1, // groupId could differ for mms notifications
+                                mmsNotification);
            }
 
             // fills event properties
@@ -777,12 +774,8 @@ void TextChannelListener::handleMessages()
                 QString supersedes = supersedesToken(message.header());
                 if (!supersedes.isEmpty()) {
                     CommHistory::Event originalEvent;
-                    DeliveryHandlingStatus status = getEventForToken(supersedes,
-                                                                     QString(),
-                                                                     m_Group.id(),
-                                                                     originalEvent);
-                    switch (status) {
-                    case DeliveryHandlingFailed:
+                    getEventForToken(supersedes, QString(), m_Group.id(), originalEvent);
+                    if (!originalEvent.isValid()) {
                         // handle as a new message
                         // use original's message token to be able to handle updates
                         // for this message
@@ -790,8 +783,7 @@ void TextChannelListener::handleMessages()
                         addEvents << event;
                         addMessages << message;
                         nManager->showNotification(event, targetId(), m_Group.chatType());
-                        break;
-                    case DeliveryHandlingResolved:
+                    } else {
                         //update message
                         originalEvent.setFreeText(event.freeText());
                         originalEvent.setStartTime(event.startTime());
@@ -803,11 +795,6 @@ void TextChannelListener::handleMessages()
                         modifyTokens[event.groupId()].insertMulti(originalEvent.id(),originalEvent.messageToken());
 
                         nManager->showNotification(originalEvent, targetId(), m_Group.chatType());
-                        break;
-                    case DeliveryHandlingPending:
-                        wait = true;
-                        break;
-                    default:;
                     }
                 }
                 else {
@@ -1019,42 +1006,38 @@ bool TextChannelListener::recoverDeliveryEcho(const Tp::Message &message,
     return result;
 }
 
-TextChannelListener::DeliveryHandlingStatus TextChannelListener::getEventForToken(const QString &token,
-                                                                                  const QString &mmsId,
-                                                                                  int groupId,
-                                                                                  CommHistory::Event &event)
+bool TextChannelListener::getEventForToken(const QString &token,
+                                           const QString &mmsId,
+                                           int groupId,
+                                           CommHistory::Event &event)
 {
-    DeliveryHandlingStatus result = DeliveryHandlingFailed;
-    QString eventKey = token + "+" + mmsId;
+    CommHistory::SingleEventModel model;
+    model.setQueryMode(CommHistory::SingleEventModel::SyncQuery);
+    model.setPropertyMask(deliveryHandlingProperties);
 
-    if (m_pendingEvents.contains(eventKey)) {
-        CommHistory::SingleEventModel *model = m_pendingEvents.value(eventKey);
-
-        if (!model) {
-            m_pendingEvents.remove(eventKey);
-        } else if (!model->isReady()) {
-            result = DeliveryHandlingPending;
-        } else {
-            if (model->rowCount() > 0)
-                event = model->event(model->index(0, 0));
-            m_pendingEvents.remove(eventKey);
-            model->deleteLater();
-            result = DeliveryHandlingResolved;
-        }
+    if (model.getEventByTokens(token, mmsId, groupId)) {
+        if (model.rowCount() > 0)
+            event = model.event(model.index(0, 0));
+        return true;
     } else {
-        CommHistory::SingleEventModel *model = new CommHistory::SingleEventModel(this);
-        model->setPropertyMask(deliveryHandlingProperties);
-        if (model->getEventByTokens(token, mmsId, groupId)) {
-            connect(model, SIGNAL(modelReady(bool)), SLOT(slotSingleModelReady(bool)));
-            m_pendingEvents.insert(eventKey, model);
-            result = DeliveryHandlingPending;
-        } else {
-            qWarning() << "Failed query single event model";
-            delete model;
-        }
+        qWarning() << "Failed query single event model";
+        return false;
     }
+}
 
-    return result;
+bool TextChannelListener::getEventById(int eventId, CommHistory::Event &event)
+{
+    CommHistory::SingleEventModel model;
+    model.setQueryMode(CommHistory::SingleEventModel::SyncQuery);
+
+    if (model.getEventById(eventId)) {
+        if (model.rowCount() > 0) 
+            event = model.event(model.index(0, 0));
+        return true;
+    } else {
+        qWarning() << "Failed query single event model";
+        return false;
+    }
 }
 
 TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryReport(const Tp::ReceivedMessage &message,
@@ -1100,11 +1083,9 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
     if (!deliveryToken.isEmpty() || !mmsId.isEmpty()) {
         //use only delivery-token when status is "accepted"
         QString mmsIdForRequest = (status.isValid() && status.value<int>() == Tp::DeliveryStatusAccepted) ? QString() : mmsId;
-        result = getEventForToken(deliveryToken, mmsIdForRequest, m_Group.id(), event);
-        if (result != DeliveryHandlingResolved)
-            return result;
-        else
-            messageFound = event.isValid();
+        if (!getEventForToken(deliveryToken, mmsIdForRequest, m_Group.id(), event))
+            return DeliveryHandlingFailed;
+        messageFound = event.isValid();
     }
 
     // echo recovery
@@ -2285,7 +2266,6 @@ void TextChannelListener::slotHandleOwnersChanged(const Tp::HandleOwnerMap &hand
 bool TextChannelListener::hasPendingOperations() const
 {
     return !(m_sendMms.isEmpty()
-             && m_pendingEvents.isEmpty()
              && m_expungeTokens.isEmpty()
              && m_EventTokens.isEmpty()
              && m_pendingGroups.isEmpty()
