@@ -40,6 +40,13 @@ PKGCONFIG += TelepathyQt5 commhistory-qt5 mlite5 mlocale5
 # clock_gettime
 LIBS += -lrt
 
+packagesExist(qt5-boostable) {
+    DEFINES += HAS_BOOSTER
+    PKGCONFIG += qt5-boostable
+} else {
+    warning("qt5-boostable not available; startup times will be slower")
+}
+
 # -----------------------------------------------------------------------------
 # input
 # -----------------------------------------------------------------------------
