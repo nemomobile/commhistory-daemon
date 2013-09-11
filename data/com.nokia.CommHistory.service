@@ -1,3 +1,0 @@
-[D-BUS Service]
-Name=com.nokia.CommHistory
-Exec=/usr/bin/commhistoryd
