@@ -17,9 +17,11 @@ BuildRequires:  pkgconfig(mlite5)
 BuildRequires:  pkgconfig(mlocale5)
 BuildRequires:  pkgconfig(qmsystem2-qt5)
 BuildRequires:  pkgconfig(ngf-qt5)
+BuildRequires:  pkgconfig(qt5-boostable)
 BuildRequires:  qt5-qttools
 BuildRequires:  qt5-qttools-linguist
 BuildRequires:  python
+Requires:  mapplauncherd-qt5
 
 Obsoletes: smshistory <= 0.1.8
 Provides: smshistory > 0.1.8
@@ -50,16 +52,19 @@ Daemon for logging communications (IM, SMS and call) in history database.
 unset LD_AS_NEEDED
 %qmake5
 make %{?jobs:-j%jobs}
+
 %install
 rm -rf %{buildroot}
 %qmake5_install
 
+mkdir -p %{buildroot}%{_libdir}/systemd/user/user-session.target.wants
+ln -s ../commhistoryd.service %{buildroot}%{_libdir}/systemd/user/user-session.target.wants/
+
 %files
 %defattr(-,root,root,-)
 %{_bindir}/commhistoryd
-%{_datadir}/dbus-1/services/com.nokia.CommHistory.service
-%{_datadir}/dbus-1/services/org.freedesktop.Telepathy.Client.CommHistory.service
-%{_datadir}/dbus-1/services/org.nemomobile.AccountPresence.service
+%{_libdir}/systemd/user/commhistoryd.service
+%{_libdir}/systemd/user/user-session.target.wants/commhistoryd.service
 %{_datadir}/translations/commhistoryd.qm
 %{_datadir}/lipstick/notificationcategories/*
 %{_datadir}/telepathy/clients/CommHistory.client
