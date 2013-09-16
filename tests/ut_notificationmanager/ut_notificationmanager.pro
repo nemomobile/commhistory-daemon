@@ -34,7 +34,7 @@
 #-----------------------------------------------------------------------------
 TARGET = ut_notificationmanager
 
-PKGCONFIG += mlocale5 qmsystem2-qt5 TelepathyQt5 ngf-qt5
+PKGCONFIG += mlocale5 TelepathyQt5 ngf-qt5
 
 TEST_SOURCES += $$COMMHISTORYDSRCDIR/notificationmanager.cpp \
                 $$COMMHISTORYDSRCDIR/notificationgroup.cpp \

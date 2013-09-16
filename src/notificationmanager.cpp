@@ -53,6 +53,9 @@
 // NGF-Qt includes
 #include <NgfClient>
 
+// mce
+#include <mce/dbus-names.h>
+
 // Our includes
 #include "notificationmanager.h"
 #include "locstrings.h"
@@ -162,7 +165,6 @@ NotificationManager::NotificationManager(QObject* parent)
         , m_Initialised(false)
         , m_pContactManager(0)
         , m_GroupModel(0)
-        , m_pDisplayState(0)
         , m_ngfClient(0)
         , m_ngfEvent(0)
 {
@@ -229,8 +231,6 @@ void NotificationManager::init()
             SIGNAL(MWICountChanged(int)),
             this,
             SLOT(slotMWICountChanged(int)));
-
-    m_pDisplayState = new MeeGo::QmDisplayState(this);
 
     m_Initialised = true;
 }
@@ -368,7 +368,10 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
 
         if (event.type() == CommHistory::Event::SMSEvent ||
             event.type() == CommHistory::Event::MMSEvent) {
-            undimScreen();
+            // ask mce to undim the screen
+            QString mceMethod = QString::fromLatin1(MCE_DISPLAY_ON_REQ);
+            QDBusMessage msg = QDBusMessage::createMethodCall(MCE_SERVICE, MCE_REQUEST_PATH, MCE_REQUEST_IF, mceMethod);
+            QDBusConnection::systemBus().call(msg, QDBus::NoBlock);
         }
     } else {
         if (!m_ngfClient->isConnected())
@@ -1585,14 +1588,6 @@ bool NotificationManager::hasMessageNotification() const
     }
 
     return false;
-}
-
-void NotificationManager::undimScreen()
-{
-    if (m_pDisplayState
-       && m_pDisplayState->get() == MeeGo::QmDisplayState::Off) {
-       m_pDisplayState->set(MeeGo::QmDisplayState::On);
-    }
 }
 
 QString NotificationManager::notificationName(const PersonalNotification &notification)
