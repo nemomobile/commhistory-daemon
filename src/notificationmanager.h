@@ -39,9 +39,6 @@
 #include <QContactFetchRequest>
 #include <QContactFilter>
 
-//QmSystem2
-#include <qmdisplaystate.h>
-
 #include <CommHistory/Event>
 #include <CommHistory/Group>
 
@@ -154,7 +151,6 @@ private:
 
     NotificationManager( QObject* parent = 0);
     ~NotificationManager();
-    void undimScreen();
     bool isCurrentlyObservedByUI(const CommHistory::Event& event,
                                  const QString &channelTargetId,
                                  CommHistory::Group::ChatType chatType);
@@ -248,7 +244,6 @@ private:
     QTimer m_ContactsTimer;
 
     MWIListener *m_pMWIListener;
-    MeeGo::QmDisplayState *m_pDisplayState;
     Ngf::Client *m_ngfClient;
     quint32 m_ngfEvent;
 
