@@ -47,10 +47,10 @@
 #include <TelepathyQt/Connection>
 #include <TelepathyQt/Properties>
 #include <TelepathyQt/Presence>
+#include <TelepathyQt/Constants>
 #include <TelepathyQt/types.h>
 
 #include <TpExtensions/Connection> // stored messages if
-#include <TpExtensions/Constants> // Flash sms
 
 // Contacts
 #include <QContact>
@@ -288,7 +288,7 @@ void TextChannelListener::channelListenerReady()
         // check if channel is meant to be used for class 0 sms messages
         QVariantMap properties = textChannel->immutableProperties();
 
-        QVariant property = properties.value(QLatin1String(COMM_HISTORY_TP_INTERFACE_CHANNEL_INTERFACE_SMS ".Flash"), QVariant());
+        QVariant property = properties.value(TP_QT_IFACE_CHANNEL_INTERFACE_SMS + QLatin1String(".Flash"), QVariant());
         if(property.isValid() && property.value<bool>() == true) {
             DEBUG() << __FUNCTION__ << "Channel contains class 0 property";
             m_isClassZeroSMS = true;
