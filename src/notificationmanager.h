@@ -108,6 +108,11 @@ public:
     void showVoicemailNotification(int count);
 
     /*!
+     * \brief Play class 0 SMS alert
+     */
+    void playClass0SMSAlert();
+
+    /*!
      * \brief Get the QContactManager.
      */
     QContactManager* contactManager();
