@@ -65,7 +65,7 @@ ln -s ../commhistoryd.service %{buildroot}%{_libdir}/systemd/user/user-session.t
 %{_bindir}/commhistoryd
 %{_libdir}/systemd/user/commhistoryd.service
 %{_libdir}/systemd/user/user-session.target.wants/commhistoryd.service
-%{_datadir}/translations/commhistoryd.qm
+%{_datadir}/translations/commhistoryd_eng_en.qm
 %{_datadir}/lipstick/notificationcategories/*
 %{_datadir}/telepathy/clients/CommHistory.client
 

@@ -25,8 +25,6 @@
 #include <sys/socket.h>
 #include <syslog.h>
 
-#include <MLocale>
-
 // Our includes
 #include "logger.h"
 #include "notificationmanager.h"
@@ -137,17 +135,13 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     QObject::connect(snTerm, SIGNAL(activated(int)), &app, SLOT(quit()));
     setupSigtermHandler();
 
-    ML10N::MLocale locale;
-    locale.addTranslationPath("/usr/share/translations/");
-    locale.installTrCatalog("messaging");
-    locale.installTrCatalog("telephony");
-    locale.installTrCatalog("mms");
-    locale.installTrCatalog("presence");
-    locale.installTrCatalog("recipientedit");
-    locale.installTrCatalog("commhistoryd");
-    ML10N::MLocale::setDefault(locale);
+    QScopedPointer<QTranslator> engineeringEnglish(new QTranslator);
+    engineeringEnglish->load("commhistoryd_eng_en", "/usr/share/translations");
+    QScopedPointer<QTranslator> translator(new QTranslator);
+    translator->load(QLocale(), "commhistoryd", "-", "/usr/share/translations");
 
-    DEBUG() << "Translation catalogs loaded";
+    app.installTranslator(engineeringEnglish.data());
+    app.installTranslator(translator.data());
 
     CommHistoryService *chService = CommHistoryService::instance();
     if (!chService->isRegistered()) {
