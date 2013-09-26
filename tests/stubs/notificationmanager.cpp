@@ -50,6 +50,10 @@ void NotificationManager::showVoicemailNotification(int count)
     voicemailNotifications = count;
 }
 
+void NotificationManager::playClass0SMSAlert()
+{
+}
+
 CommHistory::GroupModel* NotificationManager::groupModel()
 {
     return m_GroupModel;
