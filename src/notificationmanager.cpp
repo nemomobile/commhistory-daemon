@@ -386,6 +386,19 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
     }
 }
 
+void NotificationManager::playClass0SMSAlert()
+{
+    if (!m_ngfClient->isConnected())
+        m_ngfClient->connect();
+
+    m_ngfEvent = m_ngfClient->play(QLatin1Literal("sms"));
+
+    // ask mce to undim the screen
+    QString mceMethod = QString::fromLatin1(MCE_DISPLAY_ON_REQ);
+    QDBusMessage msg = QDBusMessage::createMethodCall(MCE_SERVICE, MCE_REQUEST_PATH, MCE_REQUEST_IF, mceMethod);
+    QDBusConnection::systemBus().call(msg, QDBus::NoBlock);
+}
+
 bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& event,
                                                   const QString &channelTargetId,
                                                   CommHistory::Group::ChatType chatType)

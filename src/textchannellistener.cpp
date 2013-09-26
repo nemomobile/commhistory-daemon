@@ -760,6 +760,7 @@ void TextChannelListener::handleMessages()
                 processedMessages << message;
                 classZeroSMSModel()->addEvent(event,true);
                 m_EventTokens.insertMulti(event.id(), event.messageToken());
+                nManager->playClass0SMSAlert();
             // Replace sms
             } else if (!replaceTypeValue.isEmpty()) {
                 DEBUG() << __FUNCTION__ << "Replace type of sms";

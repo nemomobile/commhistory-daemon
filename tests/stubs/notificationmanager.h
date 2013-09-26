@@ -30,6 +30,7 @@ public:
 
     CommHistory::GroupModel* groupModel();
     void showVoicemailNotification(int count);
+    void playClass0SMSAlert();
     QContactManager* contactManager();
 
 
