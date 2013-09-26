@@ -47,7 +47,7 @@ QMAKE_LFLAGS = --version
 
 # translation input/output
 TS_FILENAME = $${_PRO_FILE_PWD_}/$${CATALOGNAME}.ts
-QM_FILENAME = $${_PRO_FILE_PWD_}/$${CATALOGNAME}.qm
+QM_FILENAME = $${_PRO_FILE_PWD_}/$${CATALOGNAME}_eng_en.qm
 
 # LUPDATE and LRELEASE --------------------------------------------------------
 LUPDATE_CMD = lupdate \
