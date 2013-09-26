@@ -3472,6 +3472,14 @@ const int NUM_MEDIA_STREAM_TRANSPORT_TYPES = (2+1);
 /**
  * \ingroup ifacestrconsts
  *
+ * The interface name "org.freedesktop.Telepathy.Channel.Interface.SMS" as a QLatin1String, usable in QString requiring contexts even when
+ * building with Q_NO_CAST_FROM_ASCII defined.
+ */
+#define TP_QT_IFACE_CHANNEL_INTERFACE_SMS (QLatin1String("org.freedesktop.Telepathy.Channel.Interface.SMS"))
+
+/**
+ * \ingroup ifacestrconsts
+ *
  * The interface name "org.freedesktop.Telepathy.Channel.Interface.Tube".
  */
 #define TELEPATHY_INTERFACE_CHANNEL_INTERFACE_TUBE "org.freedesktop.Telepathy.Channel.Interface.Tube"
