@@ -61,7 +61,6 @@
 #include "locstrings.h"
 #include "constants.h"
 #include "mwilistener.h"
-#include "voicemailhandler.h"
 #include "commhistoryservice.h"
 #include "debug.h"
 
@@ -635,12 +634,7 @@ void NotificationManager::addNotification(PersonalNotification notification)
 {
     DEBUG() << Q_FUNC_INFO;
 
-    uint eventType;
-
-    if (VoiceMailHandler::instance()->isVoiceMailNumber(notification.remoteUid()))
-        eventType = VOICEMAIL_SMS_EVENT_TYPE;
-    else
-        eventType = notification.eventType();
+    uint eventType = notification.eventType();
 
     NotificationGroup notificationgroup = notificationGroup(eventType);
 
@@ -1351,14 +1345,6 @@ void NotificationManager::slotContactsRemoved(const QList<QContactId> &contactId
 
     DEBUG() << Q_FUNC_INFO;
 
-    if (contactIds.contains(VoiceMailHandler::instance()->voiceMailContactId())) {
-        // If removed contact is a voice mail one, then clear its data from VoiceMailHandler:
-        DEBUG() << Q_FUNC_INFO << "Voice mail contact removed!";
-        VoiceMailHandler::instance()->clear();
-        // Start listening vmc file changes in order to be notified about new voice mail contact addings.
-        VoiceMailHandler::instance()->startObservingVmcFile();
-    }
-
     // update contact cache for notifications
     QList<QContactId> updatedContactIds;
     QMutableHashIterator<TpContactUid, QContact> i(m_contacts);
@@ -1379,12 +1365,6 @@ void NotificationManager::slotContactsChanged(const QList<QContactId> &contactId
         return;
 
     DEBUG() << Q_FUNC_INFO;
-
-    if (contactIds.contains(VoiceMailHandler::instance()->voiceMailContactId())) {
-        // If changed contact is a voice mail one, then refresh its data in VoiceMailHandler:
-        DEBUG() << Q_FUNC_INFO << "Voice mail contact changed!";
-        VoiceMailHandler::instance()->fetchVoiceMailContact();
-    }
 
     if (!m_contacts.isEmpty() || !m_Notifications.isEmpty()) {
         QContactIdFilter filter;
