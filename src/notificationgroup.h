@@ -2,8 +2,9 @@
 **
 ** This file is part of commhistory-daemon.
 **
+** Copyright (C) 2013 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: Reto Zingg <reto.zingg@nokia.com>
+** Contact: John Brooks <john.brooks@jollamobile.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -26,43 +27,75 @@
 #include <QObject>
 #include <QString>
 #include <QMetaType>
+#include <QTimer>
 
-#include "serialisable.h"
+class MNotificationGroup;
+
+namespace CommHistory {
+    class Event;
+}
 
 namespace RTComLogger {
 
-class NotificationGroup : public QObject, public Serialisable
+class PersonalNotification;
+
+class NotificationGroup : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(int type READ type WRITE setType)
-
 public:
-    NotificationGroup(QObject* parent = 0);
-    explicit NotificationGroup(int notificationGroupType,
-                               QObject* parent = 0);
-    NotificationGroup(const NotificationGroup& other);
-    NotificationGroup& operator = (const NotificationGroup& other);
-    bool operator == (const NotificationGroup& other) const;
-    bool operator != (const NotificationGroup& other) const;
-    bool isValid() const;
+    explicit NotificationGroup(int type, QObject *parent = 0);
+    explicit NotificationGroup(MNotificationGroup *mGroup, QObject* parent = 0);
+    virtual ~NotificationGroup();
 
-public:
+    static QString groupType(int eventType);
+    static int eventType(const QString &groupType);
 
     int type() const;
-    void setType(int notificationType);
+    MNotificationGroup *notificationGroup();
+    QList<PersonalNotification*> notifications() const;
+
+    /* Add a notification to this group
+     *
+     * Ownership and management of the notification are assumed. If marked as pending, the
+     * notification will be emitted automatically. Changes to the notification will be handled
+     * automatically. */
+    void addNotification(PersonalNotification *notification);
+
+    /* Remove a notification
+     *
+     * The notification will be unpublished and its instance deleted. The group may be empty
+     * afterwards, in which case it will also be unpublished. Caller should delete this instance
+     * when empty afterwards, if desired. */
+    bool removeNotification(PersonalNotification *notification);
+
+public slots:
+    /* Update the group's message text and publish it if necessary. Should not need to be called
+     * manually; the group will be updated after all relevant changes to notifications. */
+    void updateGroup();
+    void updateGroupLater();
+
+    /* Remove the group and all notifications. Equivalent to calling removeNotification for each
+     * notification. */
+    void removeGroup();
+
+signals:
+    /* Emitted when the group or any notification within it has changed */
+    void changed();
+
+private slots:
+    void onNotificationChanged();
 
 private:
     int m_type;
+    MNotificationGroup *mGroup;
+    QList<PersonalNotification*> mNotifications;
+    QTimer updateTimer;
+
+    QStringList contactNames();
+    QString notificationGroupText();
 };
 
 } // namespace
-
-Q_DECLARE_METATYPE(RTComLogger::NotificationGroup)
-
-uint qHash(const RTComLogger::NotificationGroup& group);
-
-QDataStream& operator<<(QDataStream &out, const RTComLogger::NotificationGroup &key);
-QDataStream& operator>>(QDataStream &in, RTComLogger::NotificationGroup &key);
 
 #endif // NOTIFICATIONGROUP_H

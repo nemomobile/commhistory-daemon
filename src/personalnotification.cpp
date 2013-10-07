@@ -21,6 +21,15 @@
 ******************************************************************************/
 
 #include "personalnotification.h"
+#include "notificationmanager.h"
+#include "notificationgroup.h"
+#include "locstrings.h"
+#include "debug.h"
+
+#include <CommHistory/commonutils.h>
+
+#include <MNotificationGroup>
+#include <MLocale>
 
 using namespace RTComLogger;
 
@@ -28,7 +37,8 @@ PersonalNotification::PersonalNotification(QObject* parent) : QObject(parent),
     m_eventType(CommHistory::Event::UnknownType),
     m_chatType(CommHistory::Group::ChatTypeP2P),
     m_contactId(0),
-    m_hasPendingEvents(false)
+    m_hasPendingEvents(false),
+    m_notification(0)
 {
 }
 
@@ -43,32 +53,67 @@ PersonalNotification::PersonalNotification(const QString& remoteUid,
     QObject(parent), m_remoteUid(remoteUid), m_account(account),
     m_eventType(eventType), m_targetId(channelTargetId), m_chatType(chatType),
     m_contactId(contactId), m_notificationText(lastNotification),
-    m_hasPendingEvents(false)
+    m_hasPendingEvents(true),
+    m_notification(0)
 {
 }
 
-PersonalNotification::PersonalNotification(const PersonalNotification& other) :
-    QObject(other.parent())
+PersonalNotification::~PersonalNotification()
 {
-    *this = other;
+    delete m_notification;
 }
 
-PersonalNotification& PersonalNotification::operator=(const PersonalNotification& other)
+void PersonalNotification::publishNotification(NotificationGroup *group)
 {
-    setParent(other.parent());
-    setRemoteUid(other.remoteUid());
-    setEventType(other.eventType());
-    setTargetId(other.targetId());
-    setChatType(other.chatType());
-    setAccount(other.account());
-    setContactId(other.contactId());
-    setContactName(other.contactName());
-    setNotificationText(other.notificationText());
-    setHasPendingEvents(other.hasPendingEvents());
-    setChatName(other.chatName());
-    setEventToken(other.eventToken());
-    setSmsReplaceNumber(other.smsReplaceNumber());
-    return *this;
+    QString name;
+
+    // voicemail notifications shouldn't have contact name
+    if (m_eventType != CommHistory::Event::VoicemailEvent)
+        name = notificationName();
+
+    QString activateAction = NotificationManager::instance()->action(group, this, false);
+    QString event = NotificationGroup::groupType(m_eventType);
+
+    if (!m_notification)
+        m_notification = new MNotification(event);
+
+    if (group && group->notificationGroup())
+        m_notification->setGroup(*group->notificationGroup());
+
+    m_notification->setSummary(name);
+    m_notification->setBody(notificationText());
+    m_notification->setAction(MRemoteAction(activateAction, this));
+    m_notification->publish();
+
+    setHasPendingEvents(false);
+
+    DEBUG() << event << name << m_notification->body() << activateAction;
+}
+
+void PersonalNotification::removeNotification()
+{
+    DEBUG() << "removing notification" << m_notification;
+    if (m_notification)
+        m_notification->remove();
+    delete m_notification;
+    m_notification = 0;
+
+    setHasPendingEvents(false);
+}
+
+QString PersonalNotification::notificationName() const
+{
+    if (!chatName().isEmpty())
+        return chatName();
+    else if (!contactName().isEmpty())
+        return contactName();
+    else if (remoteUid() == QLatin1String("<hidden>"))
+        return txt_qtn_call_type_private;
+    else if (CommHistory::normalizePhoneNumber(remoteUid()).isEmpty())
+        return remoteUid();
+
+    ML10N::MLocale locale;
+    return locale.toLocalizedNumbers(remoteUid());
 }
 
 QString PersonalNotification::remoteUid() const
@@ -135,84 +180,75 @@ QString PersonalNotification::smsReplaceNumber() const
 void PersonalNotification::setRemoteUid(const QString& remoteUid)
 {
     m_remoteUid = remoteUid;
+    setHasPendingEvents(true);
 }
 
 void PersonalNotification::setAccount(const QString& account)
 {
     m_account = account;
+    setHasPendingEvents(true);
 }
 
 void PersonalNotification::setEventType(uint eventType)
 {
     m_eventType = eventType;
+    setHasPendingEvents(true);
 }
 
 void PersonalNotification::setTargetId(const QString& targetId)
 {
     m_targetId = targetId;
+    setHasPendingEvents(true);
 }
 
 void PersonalNotification::setChatType(uint chatType)
 {
     m_chatType = chatType;
+    setHasPendingEvents(true);
 }
 
 void PersonalNotification::setContactName(const QString& contactName)
 {
     m_contactName = contactName;
+    setHasPendingEvents(true);
 }
 
 void PersonalNotification::setContactId(uint contactId)
 {
     m_contactId = contactId;
+    setHasPendingEvents(true);
 }
 
 void PersonalNotification::setNotificationText(const QString& notificationText)
 {
     m_notificationText = notificationText;
+    setHasPendingEvents(true);
 }
 
 void PersonalNotification::setHasPendingEvents(bool hasPendingEvents)
 {
-    m_hasPendingEvents = hasPendingEvents;
+    if (m_hasPendingEvents != hasPendingEvents) {
+        m_hasPendingEvents = hasPendingEvents;
+        emit hasPendingEventsChanged(hasPendingEvents);
+    }
 }
 
 void PersonalNotification::setChatName(const QString& chatName)
 {
     m_chatName = chatName;
+    setHasPendingEvents(true);
 }
 
 void PersonalNotification::setEventToken(const QString &eventToken)
 {
     m_eventToken = eventToken;
+    setHasPendingEvents(true);
 }
 
 void PersonalNotification::setSmsReplaceNumber(const QString &number)
 {
     m_smsReplaceNumber = number;
-}
-
-bool PersonalNotification::operator == (const PersonalNotification& other) const
-{
-    if(eventType() == other.eventType()
-       && targetId() == other.targetId()
-       && chatType() == other.chatType()
-       && account() == other.account()) {
-
-        // With MUC notifications compare chatNames, with other type of
-        // notifications compare remoteUids.
-        if ((!chatName().isEmpty() && chatName() == other.chatName())
-            || (chatName().isEmpty() && remoteUid() == other.remoteUid())) {
-
-            return true;
-        }
-    }
-    return false;
-}
-
-bool PersonalNotification::operator != (const PersonalNotification& other) const
-{
-    return !(*this == other);
+    setHasPendingEvents(true);
 }
 
 QDataStream& operator<<(QDataStream &out, const RTComLogger::PersonalNotification &key)

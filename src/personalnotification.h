@@ -32,7 +32,11 @@
 // commhistory
 #include <CommHistory/Group>
 
+class MNotification;
+
 namespace RTComLogger {
+
+class NotificationGroup;
 
 class PersonalNotification : public QObject, public Serialisable
 {
@@ -71,12 +75,14 @@ public:
                          uint contactId = 0,
                          const QString& lastNotification = QString(),
                          QObject* parent = 0);
-    PersonalNotification(const PersonalNotification& other);
-    PersonalNotification& operator = (const PersonalNotification& other);
-    bool operator == (const PersonalNotification& other) const;
-    bool operator != (const PersonalNotification& other) const;
 
-public:
+    virtual ~PersonalNotification();
+
+    void publishNotification(NotificationGroup *group);
+    void removeNotification();
+
+    QString notificationName() const;
+
     QString remoteUid() const;
     QString account() const;
     uint eventType() const;
@@ -107,6 +113,9 @@ public:
     void setEventToken(const QString& eventToken);
     void setSmsReplaceNumber(const QString& number);
 
+signals:
+    void hasPendingEventsChanged(bool hasPendingEvents);
+
 private:
     QString m_remoteUid;
     QString m_account;
@@ -120,11 +129,11 @@ private:
     QString m_chatName;
     QString m_eventToken;
     QString m_smsReplaceNumber;
+
+    MNotification *m_notification;
 };
 
 } // namespace
-
-Q_DECLARE_METATYPE(RTComLogger::PersonalNotification)
 
 QDataStream& operator<<(QDataStream &out, const RTComLogger::PersonalNotification &key);
 QDataStream& operator>>(QDataStream &in, RTComLogger::PersonalNotification &key);

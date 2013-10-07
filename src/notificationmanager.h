@@ -110,6 +110,8 @@ public:
      */
     void playClass0SMSAlert();
 
+    QString action(NotificationGroup *group, PersonalNotification *notification, bool grouped);
+
 public Q_SLOTS:
     /*!
      * \brief Removes notifications belonging to a particular account having optionally certain remote uids.
@@ -126,7 +128,6 @@ private Q_SLOTS:
     void slotObservedConversationsChanged(const QVariantList &conversations);
     void slotInboxObservedChanged();
     void slotCallHistoryObservedChanged(bool observed);
-    void fireNotifications();
     void slotGroupRemoved(const QModelIndex &index, int start, int end);
     void slotMWICountChanged(int count);
     void slotGroupDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
@@ -141,22 +142,9 @@ private:
     bool isCurrentlyObservedByUI(const CommHistory::Event& event,
                                  const QString &channelTargetId,
                                  CommHistory::Group::ChatType chatType);
-    void addNotification(PersonalNotification notification);
-    NotificationGroup notificationGroup(int type);
+    void addNotification(PersonalNotification *notification);
 
-    void showLatestNotification(const NotificationGroup& group,
-                                PersonalNotification& notification);
-    int countContacts(const NotificationGroup& group);
-    int countNotifications(const NotificationGroup& group);
-
-    QString action(const NotificationGroup& group,
-                   const PersonalNotification& notification,
-                   bool grouped);
-    QString notificationText(const CommHistory::Event& event);
-    QString notificationGroupText(const NotificationGroup& group,
-                                  const PersonalNotification& notification);
     static QString eventType(int type);
-    void updateNotificationGroup(const NotificationGroup& group);
 
     /* actions */
     QString createActionInbox();
@@ -165,23 +153,6 @@ private:
                                      const QString& remoteUid,
                                      CommHistory::Group::ChatType chatType);
     QString createActionVoicemail();
-
-    /* persistent notification support */
-    void createDataDir();
-    bool openStorageFile(QIODevice::OpenModeFlag flag);
-    void saveState();
-    void loadState();
-
-    QStringList contactNames(const NotificationGroup& group);
-
-    /* uses MeeGoTouch notification framework */
-    void addGroup(int type);
-    void updateGroup(int eventType,
-                     int notificationCount,
-                     const QString& contactName,
-                     const QString& message,
-                     const QString& action);
-    void removeGroup(int type);
 
     void startNotificationTimer();
     bool canShowNotification();
@@ -197,19 +168,18 @@ private:
     void clearPendingEvents(const NotificationGroup &group);
     void removeNotPendingEvents(const NotificationGroup &group);
 
-    QString notificationName(const PersonalNotification &notification);
     bool isFilteredInbox();
     QString filteredInboxAccountPath();
-    bool updateEditedEvent(const CommHistory::Event& event);
+    bool updateEditedEvent(const CommHistory::Event &event);
 
 private:
     static NotificationManager* m_pInstance;
-    QMultiHash<NotificationGroup,PersonalNotification> m_Notifications;
-    QHash<int, MNotificationGroup*> m_MgtGroups;
-    QFile m_Storage;
+    QMap<int, NotificationGroup*> m_Groups;
     bool m_Initialised;
 
-    QQueue<PersonalNotification> m_unresolvedEvents;
+    QList<PersonalNotification*> m_unresolvedEvents;
+
+    QString notificationText(const CommHistory::Event &event);
 
     // Delayed notifications
     QTimer m_NotificationTimer;
