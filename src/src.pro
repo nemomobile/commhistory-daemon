@@ -71,7 +71,6 @@ HEADERS += logger.h \
            accountoperationsobserver.h \
            accountpresenceifadaptor.h \
            accountpresenceservice.h \
-           voicemailhandler.h \
            debug.h
 
 SOURCES += main.cpp \
@@ -93,8 +92,7 @@ SOURCES += main.cpp \
            mwilistener.cpp \
            accountoperationsobserver.cpp \
            accountpresenceifadaptor.cpp \
-           accountpresenceservice.cpp \
-           voicemailhandler.cpp
+           accountpresenceservice.cpp
 
 # -----------------------------------------------------------------------------
 # Telepathy extensions.
