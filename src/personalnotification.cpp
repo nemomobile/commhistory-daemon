@@ -2,8 +2,9 @@
 **
 ** This file is part of commhistory-daemon.
 **
+** Copyright (C) 2013 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: Reto Zingg <reto.zingg@nokia.com>
+** Contact: John Brooks <john.brooks@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -25,10 +26,8 @@
 #include "notificationgroup.h"
 #include "locstrings.h"
 #include "debug.h"
-
 #include <CommHistory/commonutils.h>
-
-#include <MNotificationGroup>
+#include <notification.h>
 #include <MLocale>
 
 using namespace RTComLogger;
@@ -63,7 +62,39 @@ PersonalNotification::~PersonalNotification()
     delete m_notification;
 }
 
-void PersonalNotification::publishNotification(NotificationGroup *group)
+bool PersonalNotification::restore(Notification *n)
+{
+    if (m_notification && m_notification != n) {
+        delete m_notification;
+        m_notification = 0;
+    }
+
+    QByteArray data = n->hintValue("x-commhistoryd-data").toByteArray();
+    if (data.isEmpty())
+        return false;
+
+    QDataStream stream(data);
+    stream.setVersion(QDataStream::Qt_5_0);
+    stream >> *this;
+    if (stream.status())
+        return false;
+
+    m_notification = n;
+    return true;
+}
+
+QByteArray PersonalNotification::serialized() const
+{
+    QByteArray data;
+    QDataStream stream(&data, QIODevice::WriteOnly);
+    stream.setVersion(QDataStream::Qt_5_0);
+    stream << *this;
+    if (stream.status())
+        return QByteArray();
+    return data;
+}
+
+void PersonalNotification::publishNotification()
 {
     QString name;
 
@@ -71,30 +102,34 @@ void PersonalNotification::publishNotification(NotificationGroup *group)
     if (m_eventType != CommHistory::Event::VoicemailEvent)
         name = notificationName();
 
-    QString activateAction = NotificationManager::instance()->action(group, this, false);
-    QString event = NotificationGroup::groupType(m_eventType);
-
     if (!m_notification)
-        m_notification = new MNotification(event);
+        m_notification = new Notification(this);
 
-    if (group && group->notificationGroup())
-        m_notification->setGroup(*group->notificationGroup());
+    m_notification->setCategory(NotificationGroup::groupType(m_eventType));
+    m_notification->setHintValue("x-commhistoryd-data", serialized());
+    NotificationManager::instance()->setNotificationAction(m_notification, this, false);
 
-    m_notification->setSummary(name);
-    m_notification->setBody(notificationText());
-    m_notification->setAction(MRemoteAction(activateAction, this));
+    // No preview banner for existing notifications
+    if (m_notification->replacesId()) {
+        m_notification->setPreviewSummary(QString());
+        m_notification->setPreviewBody(QString());
+    } else {
+        m_notification->setPreviewSummary(name);
+        m_notification->setPreviewBody(notificationText());
+    }
+
     m_notification->publish();
 
     setHasPendingEvents(false);
 
-    DEBUG() << event << name << m_notification->body() << activateAction;
+    DEBUG() << m_notification->category() << name << m_notification->previewBody();
 }
 
 void PersonalNotification::removeNotification()
 {
     DEBUG() << "removing notification" << m_notification;
     if (m_notification)
-        m_notification->remove();
+        m_notification->close();
     delete m_notification;
     m_notification = 0;
 
@@ -179,50 +214,66 @@ QString PersonalNotification::smsReplaceNumber() const
 
 void PersonalNotification::setRemoteUid(const QString& remoteUid)
 {
-    m_remoteUid = remoteUid;
-    setHasPendingEvents(true);
+    if (m_remoteUid != remoteUid) {
+        m_remoteUid = remoteUid;
+        setHasPendingEvents(true);
+    }
 }
 
 void PersonalNotification::setAccount(const QString& account)
 {
-    m_account = account;
-    setHasPendingEvents(true);
+    if (m_account != account) {
+        m_account = account;
+        setHasPendingEvents(true);
+    }
 }
 
 void PersonalNotification::setEventType(uint eventType)
 {
-    m_eventType = eventType;
-    setHasPendingEvents(true);
+    if (m_eventType != eventType) {
+        m_eventType = eventType;
+        setHasPendingEvents(true);
+    }
 }
 
 void PersonalNotification::setTargetId(const QString& targetId)
 {
-    m_targetId = targetId;
-    setHasPendingEvents(true);
+    if (m_targetId != targetId) {
+        m_targetId = targetId;
+        setHasPendingEvents(true);
+    }
 }
 
 void PersonalNotification::setChatType(uint chatType)
 {
-    m_chatType = chatType;
-    setHasPendingEvents(true);
+    if (m_chatType != chatType) {
+        m_chatType = chatType;
+        setHasPendingEvents(true);
+    }
 }
 
 void PersonalNotification::setContactName(const QString& contactName)
 {
-    m_contactName = contactName;
-    setHasPendingEvents(true);
+    if (m_contactName != contactName) {
+        m_contactName = contactName;
+        setHasPendingEvents(true);
+    }
 }
 
 void PersonalNotification::setContactId(uint contactId)
 {
-    m_contactId = contactId;
-    setHasPendingEvents(true);
+    if (m_contactId != contactId) {
+        m_contactId = contactId;
+        setHasPendingEvents(true);
+    }
 }
 
 void PersonalNotification::setNotificationText(const QString& notificationText)
 {
-    m_notificationText = notificationText;
-    setHasPendingEvents(true);
+    if (m_notificationText != notificationText) {
+        m_notificationText = notificationText;
+        setHasPendingEvents(true);
+    }
 }
 
 void PersonalNotification::setHasPendingEvents(bool hasPendingEvents)
@@ -235,20 +286,26 @@ void PersonalNotification::setHasPendingEvents(bool hasPendingEvents)
 
 void PersonalNotification::setChatName(const QString& chatName)
 {
-    m_chatName = chatName;
-    setHasPendingEvents(true);
+    if (m_chatName != chatName) {
+        m_chatName = chatName;
+        setHasPendingEvents(true);
+    }
 }
 
 void PersonalNotification::setEventToken(const QString &eventToken)
 {
-    m_eventToken = eventToken;
-    setHasPendingEvents(true);
+    if (m_eventToken != eventToken) {
+        m_eventToken = eventToken;
+        setHasPendingEvents(true);
+    }
 }
 
 void PersonalNotification::setSmsReplaceNumber(const QString &number)
 {
-    m_smsReplaceNumber = number;
-    setHasPendingEvents(true);
+    if (m_smsReplaceNumber != number) {
+        m_smsReplaceNumber = number;
+        setHasPendingEvents(true);
+    }
 }
 
 QDataStream& operator<<(QDataStream &out, const RTComLogger::PersonalNotification &key)

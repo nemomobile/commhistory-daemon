@@ -2,8 +2,9 @@
 **
 ** This file is part of commhistory-daemon.
 **
+** Copyright (C) 2013 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: Reto Zingg <reto.zingg@nokia.com>
+** Contact: John Brooks <john.brooks@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -36,15 +37,12 @@
 
 #include <CommHistory/Event>
 #include <CommHistory/Group>
+#include <CommHistory/GroupModel>
 #include <CommHistory/contactlistener.h>
 
 // our includes
 #include "notificationgroup.h"
 #include "personalnotification.h"
-
-QTCONTACTS_USE_NAMESPACE
-
-class MNotificationGroup;
 
 namespace CommHistory {
     class GroupModel;
@@ -110,7 +108,7 @@ public:
      */
     void playClass0SMSAlert();
 
-    QString action(NotificationGroup *group, PersonalNotification *notification, bool grouped);
+    void setNotificationAction(Notification *notification, PersonalNotification *pn, bool grouped);
 
 public Q_SLOTS:
     /*!
@@ -135,6 +133,7 @@ private Q_SLOTS:
     void slotContactUpdated(quint32 localId, const QString &name, const QList<ContactAddress> &addresses);
     void slotContactRemoved(quint32 localId);
     void slotContactUnknown(const QPair<QString,QString> &address);
+    void slotNotificationGroupChanged();
 
 private:
     NotificationManager( QObject* parent = 0);
@@ -142,20 +141,9 @@ private:
     bool isCurrentlyObservedByUI(const CommHistory::Event& event,
                                  const QString &channelTargetId,
                                  CommHistory::Group::ChatType chatType);
+
+    void resolveNotification(PersonalNotification *notification);
     void addNotification(PersonalNotification *notification);
-
-    static QString eventType(int type);
-
-    /* actions */
-    QString createActionInbox();
-    QString createActionCallHistory();
-    QString createActionConversation(const QString& accountPath,
-                                     const QString& remoteUid,
-                                     CommHistory::Group::ChatType chatType);
-    QString createActionVoicemail();
-
-    void startNotificationTimer();
-    bool canShowNotification();
 
     void removeConversationNotifications(const QString &localId,
                                          const QString &remoteId,

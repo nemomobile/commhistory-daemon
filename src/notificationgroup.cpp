@@ -2,8 +2,9 @@
 **
 ** This file is part of commhistory-daemon.
 **
+** Copyright (C) 2013 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: Reto Zingg <reto.zingg@nokia.com>
+** Contact: John Brooks <john.brooks@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -27,10 +28,9 @@
 #include "constants.h"
 #include "debug.h"
 
+#include <notification.h>
+
 #include <MLocale>
-#include <MRemoteAction>
-#include <MNotification>
-#include <MNotificationGroup>
 
 #include <CommHistory/commonutils.h>
 #include <CommHistory/Event>
@@ -47,8 +47,8 @@ NotificationGroup::NotificationGroup(int type, QObject *parent)
     connect(this, SIGNAL(changed()), SLOT(updateGroupLater()));
 }
 
-NotificationGroup::NotificationGroup(MNotificationGroup *group, QObject *parent)
-    : QObject(parent), m_type(eventType(group->eventType())), mGroup(group)
+NotificationGroup::NotificationGroup(Notification *group, QObject *parent)
+    : QObject(parent), m_type(eventType(group->category())), mGroup(group)
 {
     updateTimer.setInterval(0);
     updateTimer.setSingleShot(true);
@@ -86,7 +86,7 @@ int NotificationGroup::type() const
     return m_type;
 }
 
-MNotificationGroup *NotificationGroup::notificationGroup()
+Notification *NotificationGroup::notification()
 {
     if (!mGroup && !mNotifications.isEmpty())
         updateGroup();
@@ -105,44 +105,26 @@ void NotificationGroup::updateGroup()
         return;
     }
 
+    // Publish group notification, not including preview banners/sounds.
+    if (!mGroup)
+        mGroup = new Notification(this);
+
+    mGroup->setCategory(groupType(type()));
+    mGroup->setBody(notificationGroupText());
+    mGroup->setItemCount(mNotifications.size());
+    NotificationManager::instance()->setNotificationAction(mGroup, mNotifications[0],
+            countConversations() > 1);
+
     QString name;
-
-    // update group notification
-    bool grouped = mNotifications.size() > 1;
-    // get group message
-    QString message = notificationGroupText();
-    // get group action
-    QString groupAction = NotificationManager::instance()->action(this, mNotifications[0], grouped);
-
     ML10N::MLocale tempLocale;
-    // update group
     if (type() != CommHistory::Event::VoicemailEvent)
         name = tempLocale.joinStringList(contactNames());
+    mGroup->setSummary(name);
+    mGroup->publish();
 
-    if (!mGroup)
-        mGroup = new MNotificationGroup(groupType(type()));
-
-    if (mGroup->summary() == name && mGroup->body() == message)
-    {
-        DEBUG() << Q_FUNC_INFO << "Suppressing unnecessary notification update";
-    } else {
-        DEBUG() << "Publishing group:" << name << message << groupAction << mNotifications.size();
-
-        mGroup->setSummary(name);
-        mGroup->setBody(message);
-        mGroup->setAction(MRemoteAction(groupAction));
-        mGroup->setCount(mNotifications.size());
-        // Publish to update lock screen item. Empty strings suppress any preview banner, which is sent with
-        // individual notifications
-        mGroup->publish(QString(), QString());
-    }
-
-    // Publish all notifications marked as pending
-    // XXX does this show a banner for changes? maybe suppressed by existing id
     foreach (PersonalNotification *pn, mNotifications) {
-        if (pn->hasPendingEvents()) {
-            pn->publishNotification(this);
-        }
+        if (pn->hasPendingEvents())
+            pn->publishNotification();
     }
 }
 
@@ -161,6 +143,14 @@ QStringList NotificationGroup::contactNames()
     }
 
     return names;
+}
+
+int NotificationGroup::countConversations()
+{
+    QSet<QPair<QString, QString> > seen;
+    foreach (PersonalNotification *pn, mNotifications)
+        seen.insert(qMakePair(pn->account(), pn->remoteUid()));
+    return seen.count();
 }
 
 QString NotificationGroup::notificationGroupText()
@@ -203,13 +193,13 @@ QString NotificationGroup::notificationGroupText()
 void NotificationGroup::removeGroup()
 {
     if (mGroup) {
-        mGroup->remove();
+        mGroup->close();
         delete mGroup;
         mGroup = 0;
     }
 
-    foreach (PersonalNotification *n, mNotifications)
-        removeNotification(n);
+    while (!mNotifications.isEmpty())
+        removeNotification(mNotifications.first());
 }
 
 void NotificationGroup::addNotification(PersonalNotification *notification)
@@ -223,11 +213,12 @@ void NotificationGroup::addNotification(PersonalNotification *notification)
     emit changed();
 }
 
-bool NotificationGroup::removeNotification(PersonalNotification *notification)
+bool NotificationGroup::removeNotification(PersonalNotification *&notification)
 {
     if (mNotifications.removeOne(notification)) {
         notification->removeNotification();
         delete notification;
+        notification = 0;
         emit changed();
         return true;
     }

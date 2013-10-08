@@ -2,8 +2,9 @@
 **
 ** This file is part of commhistory-daemon.
 **
+** Copyright (C) 2013 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: Reto Zingg <reto.zingg@nokia.com>
+** Contact: John Brooks <john.brooks@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -32,11 +33,9 @@
 // commhistory
 #include <CommHistory/Group>
 
-class MNotification;
+class Notification;
 
 namespace RTComLogger {
-
-class NotificationGroup;
 
 class PersonalNotification : public QObject, public Serialisable
 {
@@ -78,7 +77,9 @@ public:
 
     virtual ~PersonalNotification();
 
-    void publishNotification(NotificationGroup *group);
+    bool restore(Notification *notification);
+
+    void publishNotification();
     void removeNotification();
 
     QString notificationName() const;
@@ -130,7 +131,9 @@ private:
     QString m_eventToken;
     QString m_smsReplaceNumber;
 
-    MNotification *m_notification;
+    Notification *m_notification;
+
+    QByteArray serialized() const;
 };
 
 } // namespace

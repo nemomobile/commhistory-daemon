@@ -2,8 +2,9 @@
 **
 ** This file is part of commhistory-daemon.
 **
+** Copyright (C) 2013 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: Reto Zingg <reto.zingg@nokia.com>
+** Contact: John Brooks <john.brooks@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -26,12 +27,6 @@
 #include <QTimer>
 #include <QDir>
 
-// MeegoTouch includes
-#include <MLocale>
-#include <MRemoteAction>
-#include <MNotification>
-#include <MNotificationGroup>
-
 // CommHistory includes
 #include <CommHistory/commonutils.h>
 #include <CommHistory/GroupModel>
@@ -42,6 +37,9 @@
 
 // NGF-Qt includes
 #include <NgfClient>
+
+// nemo notifications
+#include <notification.h>
 
 // mce
 #include <mce/dbus-names.h>
@@ -96,15 +94,6 @@ void NotificationManager::init()
 
     // Loads old state
     syncNotifications();
-    for (QMap<int,NotificationGroup*>::iterator it = m_Groups.begin(); it != m_Groups.end(); ) {
-        // Remove any empty groups after loading notifications
-        if ((*it)->notifications().isEmpty()) {
-            (*it)->removeGroup();
-            delete (*it);
-            it = m_Groups.erase(it);
-        } else
-            it++;
-    }
 
     CommHistoryService *service = CommHistoryService::instance();
     connect(service, SIGNAL(inboxObservedChanged(bool,QString)), SLOT(slotInboxObservedChanged()));
@@ -112,9 +101,9 @@ void NotificationManager::init()
     connect(service, SIGNAL(observedConversationsChanged(QVariantList)),
                      SLOT(slotObservedConversationsChanged(QVariantList)));
 
+    // For notifications fired when inbox is observed, clear them after NOTIFICATION_THRESHOLD
     m_NotificationTimer.setSingleShot(true);
     m_NotificationTimer.setInterval(NOTIFICATION_THRESHOLD);
-    connect(&m_NotificationTimer, SIGNAL(timeout()), this, SLOT(fireNotifications()));
     connect(&m_NotificationTimer, SIGNAL(timeout()), this, SLOT(slotInboxObservedChanged()));
 
     if (hasMessageNotification())
@@ -131,11 +120,49 @@ void NotificationManager::init()
 
 void NotificationManager::syncNotifications()
 {
-    QList<MNotificationGroup*> mgtGroups = MNotificationGroup::notificationGroups();
-    // Create NotificationGroup for our existing MNotificationGroups
-    foreach (MNotificationGroup *mgtGroup, mgtGroups) {
-        NotificationGroup *group = new NotificationGroup(mgtGroup);
-        m_Groups.insert(group->type(), group);
+    QList<PersonalNotification*> pnList;
+    QMap<int,int> typeCounts;
+    QList<QObject*> notifications = Notification::notifications();
+
+    foreach (QObject *o, notifications) {
+        Notification *n = static_cast<Notification*>(o);
+
+        if (n->previewBody().isEmpty() && !n->body().isEmpty() && n->hintValue("x-commhistoryd-data").isNull()) {
+            NotificationGroup *group = new NotificationGroup(n, this);
+            if (m_Groups.contains(group->type())) {
+                group->removeGroup();
+                delete group;
+                continue;
+            }
+
+            connect(group, SIGNAL(changed()), SLOT(slotNotificationGroupChanged()));
+            m_Groups.insert(group->type(), group);
+        } else {
+            PersonalNotification *pn = new PersonalNotification(this);
+            if (!pn->restore(n)) {
+                delete pn;
+                n->close();
+                delete n;
+                continue;
+            }
+
+            typeCounts[pn->eventType()]++;
+            pnList.append(pn);
+        }
+    }
+
+    foreach (PersonalNotification *pn, pnList)
+        resolveNotification(pn);
+
+    // Remove groups with no events or unresolved events
+    for (QMap<int,NotificationGroup*>::iterator it = m_Groups.begin(); it != m_Groups.end(); ) {
+        NotificationGroup *group = *it;
+        if (typeCounts[group->type()] < 1) {
+            group->removeGroup();
+            delete group;
+            it = m_Groups.erase(it);
+        } else
+            it++;
     }
 }
 
@@ -226,22 +253,26 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
 
     notification->setEventToken(event.messageToken());
 
-    if (event.remoteUid() == QLatin1String("<hidden>") || !chatName.isEmpty()) {
-        // Add notification immediately
-        addNotification(notification);
-    } else {
-        DEBUG() << Q_FUNC_INFO << "Trying to resolve contact for" << event.localUid() << event.remoteUid();
-        m_unresolvedEvents.append(notification);
-        m_contactListener->resolveContact(event.localUid(), event.remoteUid());
-    }
+    resolveNotification(notification);
 
-    // XXX Shouldn't this be done when the notification is fired..?
     if (event.type() == CommHistory::Event::SMSEvent ||
         event.type() == CommHistory::Event::MMSEvent) {
         // ask mce to undim the screen
         QString mceMethod = QString::fromLatin1(MCE_DISPLAY_ON_REQ);
         QDBusMessage msg = QDBusMessage::createMethodCall(MCE_SERVICE, MCE_REQUEST_PATH, MCE_REQUEST_IF, mceMethod);
         QDBusConnection::systemBus().call(msg, QDBus::NoBlock);
+    }
+}
+
+void NotificationManager::resolveNotification(PersonalNotification *pn)
+{
+    if (pn->remoteUid() == QLatin1String("<hidden>") || !pn->chatName().isEmpty()) {
+        // Add notification immediately
+        addNotification(pn);
+    } else {
+        DEBUG() << Q_FUNC_INFO << "Trying to resolve contact for" << pn->account() << pn->remoteUid();
+        m_unresolvedEvents.append(pn);
+        m_contactListener->resolveContact(pn->account(), pn->remoteUid());
     }
 }
 
@@ -417,6 +448,16 @@ QString NotificationManager::filteredInboxAccountPath()
     return CommHistoryService::instance()->inboxFilterAccount();
 }
 
+void NotificationManager::slotNotificationGroupChanged()
+{
+    NotificationGroup *group = qobject_cast<NotificationGroup*>(sender());
+    if (!group)
+        return;
+
+    if (CommHistoryService::instance()->inboxObserved())
+        m_NotificationTimer.start();
+}
+
 bool NotificationManager::removeNotificationGroup(int type)
 {
     DEBUG() << Q_FUNC_INFO << type;
@@ -439,111 +480,16 @@ void NotificationManager::addNotification(PersonalNotification *notification)
     NotificationGroup *group = m_Groups.value(eventType);
     if (!group) {
         group = new NotificationGroup(eventType, this);
+        connect(group, SIGNAL(changed()), SLOT(slotNotificationGroupChanged()));
         m_Groups.insert(eventType, group);
     }
 
     group->addNotification(notification);
 }
 
-void NotificationManager::startNotificationTimer()
-{
-    m_NotificationTimer.start();
-}
-
-bool NotificationManager::canShowNotification()
-{
-    return !m_NotificationTimer.isActive();
-}
-
 int NotificationManager::pendingEventCount()
 {
     return m_unresolvedEvents.size();
-}
-
-QString NotificationManager::createActionInbox()
-{
-    return MRemoteAction(MESSAGING_SERVICE_NAME,
-                         OBJECT_PATH,
-                         MESSAGING_INTERFACE,
-                         SHOW_INBOX_METHOD).toString();
-}
-
-QString NotificationManager::createActionConversation(const QString& accountPath,
-                                                      const QString& remoteUid,
-                                                      CommHistory::Group::ChatType chatType)
-{
-    QList<QVariant> args;
-    args.append(QVariant(accountPath));
-    args.append(QVariant(remoteUid));
-    args.append(QVariant((uint)chatType));
-    return MRemoteAction(MESSAGING_SERVICE_NAME,
-                         OBJECT_PATH,
-                         MESSAGING_INTERFACE,
-                         START_CONVERSATION_METHOD,
-                         args).toString();
-}
-
-QString NotificationManager::createActionCallHistory()
-{
-    QList<QVariant> args;
-    args.append(QVariant(QStringList() << CALL_HISTORY_PARAMETER));
-
-    return MRemoteAction(CALL_HISTORY_SERVICE_NAME,
-                         CALL_HISTORY_OBJECT_PATH,
-                         CALL_HISTORY_INTERFACE,
-                         CALL_HISTORY_METHOD,
-                         args).toString();
-}
-
-QString NotificationManager::createActionVoicemail()
-{
-    return MRemoteAction(CALL_HISTORY_SERVICE_NAME,
-                         VOICEMAIL_OBJECT_PATH,
-                         VOICEMAIL_INTERFACE,
-                         VOICEMAIL_METHOD).toString();
-}
-
-QString NotificationManager::action(NotificationGroup *group,
-                                    PersonalNotification *notification,
-                                    bool grouped)
-{
-    QString action;
-
-    switch (group->type())
-    {
-        case CommHistory::Event::IMEvent:
-        case CommHistory::Event::SMSEvent:
-        case CommHistory::Event::MMSEvent:
-        {
-            if (grouped)
-                action = createActionInbox();
-            else
-                action = createActionConversation(notification->account(),
-                                                  notification->targetId(),
-                                                  (CommHistory::Group::ChatType)notification->chatType());
-            break;
-        }
-        case CommHistory::Event::CallEvent:
-        {
-            action = createActionCallHistory();
-            break;
-        }
-        case CommHistory::Event::VoicemailEvent:
-        {
-            action = createActionVoicemail();
-            break;
-        }
-        case VOICEMAIL_SMS_EVENT_TYPE:
-        {
-            action = createActionConversation(notification->account(),
-                                              notification->targetId(),
-                                              (CommHistory::Group::ChatType)notification->chatType());
-        }
-        default:
-            break;
-    }
-
-    return action;
 }
 
 QString NotificationManager::notificationText(const CommHistory::Event& event)
@@ -585,6 +531,54 @@ QString NotificationManager::notificationText(const CommHistory::Event& event)
     return text;
 }
 
+void NotificationManager::setNotificationAction(Notification *notification, PersonalNotification *pn, bool grouped)
+{
+    switch (pn->eventType()) {
+        case CommHistory::Event::IMEvent:
+        case CommHistory::Event::SMSEvent:
+        case CommHistory::Event::MMSEvent:
+        case VOICEMAIL_SMS_EVENT_TYPE:
+            if (pn->eventType() != VOICEMAIL_SMS_EVENT_TYPE && grouped) {
+                notification->setRemoteDBusCallServiceName(MESSAGING_SERVICE_NAME);
+                notification->setRemoteDBusCallObjectPath(OBJECT_PATH);
+                notification->setRemoteDBusCallInterface(MESSAGING_INTERFACE);
+                notification->setRemoteDBusCallMethodName(SHOW_INBOX_METHOD);
+                notification->setRemoteDBusCallArguments(QVariantList());
+            } else {
+                notification->setRemoteDBusCallServiceName(MESSAGING_SERVICE_NAME);
+                notification->setRemoteDBusCallObjectPath(OBJECT_PATH);
+                notification->setRemoteDBusCallInterface(MESSAGING_INTERFACE);
+                notification->setRemoteDBusCallMethodName(START_CONVERSATION_METHOD);
+
+                QVariantList args;
+                args << pn->account() << pn->targetId() << uint(pn->chatType());
+                notification->setRemoteDBusCallArguments(args);
+            }
+            break;
+
+        case CommHistory::Event::CallEvent:
+            {
+                notification->setRemoteDBusCallServiceName(CALL_HISTORY_SERVICE_NAME);
+                notification->setRemoteDBusCallObjectPath(CALL_HISTORY_OBJECT_PATH);
+                notification->setRemoteDBusCallInterface(CALL_HISTORY_INTERFACE);
+                notification->setRemoteDBusCallMethodName(CALL_HISTORY_METHOD);
+
+                QVariantList args;
+                args << (QStringList() << CALL_HISTORY_PARAMETER);
+                notification->setRemoteDBusCallArguments(args);
+            }
+            break;
+
+        case CommHistory::Event::VoicemailEvent:
+            notification->setRemoteDBusCallServiceName(CALL_HISTORY_SERVICE_NAME);
+            notification->setRemoteDBusCallObjectPath(VOICEMAIL_OBJECT_PATH);
+            notification->setRemoteDBusCallInterface(VOICEMAIL_INTERFACE);
+            notification->setRemoteDBusCallMethodName(VOICEMAIL_METHOD);
+            notification->setRemoteDBusCallArguments(QVariantList());
+            break;
+    }
+}
+
 void NotificationManager::slotContactUpdated(quint32 localId, const QString &contactName,
                                              const QList<ContactListener::ContactAddress> &addresses)
 {
@@ -596,10 +590,8 @@ void NotificationManager::slotContactUpdated(quint32 localId, const QString &con
             if (ContactListener::addressMatchesList(notification->account(),
                         notification->remoteUid(), addresses)) {
                 DEBUG() << "Match existing notification" << notification->account() << notification->remoteUid();
-                if (localId != notification->contactId()) {
-                    notification->setContactId(localId);
-                    notification->setContactName(contactName);
-                }
+                notification->setContactId(localId);
+                notification->setContactName(contactName);
             }
         }
     }
@@ -608,21 +600,15 @@ void NotificationManager::slotContactUpdated(quint32 localId, const QString &con
     for (QList<PersonalNotification*>::iterator it = m_unresolvedEvents.begin(); it != m_unresolvedEvents.end(); ) {
         PersonalNotification *notification = *it;
 
-        // XXX Is this relevant here?
-        if (notification->remoteUid().isEmpty() || !notification->chatName().isEmpty()) {
-            addNotification(notification);
-            it = m_unresolvedEvents.erase(it);
-        } else if (ContactListener::addressMatchesList(notification->account(),
+        if (ContactListener::addressMatchesList(notification->account(),
                     notification->remoteUid(), addresses)) {
             notification->setContactId(localId);
             notification->setContactName(contactName);
             DEBUG() << "Resolved contact for notification" << notification->account() << notification->remoteUid();
             addNotification(notification);
             it = m_unresolvedEvents.erase(it);
-        } else {
+        } else
             it++;
-            continue;
-        }
     }
 }
 

@@ -4,7 +4,7 @@
 **
 ** Copyright (C) 2013 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: John Brooks <john.brooks@jollamobile.com>
+** Contact: John Brooks <john.brooks@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -29,7 +29,7 @@
 #include <QMetaType>
 #include <QTimer>
 
-class MNotificationGroup;
+class Notification;
 
 namespace CommHistory {
     class Event;
@@ -45,14 +45,14 @@ class NotificationGroup : public QObject
 
 public:
     explicit NotificationGroup(int type, QObject *parent = 0);
-    explicit NotificationGroup(MNotificationGroup *mGroup, QObject* parent = 0);
+    explicit NotificationGroup(Notification *mGroup, QObject* parent = 0);
     virtual ~NotificationGroup();
 
     static QString groupType(int eventType);
     static int eventType(const QString &groupType);
 
     int type() const;
-    MNotificationGroup *notificationGroup();
+    Notification *notification();
     QList<PersonalNotification*> notifications() const;
 
     /* Add a notification to this group
@@ -67,7 +67,7 @@ public:
      * The notification will be unpublished and its instance deleted. The group may be empty
      * afterwards, in which case it will also be unpublished. Caller should delete this instance
      * when empty afterwards, if desired. */
-    bool removeNotification(PersonalNotification *notification);
+    bool removeNotification(PersonalNotification *&notification);
 
 public slots:
     /* Update the group's message text and publish it if necessary. Should not need to be called
@@ -88,12 +88,13 @@ private slots:
 
 private:
     int m_type;
-    MNotificationGroup *mGroup;
+    Notification *mGroup;
     QList<PersonalNotification*> mNotifications;
     QTimer updateTimer;
 
     QStringList contactNames();
     QString notificationGroupText();
+    int countConversations();
 };
 
 } // namespace
