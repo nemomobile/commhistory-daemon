@@ -49,7 +49,7 @@ class PersonalNotification : public QObject, public Serialisable
     // ...and the same goes for Group::ChatType.
     Q_PROPERTY(uint chatType READ chatType WRITE setChatType)
 
-    Q_PROPERTY(int contactid READ contactId WRITE setContactId)
+    Q_PROPERTY(uint contactid READ contactId WRITE setContactId)
     Q_PROPERTY(QString notificationtext READ notificationText
                                         WRITE setNotificationText)
     Q_PROPERTY(bool haspendingevents READ hasPendingEvents
@@ -68,7 +68,7 @@ public:
                          CommHistory::Event::EventType eventType = CommHistory::Event::UnknownType,
                          const QString& targetId = QString(),
                          CommHistory::Group::ChatType chatType = CommHistory::Group::ChatTypeP2P,
-                         int contactId = 0,
+                         uint contactId = 0,
                          const QString& lastNotification = QString(),
                          QObject* parent = 0);
     PersonalNotification(const PersonalNotification& other);
@@ -86,7 +86,8 @@ public:
        requests. */
     QString targetId() const;
     uint chatType() const;
-    int contactId() const;
+    uint contactId() const;
+    QString contactName() const;
     QString notificationText() const;
     bool hasPendingEvents() const;
     QString chatName() const;
@@ -98,7 +99,8 @@ public:
     void setEventType(uint eventType);
     void setTargetId(const QString& targetId);
     void setChatType(uint chatType);
-    void setContactId(int contactId);
+    void setContactId(uint contactId);
+    void setContactName(const QString& contactName);
     void setNotificationText(const QString& notificationText);
     void setHasPendingEvents(bool hasPendingEvents = true);
     void setChatName(const QString& chatName);
@@ -111,7 +113,8 @@ private:
     uint m_eventType;
     QString m_targetId;
     uint m_chatType;
-    int m_contactId;
+    uint m_contactId;
+    QString m_contactName;
     QString m_notificationText;
     bool m_hasPendingEvents;
     QString m_chatName;

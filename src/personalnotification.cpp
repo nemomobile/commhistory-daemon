@@ -37,7 +37,7 @@ PersonalNotification::PersonalNotification(const QString& remoteUid,
                                            CommHistory::Event::EventType eventType,
                                            const QString& channelTargetId,
                                            CommHistory::Group::ChatType chatType,
-                                           int contactId,
+                                           uint contactId,
                                            const QString& lastNotification,
                                           QObject* parent) :
     QObject(parent), m_remoteUid(remoteUid), m_account(account),
@@ -62,6 +62,7 @@ PersonalNotification& PersonalNotification::operator=(const PersonalNotification
     setChatType(other.chatType());
     setAccount(other.account());
     setContactId(other.contactId());
+    setContactName(other.contactName());
     setNotificationText(other.notificationText());
     setHasPendingEvents(other.hasPendingEvents());
     setChatName(other.chatName());
@@ -95,7 +96,12 @@ uint PersonalNotification::chatType() const
     return m_chatType;
 }
 
-int PersonalNotification::contactId() const
+QString PersonalNotification::contactName() const
+{
+    return m_contactName;
+}
+
+uint PersonalNotification::contactId() const
 {
     return m_contactId;
 }
@@ -151,7 +157,12 @@ void PersonalNotification::setChatType(uint chatType)
     m_chatType = chatType;
 }
 
-void PersonalNotification::setContactId(int contactId)
+void PersonalNotification::setContactName(const QString& contactName)
+{
+    m_contactName = contactName;
+}
+
+void PersonalNotification::setContactId(uint contactId)
 {
     m_contactId = contactId;
 }

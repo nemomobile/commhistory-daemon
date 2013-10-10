@@ -34,13 +34,9 @@
 #include <QMultiHash>
 #include <QModelIndex>
 
-#include <QContact>
-#include <QContactManager>
-#include <QContactFetchRequest>
-#include <QContactFilter>
-
 #include <CommHistory/Event>
 #include <CommHistory/Group>
+#include <CommHistory/contactlistener.h>
 
 // our includes
 #include "notificationgroup.h"
@@ -71,6 +67,8 @@ typedef QPair<QString,QString> TpContactUid;
 class NotificationManager : public QObject
 {
     Q_OBJECT
+
+    typedef CommHistory::ContactListener::ContactAddress ContactAddress;
 
 public:
     /*!
@@ -112,16 +110,6 @@ public:
      */
     void playClass0SMSAlert();
 
-    /*!
-     * \brief Get the QContactManager.
-     */
-    QContactManager* contactManager();
-
-    int pendingRequestCount() const;
-
-Q_SIGNALS:
-    void pendingRequestCountChanged();
-
 public Q_SLOTS:
     /*!
      * \brief Removes notifications belonging to a particular account having optionally certain remote uids.
@@ -138,22 +126,16 @@ private Q_SLOTS:
     void slotObservedConversationsChanged(const QVariantList &conversations);
     void slotInboxObservedChanged();
     void slotCallHistoryObservedChanged(bool observed);
-    void slotResultsAvailable();
-    void slotResultsAvailableForUnknown();
     void fireNotifications();
-    void slotContactsAdded(const QList<QContactId> &contactIds);
-    void slotContactsRemoved(const QList<QContactId> &contactIds);
-    void slotContactsChanged(const QList<QContactId> &contactIds);
-    void fireUnknownContactsRequest();
-    void slotOnModelReady(bool status);
     void slotGroupRemoved(const QModelIndex &index, int start, int end);
     void slotMWICountChanged(int count);
-    void slotContactRequestTimeout();
     void slotGroupDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
     void slotNgfEventFinished(quint32 id);
+    void slotContactUpdated(quint32 localId, const QString &name, const QList<ContactAddress> &addresses);
+    void slotContactRemoved(quint32 localId);
+    void slotContactUnknown(const QPair<QString,QString> &address);
 
 private:
-
     NotificationManager( QObject* parent = 0);
     ~NotificationManager();
     bool isCurrentlyObservedByUI(const CommHistory::Event& event,
@@ -190,10 +172,6 @@ private:
     void saveState();
     void loadState();
 
-    /* contacts fetching */
-    void requestContact(TpContactUid contactUid);
-    void resolveEvents();
-    QString contactName(const QString &localUid, const QString &remoteUid);
     QStringList contactNames(const NotificationGroup& group);
 
     /* uses MeeGoTouch notification framework */
@@ -206,23 +184,19 @@ private:
     void removeGroup(int type);
 
     void startNotificationTimer();
-    void startContactsTimer();
     bool canShowNotification();
 
     void removeConversationNotifications(const QString &localId,
                                          const QString &remoteId,
                                          CommHistory::Group::ChatType chatType);
 
-    QContactFetchRequest* startContactRequest(QContactFilter &filter,
-                                              const char *resultSlot);
-    void updateNotificationContacts(const QList<QContactId> &contactIds);
     bool hasMessageNotification() const;
 
     void syncNotifications();
+    int pendingEventCount();
     void clearPendingEvents(const NotificationGroup &group);
     void removeNotPendingEvents(const NotificationGroup &group);
 
-    void clearContactsCache();
     QString notificationName(const PersonalNotification &notification);
     bool isFilteredInbox();
     QString filteredInboxAccountPath();
@@ -235,18 +209,13 @@ private:
     QFile m_Storage;
     bool m_Initialised;
 
-    QContactManager *m_pContactManager;
     QQueue<PersonalNotification> m_unresolvedEvents;
-    QHash<TpContactUid, QContact> m_contacts;
-    QHash<QContactFetchRequest*, TpContactUid> m_requests;
 
     // Delayed notifications
     QTimer m_NotificationTimer;
 
+    QSharedPointer<CommHistory::ContactListener> m_contactListener;
     CommHistory::GroupModel *m_GroupModel;
-    // contact request for unknown/modified group contact
-    QContactFilter m_ContactFilter;
-    QTimer m_ContactsTimer;
 
     MWIListener *m_pMWIListener;
     Ngf::Client *m_ngfClient;
