@@ -71,6 +71,7 @@ HEADERS += logger.h \
            accountoperationsobserver.h \
            accountpresenceifadaptor.h \
            accountpresenceservice.h \
+           lastdialedcache.h \
            debug.h
 
 SOURCES += main.cpp \
@@ -92,7 +93,8 @@ SOURCES += main.cpp \
            mwilistener.cpp \
            accountoperationsobserver.cpp \
            accountpresenceifadaptor.cpp \
-           accountpresenceservice.cpp
+           accountpresenceservice.cpp \
+           lastdialedcache.cpp
 
 # -----------------------------------------------------------------------------
 # Telepathy extensions.
