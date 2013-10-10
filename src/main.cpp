@@ -35,6 +35,7 @@
 #include "messagereviver.h"
 #include "contactauthorizationlistener.h"
 #include "connectionutils.h"
+#include "lastdialedcache.h"
 #include "accountoperationsobserver.h"
 #include "debug.h"
 
@@ -173,6 +174,8 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     NotificationManager::instance();
     DEBUG() << "NotificationManager created";
 
+    new LastDialedCache(&app);
+    DEBUG() << "LastDialedCache created";
 
     // Init account operations observer to monitor account removals and to react to them.
     new AccountOperationsObserver(utils->accountManager(), &app);
