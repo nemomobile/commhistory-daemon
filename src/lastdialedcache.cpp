@@ -39,7 +39,8 @@ LastDialedCache::LastDialedCache(QObject *parent)
     connect(model, SIGNAL(rowsInserted(QModelIndex,int,int)), SLOT(onRowsInserted(QModelIndex,int,int)));
     connect(model, SIGNAL(rowsRemoved(QModelIndex,int,int)), SLOT(onRowsRemoved(QModelIndex,int,int)));
 
-    model->setSorting(CallModel::SortByContact);
+    model->setTreeMode(false);
+    model->setSorting(CallModel::SortByTime);
     model->setFilterType(CallEvent::DialedCallType);
     model->setLimit(1);
     model->getEvents();
