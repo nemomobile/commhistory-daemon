@@ -48,33 +48,14 @@ private Q_SLOTS:
 
 // Test functions
 private Q_SLOTS:
-    /* IM notification tests */
-    void testAddImNotification();
-    void testAddGroupImNotification();
-    void testSaveAndLoadNotificationState();
-
-    /* Missed call notification tests */
-    void testAddMissedCallNotification();
-    void testAddGroupMissedCallNotification();
-
-    void testRemoveNotificationGrouop();
-
-    // showNotification tests
-    void testImNotification();
-    void testVoicemail();
-    void testMissedCallNotification();
+    void testShowNotification();
 
 private:
-    void updateNotification(CommHistory::Event& event);
-    CommHistory::Event createImEvent(const QString& remoteUid, int contactId);
-    PersonalNotification createPersonalNotification(const CommHistory::Event &event);
-    CommHistory::Event createMissedCallEvent(const QString& remoteUid, int contactId);
-    static MNotificationGroup* getGroup(int eventType, int msec);
-    static void removeGroup(int eventType);
-
-private:
-    int eventId;
     NotificationManager* nm;
+    int eventId;
+
+    CommHistory::Event createEvent(CommHistory::Event::EventType type, const QString &remoteUid);
+    PersonalNotification *getNotification(const CommHistory::Event &event);
 };
 
 }
