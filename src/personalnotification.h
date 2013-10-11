@@ -82,6 +82,8 @@ public:
     void publishNotification();
     void removeNotification();
 
+    Notification *notification() const { return m_notification; }
+
     QString notificationName() const;
 
     QString remoteUid() const;
