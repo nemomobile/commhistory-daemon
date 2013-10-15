@@ -2,8 +2,9 @@
 **
 ** This file is part of commhistory-daemon.
 **
+** Copyright (C) 2013 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: Reto Zingg <reto.zingg@nokia.com>
+** Contact: John Brooks <john.brooks@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -26,22 +27,6 @@
 #include <QTimer>
 #include <QDir>
 
-// MeegoTouch includes
-#include <MLocale>
-#include <MRemoteAction>
-#include <MNotification>
-#include <MNotificationGroup>
-
-// contacts
-#include <QContactManager>
-#include <QContactFetchRequest>
-#include <QContactOnlineAccount>
-#include <QContactDetailFilter>
-#include <QContactPhoneNumber>
-#include <QContactName>
-#include <QContactDisplayLabel>
-#include <QContactIdFilter>
-
 // CommHistory includes
 #include <CommHistory/commonutils.h>
 #include <CommHistory/GroupModel>
@@ -52,6 +37,9 @@
 
 // NGF-Qt includes
 #include <NgfClient>
+
+// nemo notifications
+#include <notification.h>
 
 // mce
 #include <mce/dbus-names.h>
@@ -64,128 +52,26 @@
 #include "commhistoryservice.h"
 #include "debug.h"
 
-QT_BEGIN_NAMESPACE_CONTACTS
-
-static const int QContactOnlineAccount__FieldAccountPath = (QContactOnlineAccount::FieldSubTypes+1);
-static const int QContactOnlineAccount__FieldAccountIconPath = (QContactOnlineAccount::FieldSubTypes+2);
-static const int QContactOnlineAccount__FieldEnabled = (QContactOnlineAccount::FieldSubTypes+3);
-
-QT_END_NAMESPACE_CONTACTS
-
 using namespace RTComLogger;
 using namespace CommHistory;
 
 NotificationManager* NotificationManager::m_pInstance = 0;
 
-namespace {
-
-QContactId apiId(const QContact &contact) { return contact.id(); }
-
-int internalId(const QContact &contact)
-{
-    // We need to be able to represent an ID as a 32-bit int; we could use
-    // hashing, but for now we will just extract the integral part of the ID
-    // string produced by qtcontacts-sqlite
-    const QContactId id(contact.id());
-    if (!id.isNull()) {
-        QStringList components = id.toString().split(QChar::fromLatin1(':'));
-        const QString &idComponent = components.isEmpty() ? QString() : components.last();
-        if (idComponent.startsWith(QString::fromLatin1("sql-"))) {
-            return static_cast<int>(idComponent.mid(4).toUInt());
-        }
-    }
-    return 0;
-}
-
-template<typename T, typename F>
-void setFilterDetail(QContactDetailFilter &filter, F field)
-{
-    filter.setDetailType(T::Type, field);
-}
-
-QContactFilter createContactFilter(const QString &localUid, const QString &remoteUid)
-{
-    if (localUid == RING_ACCOUNT_PATH || localUid == MMS_ACCOUNT_PATH) {
-        return QContactPhoneNumber::match(remoteUid);
-    } else {
-        QContactDetailFilter filterLocal;
-        setFilterDetail<QContactOnlineAccount>(filterLocal, QContactOnlineAccount__FieldAccountPath);
-        filterLocal.setValue(localUid);
-
-        QContactDetailFilter filterRemote;
-        setFilterDetail<QContactOnlineAccount>(filterRemote, QContactOnlineAccount::FieldAccountUri);
-        filterRemote.setValue(remoteUid);
-
-        // for phone calls over SIP/Skype check remote id as a phone number
-        QString number = CommHistory::normalizePhoneNumber(remoteUid);
-        if (number.isEmpty()) {
-            return filterLocal & filterRemote;
-        } else {
-            return ((filterLocal & filterRemote)
-                    | QContactPhoneNumber::match(remoteUid));
-        }
-    }
-}
-
-QContactFilter addContactFilter(const QContactFilter &existingFilter,
-                                const QContactFilter &newFilter)
-{
-    if (existingFilter == QContactFilter())
-        return newFilter;
-
-    return existingFilter | newFilter;
-}
-
-bool matchContact(const QList<QContactOnlineAccount> &accounts,
-                  const QList<QContactPhoneNumber> &phones,
-                  const QString &localUid,
-                  const QString &remoteUid)
-{
-    foreach (QContactOnlineAccount account, accounts) {
-        if (localUid == account.value<QString>(QContactOnlineAccount__FieldAccountPath)
-            && CommHistory::remoteAddressMatch(remoteUid, account.value<QString>(QContactOnlineAccount::FieldAccountUri)))
-            return true;
-    }
-
-    foreach (QContactPhoneNumber phone, phones) {
-        if (CommHistory::remoteAddressMatch(remoteUid, phone.number()))
-            return true;
-    }
-    return false;
-}
-
-}
-
 // constructor
 //
 NotificationManager::NotificationManager(QObject* parent)
         : QObject(parent)
-        , m_Storage(QDir::homePath() + COMMHISTORYD_NOTIFICATIONSSTORAGE)
         , m_Initialised(false)
-        , m_pContactManager(0)
         , m_GroupModel(0)
         , m_ngfClient(0)
         , m_ngfEvent(0)
 {
-    qRegisterMetaType<RTComLogger::NotificationGroup>("RTComLogger::NotificationGroup");
-    qRegisterMetaTypeStreamOperators<RTComLogger::NotificationGroup>("RTComLogger::NotificationGroup");
-    qRegisterMetaType<RTComLogger::PersonalNotification>("RTComLogger::PersonalNotification");
-    qRegisterMetaTypeStreamOperators<RTComLogger::PersonalNotification>("RTComLogger::PersonalNotification");
 }
 
 NotificationManager::~NotificationManager()
 {
-    if (removeNotificationGroup(CommHistory::Event::VoicemailEvent))
-        saveState();
-
-    foreach (MNotificationGroup *group, m_MgtGroups) {
-        delete group;
-    }
-    m_MgtGroups.clear();
-
-    foreach(QContactFetchRequest *request, m_requests.keys())
-        delete request;
-    m_requests.clear();
+    qDeleteAll(m_Groups);
+    qDeleteAll(m_unresolvedEvents);
 }
 
 void NotificationManager::init()
@@ -194,14 +80,19 @@ void NotificationManager::init()
         return;
     }
 
+    m_contactListener = ContactListener::instance();
+    connect(m_contactListener.data(), SIGNAL(contactUpdated(quint32,QString,QList<ContactAddress>)),
+            SLOT(slotContactUpdated(quint32,QString,QList<ContactAddress>)));
+    connect(m_contactListener.data(), SIGNAL(contactRemoved(quint32)),
+            SLOT(slotContactRemoved(quint32)));
+    connect(m_contactListener.data(), SIGNAL(contactUnknown(QPair<QString,QString>)),
+            SLOT(slotContactUnknown(QPair<QString,QString>)));
+
     m_ngfClient = new Ngf::Client(this);
     connect(m_ngfClient, SIGNAL(eventFailed(quint32)), SLOT(slotNgfEventFinished(quint32)));
     connect(m_ngfClient, SIGNAL(eventCompleted(quint32)), SLOT(slotNgfEventFinished(quint32)));
 
-    // creates data directory
-    createDataDir();
     // Loads old state
-    loadState();
     syncNotifications();
 
     CommHistoryService *service = CommHistoryService::instance();
@@ -210,17 +101,10 @@ void NotificationManager::init()
     connect(service, SIGNAL(observedConversationsChanged(QVariantList)),
                      SLOT(slotObservedConversationsChanged(QVariantList)));
 
+    // For notifications fired when inbox is observed, clear them after NOTIFICATION_THRESHOLD
     m_NotificationTimer.setSingleShot(true);
     m_NotificationTimer.setInterval(NOTIFICATION_THRESHOLD);
-    connect(&m_NotificationTimer, SIGNAL(timeout()), this, SLOT(fireNotifications()));
     connect(&m_NotificationTimer, SIGNAL(timeout()), this, SLOT(slotInboxObservedChanged()));
-
-    m_ContactsTimer.setSingleShot(true);
-    m_ContactsTimer.setInterval(CONTACT_REQUEST_THRESHOLD);
-    connect(&m_ContactsTimer, SIGNAL(timeout()), this, SLOT(fireUnknownContactsRequest()));
-
-    // start contact tracking
-    contactManager();
 
     if (hasMessageNotification())
         groupModel();
@@ -236,28 +120,49 @@ void NotificationManager::init()
 
 void NotificationManager::syncNotifications()
 {
-    QList<MNotificationGroup*> mgtGroups = MNotificationGroup::notificationGroups();
-    foreach (NotificationGroup group, m_Notifications.uniqueKeys()) {
-        // for a chd group find matched meego touch group
-        foreach(MNotificationGroup *mgtGroup, mgtGroups) {
-            if (mgtGroup->eventType() == eventType(group.type())) {
-                m_MgtGroups.insert(group.type(), mgtGroup);
-                mgtGroups.removeOne(mgtGroup);
-                break;
-            }
-        }
+    QList<PersonalNotification*> pnList;
+    QMap<int,int> typeCounts;
+    QList<QObject*> notifications = Notification::notifications();
 
-        if (!m_MgtGroups.contains(group.type()))
-            addGroup(group.type());
+    foreach (QObject *o, notifications) {
+        Notification *n = static_cast<Notification*>(o);
+
+        if (n->previewBody().isEmpty() && !n->body().isEmpty() && n->hintValue("x-commhistoryd-data").isNull()) {
+            NotificationGroup *group = new NotificationGroup(n, this);
+            if (m_Groups.contains(group->type())) {
+                group->removeGroup();
+                delete group;
+                continue;
+            }
+
+            connect(group, SIGNAL(changed()), SLOT(slotNotificationGroupChanged()));
+            m_Groups.insert(group->type(), group);
+        } else {
+            PersonalNotification *pn = new PersonalNotification(this);
+            if (!pn->restore(n)) {
+                delete pn;
+                n->close();
+                delete n;
+                continue;
+            }
+
+            typeCounts[pn->eventType()]++;
+            pnList.append(pn);
+        }
     }
 
-    if (mgtGroups.size() > 0) {
-        qWarning() << "Mismatch between meegoo groups and our groups:";
-        foreach(MNotificationGroup *mgtGroup, mgtGroups) {
-            qWarning() << mgtGroup->eventType();
-            mgtGroup->remove();
-            delete mgtGroup;
-        }
+    foreach (PersonalNotification *pn, pnList)
+        resolveNotification(pn);
+
+    // Remove groups with no events or unresolved events
+    for (QMap<int,NotificationGroup*>::iterator it = m_Groups.begin(); it != m_Groups.end(); ) {
+        NotificationGroup *group = *it;
+        if (typeCounts[group->type()] < 1) {
+            group->removeGroup();
+            delete group;
+            it = m_Groups.erase(it);
+        } else
+            it++;
     }
 }
 
@@ -276,37 +181,22 @@ bool NotificationManager::updateEditedEvent(const CommHistory::Event& event)
     if (event.messageToken().isEmpty())
         return false;
 
-    QMutableListIterator<PersonalNotification> i(m_unresolvedEvents);
-    while (i.hasNext()) {
-        if (i.value().eventToken() == event.messageToken()) {
-            PersonalNotification pn = i.value();
-            i.remove();
-
-            pn.setNotificationText(notificationText(event));
-            pn.setHasPendingEvents(true);
-            m_unresolvedEvents.enqueue(pn);
-
+    foreach (PersonalNotification *notification, m_unresolvedEvents) {
+        if (notification->eventToken() == event.messageToken()) {
+            notification->setNotificationText(notificationText(event));
             return true;
         }
     }
 
-    NotificationGroup eventGroup = notificationGroup(event.type());
-    QHash<NotificationGroup, PersonalNotification>::iterator j = m_Notifications.find(eventGroup);
-    while (j != m_Notifications.end() &&  j.key() == eventGroup) {
-        if (j.value().eventToken() == event.messageToken()) {
-            PersonalNotification pn = j.value();
-            m_Notifications.erase(j);
+    NotificationGroup *eventGroup = m_Groups.value(event.type());
+    if (!eventGroup)
+        return false;
 
-            pn.setNotificationText(notificationText(event));
-            pn.setHasPendingEvents(true);
-
-            m_Notifications.insertMulti(eventGroup, pn);
-
-            fireNotifications();
-
+    foreach (PersonalNotification *pn, eventGroup->notifications()) {
+        if (pn->eventToken() == event.messageToken()) {
+            pn->setNotificationText(notificationText(event));
             return true;
         }
-        ++j;
     }
 
     return false;
@@ -318,61 +208,7 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
 {
     DEBUG() << Q_FUNC_INFO << event.id() << channelTargetId << chatType;
 
-    bool observed = isCurrentlyObservedByUI(event, channelTargetId, chatType);
-    if (!event.isRead() && !observed) {
-        // try to update notifications for existing event
-        if (event.isValid() && updateEditedEvent(event))
-            return;
-
-        // Get MUC topic from group
-        QString chatName;
-        if (m_GroupModel && (chatType == CommHistory::Group::ChatTypeUnnamed ||
-            chatType == CommHistory::Group::ChatTypeRoom)) {
-            for (int i = 0; i < m_GroupModel->rowCount(); i++) {
-                QModelIndex row = m_GroupModel->index(i, 0);
-                CommHistory::Group group = m_GroupModel->group(row);
-                if (group.isValid() && group.id() == event.groupId()) {
-                    chatName = group.chatName();
-                    if (chatName.isEmpty())
-                        chatName = txt_qtn_msg_group_chat;
-                    DEBUG() << Q_FUNC_INFO << "Using chatName:" << chatName;
-                    break;
-                }
-            }
-        }
-
-        PersonalNotification notification(event.remoteUid(),
-                                          event.localUid(),
-                                          event.type(),
-                                          channelTargetId,
-                                          chatType);
-        notification.setNotificationText(notificationText(event));
-        notification.setSmsReplaceNumber(event.headers().value(REPLACE_TYPE));
-
-        if (!chatName.isEmpty())
-            notification.setChatName(chatName);
-
-        notification.setEventToken(event.messageToken());
-
-        m_unresolvedEvents.enqueue(notification);
-
-        TpContactUid cuid(event.localUid(),
-                          event.remoteUid());
-        if (event.remoteUid() != QLatin1String("<hidden>") // private number
-            && !m_contacts.contains(cuid)
-            && chatName.isEmpty())
-            requestContact(cuid);
-        else
-            resolveEvents();
-
-        if (event.type() == CommHistory::Event::SMSEvent ||
-            event.type() == CommHistory::Event::MMSEvent) {
-            // ask mce to undim the screen
-            QString mceMethod = QString::fromLatin1(MCE_DISPLAY_ON_REQ);
-            QDBusMessage msg = QDBusMessage::createMethodCall(MCE_SERVICE, MCE_REQUEST_PATH, MCE_REQUEST_IF, mceMethod);
-            QDBusConnection::systemBus().call(msg, QDBus::NoBlock);
-        }
-    } else {
+    if (event.isRead() || isCurrentlyObservedByUI(event, channelTargetId, chatType)) {
         if (!m_ngfClient->isConnected())
             m_ngfClient->connect();
 
@@ -382,6 +218,61 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
             else
                 m_ngfEvent = m_ngfClient->play(QLatin1Literal("chat_fg"));
         }
+
+        return;
+    }
+
+    // try to update notifications for existing event
+    if (event.isValid() && updateEditedEvent(event))
+        return;
+
+    // Get MUC topic from group
+    QString chatName;
+    if (m_GroupModel && (chatType == CommHistory::Group::ChatTypeUnnamed ||
+        chatType == CommHistory::Group::ChatTypeRoom)) {
+        for (int i = 0; i < m_GroupModel->rowCount(); i++) {
+            QModelIndex row = m_GroupModel->index(i, 0);
+            CommHistory::Group group = m_GroupModel->group(row);
+            if (group.isValid() && group.id() == event.groupId()) {
+                chatName = group.chatName();
+                if (chatName.isEmpty())
+                    chatName = txt_qtn_msg_group_chat;
+                DEBUG() << Q_FUNC_INFO << "Using chatName:" << chatName;
+                break;
+            }
+        }
+    }
+
+    PersonalNotification *notification = new PersonalNotification(event.remoteUid(),
+            event.localUid(), event.type(), channelTargetId, chatType);
+    notification->setNotificationText(notificationText(event));
+    notification->setSmsReplaceNumber(event.headers().value(REPLACE_TYPE));
+
+    if (!chatName.isEmpty())
+        notification->setChatName(chatName);
+
+    notification->setEventToken(event.messageToken());
+
+    resolveNotification(notification);
+
+    if (event.type() == CommHistory::Event::SMSEvent ||
+        event.type() == CommHistory::Event::MMSEvent) {
+        // ask mce to undim the screen
+        QString mceMethod = QString::fromLatin1(MCE_DISPLAY_ON_REQ);
+        QDBusMessage msg = QDBusMessage::createMethodCall(MCE_SERVICE, MCE_REQUEST_PATH, MCE_REQUEST_IF, mceMethod);
+        QDBusConnection::systemBus().call(msg, QDBus::NoBlock);
+    }
+}
+
+void NotificationManager::resolveNotification(PersonalNotification *pn)
+{
+    if (pn->remoteUid() == QLatin1String("<hidden>") || !pn->chatName().isEmpty()) {
+        // Add notification immediately
+        addNotification(pn);
+    } else {
+        DEBUG() << Q_FUNC_INFO << "Trying to resolve contact for" << pn->account() << pn->remoteUid();
+        m_unresolvedEvents.append(pn);
+        m_contactListener->resolveContact(pn->account(), pn->remoteUid());
     }
 }
 
@@ -445,10 +336,8 @@ void NotificationManager::removeNotifications(const QString &accountPath, bool m
     QSet<NotificationGroup> updatedGroups;
 
     // remove matched notifications and update group
-    QMutableHashIterator<NotificationGroup, PersonalNotification> i(m_Notifications);
-    while (i.hasNext()) {
-        i.next();
-        int eventType = i.value().eventType();
+    foreach (NotificationGroup *group, m_Groups) {
+        int eventType = group->type();
 
         // If removal should be done based on Inbox being observed then remove only those notifications
         // that belong to messaging-ui area:
@@ -458,25 +347,22 @@ void NotificationManager::removeNotifications(const QString &accountPath, bool m
             continue;
         }
 
-        // Remove only a notification matching to the account:
-        if (i.key().isValid() && MAP_MMS_TO_RING(i.value().account()) == accountPath) {
-            DEBUG() << Q_FUNC_INFO << "Removing notification: accountPath: " << i.value().account() << " remoteUid: " << i.value().targetId();
-            // record notification group id
-            updatedGroups.insert(i.key());
-            // no need to resolve events anymore -> remove personal notification from queue
-            m_unresolvedEvents.removeAll(i.value());
-            // at last, delete _i_
-            i.remove();
+        foreach (PersonalNotification *notification, group->notifications()) {
+            // Remove only a notification matching to the account:
+            if (MAP_MMS_TO_RING(notification->account()) == accountPath) {
+                DEBUG() << Q_FUNC_INFO << "Removing notification: accountPath: " << notification->account() << " remoteUid: " << notification->remoteUid();
+                group->removeNotification(notification);
+            }
         }
     }
 
-    if (!updatedGroups.isEmpty()) {
-
-        clearContactsCache();
-        foreach(NotificationGroup group, updatedGroups)
-            updateNotificationGroup(group);
-
-        saveState();
+    for (QList<PersonalNotification*>::iterator it = m_unresolvedEvents.begin();
+            it != m_unresolvedEvents.end(); ) {
+        if (MAP_MMS_TO_RING((*it)->account()) == accountPath) {
+            delete *it;
+            it = m_unresolvedEvents.erase(it);
+        } else
+            it++;
     }
 }
 
@@ -484,41 +370,28 @@ void NotificationManager::removeConversationNotifications(const QString &localUi
                                                           const QString &remoteUid,
                                                           CommHistory::Group::ChatType chatType)
 {
-    QSet<NotificationGroup> updatedGroups;
+    foreach (NotificationGroup *group, m_Groups) {
+        int eventType = group->type();
+        if (eventType != CommHistory::Event::IMEvent
+             && eventType != CommHistory::Event::SMSEvent
+             && eventType != CommHistory::Event::MMSEvent
+             && eventType != VOICEMAIL_SMS_EVENT_TYPE)
+            continue;
 
-    // remove matched notifications and udpate group
-    QMutableHashIterator<NotificationGroup,PersonalNotification> i(m_Notifications);
-    while (i.hasNext()) {
-        i.next();
-        if (i.key().isValid()) {
-            int eventType = i.key().type();
-
+        foreach (PersonalNotification *notification, group->notifications()) {
             QString notificationRemoteUidStr;
             // For p-to-p chat we use remote uid for comparison and for MUC we use target (channel) id:
             if (chatType == CommHistory::Group::ChatTypeP2P)
-                notificationRemoteUidStr = i.value().remoteUid();
+                notificationRemoteUidStr = notification->remoteUid();
             else
-                notificationRemoteUidStr = i.value().targetId();
+                notificationRemoteUidStr = notification->targetId();
 
-            if ((eventType == CommHistory::Event::IMEvent
-                 || eventType == CommHistory::Event::SMSEvent
-                 || eventType == CommHistory::Event::MMSEvent
-                 || eventType == VOICEMAIL_SMS_EVENT_TYPE)
-                && MAP_MMS_TO_RING(i.value().account()) == localUid
-                && CommHistory::remoteAddressMatch(notificationRemoteUidStr,
-                                                   remoteUid)
-                && (CommHistory::Group::ChatType)(i.value().chatType()) == chatType) {
-                updatedGroups.insert(i.key());
-                i.remove();
+            if (MAP_MMS_TO_RING(notification->account()) == localUid
+                    && CommHistory::remoteAddressMatch(notificationRemoteUidStr, remoteUid)
+                    && (CommHistory::Group::ChatType)(notification->chatType()) == chatType) {
+                group->removeNotification(notification);
             }
         }
-    }
-
-    if (!updatedGroups.isEmpty()) {
-        clearContactsCache();
-        foreach(NotificationGroup group, updatedGroups)
-            updateNotificationGroup(group);
-        saveState();
     }
 }
 
@@ -542,15 +415,12 @@ void NotificationManager::slotInboxObservedChanged()
     bool observed = CommHistoryService::instance()->inboxObserved();
     if (observed) {
         if (!isFilteredInbox()) {
-            // remove sms, mms and im notification groups and save state
+            // remove sms, mms and im notification groups
             // remove meegotouch groups
-            bool save = false;
-            save = removeNotificationGroup(CommHistory::Event::IMEvent) || save;
-            save = removeNotificationGroup(CommHistory::Event::SMSEvent) || save;
-            save = removeNotificationGroup(CommHistory::Event::MMSEvent) || save;
-            save = removeNotificationGroup(VOICEMAIL_SMS_EVENT_TYPE) || save;
-            if (save)
-                saveState();
+            removeNotificationGroup(CommHistory::Event::IMEvent);
+            removeNotificationGroup(CommHistory::Event::SMSEvent);
+            removeNotificationGroup(CommHistory::Event::MMSEvent);
+            removeNotificationGroup(VOICEMAIL_SMS_EVENT_TYPE);
         } else {
             // Filtering is in use, remove only notifications of that account whose threads are visible in inbox:
             QString filteredAccountPath = filteredInboxAccountPath();
@@ -564,8 +434,7 @@ void NotificationManager::slotInboxObservedChanged()
 void NotificationManager::slotCallHistoryObservedChanged(bool observed)
 {
     if (observed) {
-        if (removeNotificationGroup(CommHistory::Event::CallEvent))
-            saveState();
+        removeNotificationGroup(CommHistory::Event::CallEvent);
     }
 }
 
@@ -579,350 +448,48 @@ QString NotificationManager::filteredInboxAccountPath()
     return CommHistoryService::instance()->inboxFilterAccount();
 }
 
-void NotificationManager::clearContactsCache()
+void NotificationManager::slotNotificationGroupChanged()
 {
-    QList<TpContactUid> tpContactUids;
-    QList<NotificationGroup> keys = m_Notifications.uniqueKeys();
+    NotificationGroup *group = qobject_cast<NotificationGroup*>(sender());
+    if (!group)
+        return;
 
-    foreach(NotificationGroup ng,keys) {
-        QList<PersonalNotification> notifications = m_Notifications.values(ng);
-        foreach(PersonalNotification pn,notifications) {
-            TpContactUid cuid(pn.account(), pn.remoteUid());
-            if (!tpContactUids.contains(cuid))
-                tpContactUids.append(cuid);
-        }
-    }
-
-    QMutableHashIterator<TpContactUid, QContact> contactIt(m_contacts);
-    while (contactIt.hasNext()) {
-        contactIt.next();
-        if (!tpContactUids.contains(contactIt.key())) {
-            DEBUG() << Q_FUNC_INFO << "Removing contact " << contactIt.key().second;
-            contactIt.remove();
-        }
-    }
+    if (CommHistoryService::instance()->inboxObserved())
+        m_NotificationTimer.start();
 }
 
 bool NotificationManager::removeNotificationGroup(int type)
 {
     DEBUG() << Q_FUNC_INFO << type;
 
-    NotificationGroup group(type);
-    removeGroup(type);
-    bool success = m_Notifications.remove(group) > 0;
+    QMap<int,NotificationGroup*>::iterator it = m_Groups.find(type);
+    if (it == m_Groups.end())
+        return false;
 
-    /* We need to iterate here through the still existing notification groups and if our contact cache contains
-       a contact not belonging to any of those existing notification groups anymore then we can delete that contact
-       from the contact cache. */
-    if (success)
-        clearContactsCache();
+    (*it)->removeGroup();
+    delete *it;
+    m_Groups.erase(it);
 
-    return success;
+    return true;
 }
 
-NotificationGroup NotificationManager::notificationGroup(int type)
+void NotificationManager::addNotification(PersonalNotification *notification)
 {
-    NotificationGroup group(type);
+    uint eventType = notification->eventType();
 
-    if (!m_MgtGroups.contains(type))
-        addGroup(type);
-
-    return group;
-}
-
-void NotificationManager::addNotification(PersonalNotification notification)
-{
-    DEBUG() << Q_FUNC_INFO;
-
-    uint eventType = notification.eventType();
-
-    NotificationGroup notificationgroup = notificationGroup(eventType);
-
-    if(!notificationgroup.isValid()) {
-        qWarning() << Q_FUNC_INFO << "Wrong notification group";
-        return;
+    NotificationGroup *group = m_Groups.value(eventType);
+    if (!group) {
+        group = new NotificationGroup(eventType, this);
+        connect(group, SIGNAL(changed()), SLOT(slotNotificationGroupChanged()));
+        m_Groups.insert(eventType, group);
     }
 
-    notification.setHasPendingEvents();
-
-    m_Notifications.insertMulti(notificationgroup, notification);
-
-    saveState();
+    group->addNotification(notification);
 }
 
-void NotificationManager::resolveEvents()
+int NotificationManager::pendingEventCount()
 {
-    while(!m_unresolvedEvents.isEmpty()) {
-        PersonalNotification &notification = m_unresolvedEvents.head();
-
-        TpContactUid cuid(notification.account(), notification.remoteUid());
-
-        if (notification.remoteUid().isEmpty() || !notification.chatName().isEmpty()) {
-            addNotification(m_unresolvedEvents.dequeue());
-        } else if (m_contacts.contains(cuid)) {
-            QContact contact = m_contacts.value(cuid);
-
-            //set contact id for usage by notification key
-            if (!contact.isEmpty())
-                notification.setContactId(internalId(contact));
-            else if (m_requests.key(cuid) != NULL) // if contact is empty
-                break;                             // but there is pending request for it
-                                                   // wait
-
-            addNotification(m_unresolvedEvents.dequeue());
-        } else
-            break;
-    }
-
-    fireNotifications();
-}
-
-void NotificationManager::fireNotifications()
-{
-    DEBUG() << Q_FUNC_INFO;
-
-    // if we cant show notification
-    // return
-    if (!canShowNotification()) {
-        // when new event is received and timer is active
-        // restart timer
-        startNotificationTimer();
-        return;
-    }
-
-    // find notifications that we need to show
-    QList<NotificationGroup> keys = m_Notifications.uniqueKeys();
-    foreach(NotificationGroup ng ,keys) {
-        if (ng.isValid()) {
-            PersonalNotification pn = m_Notifications.value(ng);
-            if (pn.hasPendingEvents()) {
-                showLatestNotification(ng, pn);
-            }
-        } else {
-            // show group-less notification in received order
-            QList<PersonalNotification> ungrouped = m_Notifications.values(ng);
-            QMutableListIterator<PersonalNotification> i(ungrouped);
-            i.toBack();
-            while (i.hasPrevious()) {
-                showLatestNotification(ng, i.previous());
-            }
-        }
-    }
-}
-
-void NotificationManager::startNotificationTimer()
-{
-    m_NotificationTimer.start();
-}
-
-bool NotificationManager::canShowNotification()
-{
-    return !m_NotificationTimer.isActive();
-}
-
-QString NotificationManager::eventType(int type)
-{
-    QString event;
-    for(int i = 0; i < _eventTypesCount; i++) {
-        if(_eventTypes[i].type == type) {
-            event = QLatin1String(_eventTypes[i].event);
-            break;
-        }
-    }
-    return event;
-}
-
-void NotificationManager::clearPendingEvents(const NotificationGroup &group)
-{
-    QList<PersonalNotification> notifications = m_Notifications.values(group);
-    m_Notifications.remove(group);
-
-    // clear HasPendingEvents() for each notification
-    // and keep the order of notifications intact
-    while (!notifications.isEmpty()) {
-        PersonalNotification p = notifications.takeLast();
-        p.setHasPendingEvents(false);
-        m_Notifications.insertMulti(group, p);
-    }
-}
-
-void NotificationManager::removeNotPendingEvents(const NotificationGroup &group)
-{
-    QList<PersonalNotification> notifications = m_Notifications.values(group);
-    m_Notifications.remove(group);
-
-    while (!notifications.isEmpty()) {
-        PersonalNotification p = notifications.takeLast();
-        if (p.hasPendingEvents()) {
-            m_Notifications.insertMulti(group, p);
-        }
-    }
-
-    clearContactsCache();
-}
-
-void NotificationManager::showLatestNotification(const NotificationGroup &group,
-                                                 PersonalNotification &notification)
-{
-    DEBUG() << Q_FUNC_INFO;
-
-    MNotificationGroup *mgroup = m_MgtGroups.value(group.type());
-    if (mgroup) {
-        // reset counters if the group has been cleared
-        if (mgroup->notificationCount() == 0)
-            removeNotPendingEvents(group);
-    } else {
-        qWarning() << Q_FUNC_INFO << "NULL group for " << group.type();
-    }
-
-    // show personal notification
-    int type = group.type(); // event type
-    QString name;
-
-    // voicemail notifications shouldn't have contact name
-    if (type != CommHistory::Event::VoicemailEvent && type != VOICEMAIL_SMS_EVENT_TYPE) {
-        name = notificationName(notification);
-    }
-
-    QString activateAction = action(group, notification, false);
-
-    QString event = eventType(type);
-
-    MNotification mnote(event,
-                        name,
-                        notification.notificationText());
-    if (group.isValid() && m_MgtGroups.contains(type))
-        mnote.setGroup(*m_MgtGroups.value(type));
-
-    mnote.setAction(MRemoteAction(activateAction, this));
-    mnote.publish();
-
-    if (group.isValid()) {
-        clearPendingEvents(group);
-        updateNotificationGroup(group);
-    } else {
-        m_Notifications.remove(group, notification);
-    }
-
-    // event was shown to the user
-    // start notification threshold timer
-    startNotificationTimer();
-}
-
-void NotificationManager::updateNotificationGroup(const NotificationGroup &group)
-{
-    DEBUG() << Q_FUNC_INFO;
-
-    if (m_Notifications.contains(group)) {
-        const PersonalNotification notification = m_Notifications.value(group);
-
-        QString name;
-
-        // update group notification
-        bool grouped = countContacts(group) > 1;
-        // get group message
-        QString message = notificationGroupText(group, notification);
-        // get group action
-        QString groupAction = action(group, notification, grouped);
-
-        ML10N::MLocale tempLocale;
-        // update group
-        if (group.type() != CommHistory::Event::VoicemailEvent && group.type() != VOICEMAIL_SMS_EVENT_TYPE)
-            name = tempLocale.joinStringList( contactNames(group) );
-
-        updateGroup(group.type(), countNotifications(group), name, message, groupAction);
-    } else {
-        // m_Notifications doesnt have any personal notification of the given group
-        // remove the group type completly
-        if (removeNotificationGroup(group.type()))
-            saveState();
-    }
-}
-
-QString NotificationManager::createActionInbox()
-{
-    return MRemoteAction(MESSAGING_SERVICE_NAME,
-                         OBJECT_PATH,
-                         MESSAGING_INTERFACE,
-                         SHOW_INBOX_METHOD).toString();
-}
-
-QString NotificationManager::createActionConversation(const QString& accountPath,
-                                                      const QString& remoteUid,
-                                                      CommHistory::Group::ChatType chatType)
-{
-    QList<QVariant> args;
-    args.append(QVariant(accountPath));
-    args.append(QVariant(remoteUid));
-    args.append(QVariant((uint)chatType));
-    return MRemoteAction(MESSAGING_SERVICE_NAME,
-                         OBJECT_PATH,
-                         MESSAGING_INTERFACE,
-                         START_CONVERSATION_METHOD,
-                         args).toString();
-}
-
-QString NotificationManager::createActionCallHistory()
-{
-    QList<QVariant> args;
-    args.append(QVariant(QStringList() << CALL_HISTORY_PARAMETER));
-
-    return MRemoteAction(CALL_HISTORY_SERVICE_NAME,
-                         CALL_HISTORY_OBJECT_PATH,
-                         CALL_HISTORY_INTERFACE,
-                         CALL_HISTORY_METHOD,
-                         args).toString();
-}
-
-QString NotificationManager::createActionVoicemail()
-{
-    return MRemoteAction(CALL_HISTORY_SERVICE_NAME,
-                         VOICEMAIL_OBJECT_PATH,
-                         VOICEMAIL_INTERFACE,
-                         VOICEMAIL_METHOD).toString();
-}
-
-QString NotificationManager::action(const NotificationGroup& group,
-                                    const PersonalNotification& notification,
-                                    bool grouped)
-{
-    QString action;
-
-    switch (group.type())
-    {
-        case CommHistory::Event::IMEvent:
-        case CommHistory::Event::SMSEvent:
-        case CommHistory::Event::MMSEvent:
-        {
-            if (grouped)
-                action = createActionInbox();
-            else
-                action = createActionConversation(notification.account(),
-                                                  notification.targetId(),
-                                                  (CommHistory::Group::ChatType)notification.chatType());
-            break;
-        }
-        case CommHistory::Event::CallEvent:
-        {
-            action = createActionCallHistory();
-            break;
-        }
-        case CommHistory::Event::VoicemailEvent:
-        {
-            action = createActionVoicemail();
-            break;
-        }
-        case VOICEMAIL_SMS_EVENT_TYPE:
-        {
-            action = createActionConversation(notification.account(),
-                                              notification.targetId(),
-                                              (CommHistory::Group::ChatType)notification.chatType());
-        }
-        default:
-            break;
-    }
-
-    return action;
+    return m_unresolvedEvents.size();
 }
 
 QString NotificationManager::notificationText(const CommHistory::Event& event)
@@ -964,414 +531,114 @@ QString NotificationManager::notificationText(const CommHistory::Event& event)
     return text;
 }
 
-QString NotificationManager::notificationGroupText(const NotificationGroup& group,
-                                          const PersonalNotification& notification)
+void NotificationManager::setNotificationAction(Notification *notification, PersonalNotification *pn, bool grouped)
 {
-    QString groupmessage;
-    int notifications = countNotifications(group);
-    switch (group.type())
-    {
+    switch (pn->eventType()) {
         case CommHistory::Event::IMEvent:
         case CommHistory::Event::SMSEvent:
         case CommHistory::Event::MMSEvent:
-        {
-            if(notifications > 1)
-                groupmessage = txt_qtn_msg_notification_new_message(notifications);
-            else
-                groupmessage = notification.notificationText();
-            break;
-        }
-        case CommHistory::Event::CallEvent:
-        {
-            groupmessage = txt_qtn_call_missed(notifications);
-            break;
-        }
-        case CommHistory::Event::VoicemailEvent:
         case VOICEMAIL_SMS_EVENT_TYPE:
-        {
-            // The amount of new / not listened voicemails
-            groupmessage = notification.notificationText();
-            break;
-        }
-        default:
-            break;
-    }
-
-    return groupmessage;
-}
-
-int NotificationManager::countContacts(const NotificationGroup& group)
-{
-    QList<PersonalNotification> contacts;
-    foreach(PersonalNotification pn, m_Notifications.values(group)) {
-        if(!contacts.contains(pn)) {
-            contacts.append(pn);
-        }
-    }
-    return contacts.count();
-}
-
-int NotificationManager::countNotifications(const NotificationGroup& group)
-{
-    DEBUG() << Q_FUNC_INFO;
-
-    // If we have more than one new message from same sender and messages have
-    // same SMS replace number, then we count all those messages as one.
-    QList<PersonalNotification> pnsCounted;
-    foreach (PersonalNotification pn, m_Notifications.values(group)) {
-        bool match = false;
-        if (!pn.smsReplaceNumber().isEmpty()) {
-            foreach (PersonalNotification counted, pnsCounted) {
-                if (pn.remoteUid() == counted.remoteUid() && pn.smsReplaceNumber() == counted.smsReplaceNumber()) {
-                    match = true;
-                }
-            }
-        }
-
-        if (!match)
-            pnsCounted.append(pn);
-    }
-
-    DEBUG() << Q_FUNC_INFO << "Notification count with replace typed messages taken into account: " << pnsCounted.count();
-    DEBUG() << Q_FUNC_INFO << "Absolute notification count: " << m_Notifications.count(group);
-
-    return pnsCounted.count();
-}
-
-void NotificationManager::requestContact(TpContactUid cuid)
-{
-    QContactFilter filter = createContactFilter(cuid.first,
-                                                cuid.second);
-    QContactFetchRequest* request = startContactRequest(filter,
-                                                        SLOT(slotResultsAvailable()));
-
-    DEBUG() << Q_FUNC_INFO << cuid.first << cuid.second;
-
-    m_requests.insert(request, cuid);
-    emit pendingRequestCountChanged();
-}
-
-int NotificationManager::pendingRequestCount() const
-{
-    return m_requests.count();
-}
-
-QContactFetchRequest* NotificationManager::startContactRequest(QContactFilter &filter,
-                                                               const char *resultSlot)
-{
-    Q_ASSERT(resultSlot != NULL);
-
-    QContactFetchRequest* request = new QContactFetchRequest();
-    request->setManager(contactManager());
-    request->setParent(this);
-
-    // connect ready signal to message item so that it can refresh itself when fetching is done
-    connect(request,
-            SIGNAL(resultsAvailable()),
-            resultSlot);
-
-    request->setFilter(filter);
-
-    QContactFetchHint hint;
-    hint.setOptimizationHints(QContactFetchHint::NoRelationships);
-
-    QList<QContactDetail::DetailType> details;
-    details << QContactName::Type
-            << QContactOnlineAccount::Type
-            << QContactDisplayLabel::Type;
-    hint.setDetailTypesHint(details);
-
-    request->setFetchHint(hint);
-
-    request->start();
-
-    // setup timeout for request
-    QTimer *timer = new QTimer(request);
-    connect(timer, SIGNAL(timeout()),
-            this, SLOT(slotContactRequestTimeout()));
-    timer->start(CONTACT_REQUEST_TIMEROUT);
-
-    return request;
-}
-
-void NotificationManager::slotContactRequestTimeout()
-{
-    Q_ASSERT(sender());
-
-    QContactFetchRequest *request = qobject_cast<QContactFetchRequest*>(sender()->parent());
-
-    Q_ASSERT(request);
-
-    if (m_requests.contains(request)) {
-        TpContactUid cuid = m_requests.take(request);
-        DEBUG() << Q_FUNC_INFO << "aborted request for:" << cuid;
-
-        if (!m_contacts.contains(cuid))
-            m_contacts.insert(cuid, QContact());
-        resolveEvents();
-
-        emit pendingRequestCountChanged();
-    }
-
-    request->deleteLater();
-}
-
-void NotificationManager::slotResultsAvailable()
-{
-    QContactFetchRequest *request = qobject_cast<QContactFetchRequest *>(sender());
-
-    if(!request || !request->isFinished()) {
-        return;
-    }
-
-    DEBUG() << Q_FUNC_INFO << request->contacts().size() << "contacts";
-
-    TpContactUid cuid = m_requests.value(request);
-    QContact contact;  // insert empty contact to indicate
-                       // there is no contact for the remote id
-
-    // show remote id in case of multiple contacts match
-    if (request->contacts().size() == 1 && apiId(request->contacts().first()) != m_pContactManager->selfContactId()) {
-        contact = request->contacts().first();
-        DEBUG() << Q_FUNC_INFO << "Using" << contact.detail<QContactDisplayLabel>().label();
-    }
-
-    m_contacts.insert(cuid, contact);
-
-    resolveEvents();
-
-    if (m_requests.remove(request)) {
-        emit pendingRequestCountChanged();
-    }
-
-    request->deleteLater();
-}
-
-QString NotificationManager::contactName(const QString &localUid,
-                                         const QString &remoteUid)
-{
-    QString result;
-
-    if (remoteUid == QLatin1String("<hidden>")) {
-        result = txt_qtn_call_type_private;
-    } else {
-        QContact contact = m_contacts.value(TpContactUid(localUid, remoteUid));
-
-        if (!contact.isEmpty()) {
-            result = contact.detail<QContactDisplayLabel>().label();
-        }
-
-        if (result.isEmpty()) {
-            if (normalizePhoneNumber(remoteUid).isEmpty()) {
-                result = remoteUid;
+            if (pn->eventType() != VOICEMAIL_SMS_EVENT_TYPE && grouped) {
+                notification->setRemoteDBusCallServiceName(MESSAGING_SERVICE_NAME);
+                notification->setRemoteDBusCallObjectPath(OBJECT_PATH);
+                notification->setRemoteDBusCallInterface(MESSAGING_INTERFACE);
+                notification->setRemoteDBusCallMethodName(SHOW_INBOX_METHOD);
+                notification->setRemoteDBusCallArguments(QVariantList());
             } else {
-                ML10N::MLocale locale;
-                result = locale.toLocalizedNumbers(remoteUid);
+                notification->setRemoteDBusCallServiceName(MESSAGING_SERVICE_NAME);
+                notification->setRemoteDBusCallObjectPath(OBJECT_PATH);
+                notification->setRemoteDBusCallInterface(MESSAGING_INTERFACE);
+                notification->setRemoteDBusCallMethodName(START_CONVERSATION_METHOD);
+
+                QVariantList args;
+                args << pn->account() << pn->targetId() << uint(pn->chatType());
+                notification->setRemoteDBusCallArguments(args);
+            }
+            break;
+
+        case CommHistory::Event::CallEvent:
+            {
+                notification->setRemoteDBusCallServiceName(CALL_HISTORY_SERVICE_NAME);
+                notification->setRemoteDBusCallObjectPath(CALL_HISTORY_OBJECT_PATH);
+                notification->setRemoteDBusCallInterface(CALL_HISTORY_INTERFACE);
+                notification->setRemoteDBusCallMethodName(CALL_HISTORY_METHOD);
+
+                QVariantList args;
+                args << (QStringList() << CALL_HISTORY_PARAMETER);
+                notification->setRemoteDBusCallArguments(args);
+            }
+            break;
+
+        case CommHistory::Event::VoicemailEvent:
+            notification->setRemoteDBusCallServiceName(CALL_HISTORY_SERVICE_NAME);
+            notification->setRemoteDBusCallObjectPath(VOICEMAIL_OBJECT_PATH);
+            notification->setRemoteDBusCallInterface(VOICEMAIL_INTERFACE);
+            notification->setRemoteDBusCallMethodName(VOICEMAIL_METHOD);
+            notification->setRemoteDBusCallArguments(QVariantList());
+            break;
+    }
+}
+
+void NotificationManager::slotContactUpdated(quint32 localId, const QString &contactName,
+                                             const QList<ContactListener::ContactAddress> &addresses)
+{
+    DEBUG() << Q_FUNC_INFO << localId << contactName;
+
+    // Check all existing notifications and update if necessary
+    foreach (NotificationGroup *group, m_Groups) {
+        foreach (PersonalNotification *notification, group->notifications()) {
+            if (ContactListener::addressMatchesList(notification->account(),
+                        notification->remoteUid(), addresses)) {
+                DEBUG() << "Match existing notification" << notification->account() << notification->remoteUid();
+                notification->setContactId(localId);
+                notification->setContactName(contactName);
             }
         }
     }
 
-    DEBUG() << Q_FUNC_INFO << localUid << remoteUid << result;
-    return result;
-}
+    // Check all unresolved events for a match, and add notifications for any that do
+    for (QList<PersonalNotification*>::iterator it = m_unresolvedEvents.begin(); it != m_unresolvedEvents.end(); ) {
+        PersonalNotification *notification = *it;
 
-QStringList NotificationManager::contactNames(const NotificationGroup& group)
-{
-    QStringList names;
-    QList<PersonalNotification> contacts;
-
-    foreach(PersonalNotification pn, m_Notifications.values(group)) {
-        if(!contacts.contains(pn)) {
-            contacts.append(pn);
-        }
-    }
-
-    for (int i=0; i<contacts.size();i++)
-        names.append(notificationName(contacts[i]));
-
-    return names;
-}
-
-void NotificationManager::addGroup(int type)
-{
-    MNotificationGroup *group = new MNotificationGroup(eventType(type));
-    m_MgtGroups.insert(type, group);
-    group->publish(); //init group id
-}
-
-void NotificationManager::removeGroup(int type)
-{
-    if (m_MgtGroups.contains(type)) {
-        MNotificationGroup *group = m_MgtGroups.take(type);
-        if (group)
-            group->remove();
-        delete group;
+        if (ContactListener::addressMatchesList(notification->account(),
+                    notification->remoteUid(), addresses)) {
+            notification->setContactId(localId);
+            notification->setContactName(contactName);
+            DEBUG() << "Resolved contact for notification" << notification->account() << notification->remoteUid();
+            addNotification(notification);
+            it = m_unresolvedEvents.erase(it);
+        } else
+            it++;
     }
 }
 
-void NotificationManager::updateGroup(int eventType,
-                                      int notificationCount,
-                                      const QString& contactName,
-                                      const QString& message,
-                                      const QString& action)
+void NotificationManager::slotContactRemoved(quint32 localId)
 {
-    MNotificationGroup *group = m_MgtGroups.value(eventType);
-    if (group) {
-        if (group->summary() != contactName ||
-            group->body() != message) {
+    DEBUG() << Q_FUNC_INFO << localId;
 
-            group->setSummary(contactName);
-            group->setBody(message);
-            group->setAction(MRemoteAction(action));
-            group->setCount(notificationCount);
-            group->publish();
-        } else {
-            DEBUG() << Q_FUNC_INFO << "Suppressing unneccessary notification update";
-        }
-    } else {
-        qWarning() << Q_FUNC_INFO << "No group for event type" << eventType;
-    }
-}
-
-void NotificationManager::saveState()
-{
-    DEBUG() << Q_FUNC_INFO;
-
-    if( !openStorageFile(QIODevice::WriteOnly) ) {
-        DEBUG() << "Cant open storage for saving";
-        return;
-    }
-
-    m_Storage.reset();
-
-    QDataStream out(&m_Storage);
-    if( out.status() ) {
-        DEBUG() << "Corrupted data file";
-        return;
-    }
-    out.setVersion(QDataStream::Qt_4_6);
-    out << m_Notifications;
-    m_Storage.close();
-}
-
-void NotificationManager::loadState()
-{
-    if( !openStorageFile(QIODevice::ReadOnly) ) {
-        DEBUG() << "Cant open storage for reading";
-        return;
-    }
-
-    QDataStream in(&m_Storage);
-    if( in.status() ) {
-        DEBUG() << "Corrupted data file";
-        return;
-    }
-    in.setVersion(QDataStream::Qt_4_6);
-    in >> m_Notifications;
-    m_Storage.close();
-}
-
-bool NotificationManager::openStorageFile(QIODevice::OpenModeFlag flag)
-{
-    if(!m_Storage.isOpen() || m_Storage.openMode() != flag) {
-        m_Storage.close();
-        if(!m_Storage.open(flag)) {
-            DEBUG() << "Cannot open storage file";
-            return false;
-        }
-    }
-
-    return true;
-}
-
-void NotificationManager::createDataDir()
-{
-    QString dirName = QDir::homePath() + COMMHISTORYD_NOTIFICATIONSDIR;
-    QDir dir(dirName);
-
-    if( !dir.exists() ) {
-        if( !dir.mkpath(dirName) ) {
-            qWarning() << "Cannot create directory for notifications data file";
+    // Check all existing notifications and update if necessary
+    foreach (NotificationGroup *group, m_Groups) {
+        foreach (PersonalNotification *notification, group->notifications()) {
+            if (notification->contactId() == localId) {
+                notification->setContactId(0);
+                notification->setContactName(QString());
+            }
         }
     }
 }
 
-QContactManager* NotificationManager::contactManager()
+void NotificationManager::slotContactUnknown(const QPair<QString,QString> &address)
 {
-    if(!m_pContactManager){
-        // Use the default contact manager
-        // Temporary override until qtpim supports QTCONTACTS_MANAGER_OVERRIDE
-        m_pContactManager = new QContactManager(QString::fromLatin1("org.nemomobile.contacts.sqlite"));
-        m_pContactManager->setParent(this);
-        connect(m_pContactManager,
-                SIGNAL(contactsAdded(const QList<QContactId>&)),
-                SLOT(slotContactsAdded(const QList<QContactId>&)));
-        connect(m_pContactManager,
-                SIGNAL(contactsRemoved(const QList<QContactId>&)),
-                SLOT(slotContactsRemoved(const QList<QContactId>&)));
-        connect(m_pContactManager,
-                SIGNAL(contactsChanged(const QList<QContactId>&)),
-                SLOT(slotContactsChanged(const QList<QContactId>&)));
-    }
-    return m_pContactManager;
-}
+    for (QList<PersonalNotification*>::iterator it = m_unresolvedEvents.begin(); it != m_unresolvedEvents.end(); ) {
+        PersonalNotification *notification = *it;
 
-void NotificationManager::slotContactsAdded(const QList<QContactId> &contactIds)
-{
-    if (contactIds.isEmpty())
-        return;
-
-    DEBUG() << Q_FUNC_INFO;
-
-    // we can't match contactIds with local unknown contacts
-    // therefore request all unknown contacts from notification contacts
-    QMutableHashIterator<TpContactUid, QContact> i(m_contacts);
-    while (i.hasNext()) {
-        i.next();
-        if (i.value().isEmpty()) {
-            TpContactUid cuid = i.key();
-            QContactFilter filter = createContactFilter(cuid.first, cuid.second);
-            m_ContactFilter = addContactFilter(m_ContactFilter, filter);
-        }
-    }
-
-    startContactsTimer();
-}
-
-void NotificationManager::slotContactsRemoved(const QList<QContactId> &contactIds)
-{
-    if (contactIds.isEmpty())
-        return;
-
-    DEBUG() << Q_FUNC_INFO;
-
-    // update contact cache for notifications
-    QList<QContactId> updatedContactIds;
-    QMutableHashIterator<TpContactUid, QContact> i(m_contacts);
-    while (i.hasNext()) {
-        QContact c = i.next().value();
-        if (!c.isEmpty() && contactIds.contains(apiId(c))) {
-            i.setValue(QContact());
-            updatedContactIds << apiId(c);
-        }
-    }
-
-    updateNotificationContacts(updatedContactIds);
-}
-
-void NotificationManager::slotContactsChanged(const QList<QContactId> &contactIds)
-{
-    if (contactIds.isEmpty())
-        return;
-
-    DEBUG() << Q_FUNC_INFO;
-
-    if (!m_contacts.isEmpty() || !m_Notifications.isEmpty()) {
-        QContactIdFilter filter;
-        filter.setIds(contactIds);
-        m_ContactFilter = addContactFilter(m_ContactFilter, filter);
-
-        startContactsTimer();
+        if (address.first == notification->account() &&
+                CommHistory::remoteAddressMatch(notification->remoteUid(), address.second)) {
+            DEBUG() << "Unknown contact for notification" << notification->account() << notification->remoteUid();
+            addNotification(notification);
+            it = m_unresolvedEvents.erase(it);
+        } else
+            it++;
     }
 }
 
@@ -1398,86 +665,6 @@ CommHistory::GroupModel* NotificationManager::groupModel()
     return m_GroupModel;
 }
 
-void NotificationManager::startContactsTimer()
-{
-    m_ContactsTimer.start();
-}
-
-void NotificationManager::slotOnModelReady(bool status)
-{
-    disconnect(m_GroupModel, SIGNAL(modelReady(bool)),
-               this, SLOT(slotOnModelReady(bool)));
-    if (status)
-        fireUnknownContactsRequest();
-    else
-        qCritical() << "Group model failed to load";
-}
-
-void NotificationManager::fireUnknownContactsRequest()
-{
-    if (!groupModel()->isReady()) {
-        connect(m_GroupModel, SIGNAL(modelReady(bool)), SLOT(slotOnModelReady(bool)));
-        return;
-    }
-
-    DEBUG() << Q_FUNC_INFO;
-
-    if (m_ContactFilter != QContactFilter()) {
-        startContactRequest(m_ContactFilter,
-                            SLOT(slotResultsAvailableForUnknown()));
-        m_ContactFilter = QContactFilter();
-    }
-}
-
-void NotificationManager::slotResultsAvailableForUnknown()
-{
-    QContactFetchRequest *request = qobject_cast<QContactFetchRequest *>(sender());
-
-    if (!request || !request->isFinished()) {
-        return;
-    }
-
-    DEBUG() << Q_FUNC_INFO << request->contacts().size() << "contacts";
-
-    QSet<QContactId> updatedContactIds;
-
-    // check notifications contact
-    QMutableHashIterator<TpContactUid, QContact> i(m_contacts);
-    while (i.hasNext()) {
-        i.next();
-        TpContactUid cuid = i.key();
-        QContact cacheContact = i.value();
-        QList<QContact> matchedContacts;
-        bool matchedLocalId = false;
-
-        foreach (QContact contact, request->contacts()) {
-            if (apiId(contact) != m_pContactManager->selfContactId()) {
-                QList<QContactOnlineAccount> accounts = contact.details<QContactOnlineAccount>();
-                QList<QContactPhoneNumber> phones = contact.details<QContactPhoneNumber>();
-
-                if (matchContact(accounts, phones, cuid.first, cuid.second))
-                    matchedContacts << contact;
-                if (apiId(cacheContact) == apiId(contact))
-                    matchedLocalId = true;
-            } // if
-        }
-
-        if (matchedContacts.size() == 1)
-            i.setValue(matchedContacts.first());
-
-        if (matchedContacts.size() > 1
-            || (matchedContacts.isEmpty() && matchedLocalId))
-            i.setValue(QContact());
-
-        foreach (QContact c, matchedContacts)
-            updatedContactIds << apiId(c);
-    }
-
-    updateNotificationContacts(updatedContactIds.toList());
-
-    request->deleteLater();
-}
-
 void NotificationManager::slotGroupRemoved(const QModelIndex &index, int start, int end)
 {
     DEBUG() << Q_FUNC_INFO;
@@ -1492,43 +679,6 @@ void NotificationManager::slotGroupRemoved(const QModelIndex &index, int start, 
         }
     }
 }
-
-void NotificationManager::updateNotificationContacts(const QList<QContactId> &contactIds)
-{
-    QMutableHashIterator<NotificationGroup,PersonalNotification> i(m_Notifications);
-
-    QSet<NotificationGroup> updatedGroups;
-    bool changed = false;
-
-    while (i.hasNext()) {
-        i.next();
-        if (i.key().isValid()) {
-            PersonalNotification pn = i.value();
-            TpContactUid cuid(pn.account(),
-                              pn.remoteUid());
-
-            QContact c = m_contacts.value(cuid);
-
-            int id = internalId(c);
-            if (id != pn.contactId()) {
-                pn.setContactId(id);
-                i.setValue(pn);
-                changed = true;
-                updatedGroups << i.key();
-            } else if (contactIds.contains(apiId(c))) {
-                updatedGroups << i.key();
-            }
-        }
-    }
-
-    if (changed)
-        saveState();
-
-    foreach (NotificationGroup group, updatedGroups.toList()) {
-        updateNotificationGroup(group);
-    }
-}
-
 void NotificationManager::showVoicemailNotification(int count)
 {
     m_pMWIListener->saveMWI(count);
@@ -1544,53 +694,15 @@ void NotificationManager::slotMWICountChanged(int count)
     }
 
     if (count == 0) {
-        if (removeNotificationGroup(CommHistory::Event::VoicemailEvent))
-            saveState();
-        return;
+        removeNotificationGroup(CommHistory::Event::VoicemailEvent);
     }
-
-    NotificationGroup notificationgroup = notificationGroup(CommHistory::Event::VoicemailEvent);
-
-    if (!notificationgroup.isValid()) {
-        qWarning() << "Wrong notification group";
-        return;
-    }
-
-    PersonalNotification notification;
-    notification.setHasPendingEvents();
-
-    if (count > 0)
-        notification.setNotificationText(txt_qtn_call_voicemail_notification(count));
-    else // unknown number, use string for 1 notification
-        notification.setNotificationText(txt_qtn_call_voicemail_notification(1));
-
-    m_Notifications.insert(notificationgroup, notification);
-
-    saveState();
-    fireNotifications();
 }
 
 bool NotificationManager::hasMessageNotification() const
 {
-    foreach(NotificationGroup g, m_Notifications.keys()) {
-        int eventType = g.type();
-        if (eventType == CommHistory::Event::IMEvent
-            || eventType == CommHistory::Event::SMSEvent
-            || eventType == CommHistory::Event::MMSEvent)
-            return true;
-    }
-
-    return false;
-}
-
-QString NotificationManager::notificationName(const PersonalNotification &notification)
-{
-    DEBUG() << Q_FUNC_INFO;
-
-    if (!notification.chatName().isEmpty())
-        return notification.chatName();
-    else
-        return contactName(notification.account(), notification.remoteUid());
+    return m_Groups.contains(CommHistory::Event::IMEvent) ||
+           m_Groups.contains(CommHistory::Event::SMSEvent) ||
+           m_Groups.contains(CommHistory::Event::MMSEvent);
 }
 
 void NotificationManager::slotGroupDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
@@ -1605,38 +717,27 @@ void NotificationManager::slotGroupDataChanged(const QModelIndex &topLeft, const
         CommHistory::Group group = m_GroupModel->group(row);
         if (group.isValid()) {
             QString remoteUid = group.remoteUids().first();
-            bool changed = false;
-            QMutableHashIterator<NotificationGroup,PersonalNotification> i(m_Notifications);
+            QString localUid = group.localUid();
 
-            while (i.hasNext()) {
-                i.next();
-                if (i.key().isValid()) {
-                    PersonalNotification pn = i.value();
-
+            foreach (NotificationGroup *g, m_Groups) {
+                foreach (PersonalNotification *pn, g->notifications()) {
                     // If notification is for MUC and matches to changed group...
-                    if (!pn.chatName().isEmpty() && pn.targetId() == remoteUid) {
+                    if (!pn->chatName().isEmpty() && pn->account() == localUid &&
+                            CommHistory::remoteAddressMatch(pn->targetId(), remoteUid))
+                    {
                         QString newChatName;
-                        if (group.chatName().isEmpty() && pn.chatName() != txt_qtn_msg_group_chat)
+                        if (group.chatName().isEmpty() && pn->chatName() != txt_qtn_msg_group_chat)
                             newChatName = txt_qtn_msg_group_chat;
-                        else if (group.chatName() != pn.chatName())
+                        else if (group.chatName() != pn->chatName())
                             newChatName = group.chatName();
 
                         if (!newChatName.isEmpty()) {
                             DEBUG() << Q_FUNC_INFO << "Changing chat name to" << newChatName;
-                            pn.setChatName(newChatName);
-                            changed = true;
-                            i.setValue(pn);
-                            updatedGroups << i.key();
+                            pn->setChatName(newChatName);
                         }
                     }
                 }
             }
-
-            if (changed)
-                saveState();
-
-            foreach (NotificationGroup ng, updatedGroups.toList())
-                updateNotificationGroup(ng);
         }
     }
 }

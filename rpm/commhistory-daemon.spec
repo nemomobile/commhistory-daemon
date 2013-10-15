@@ -11,13 +11,14 @@ BuildRequires:  pkgconfig(Qt5DBus)
 BuildRequires:  pkgconfig(Qt5Contacts)
 BuildRequires:  pkgconfig(Qt5Versit)
 BuildRequires:  pkgconfig(Qt5Test)
-BuildRequires:  pkgconfig(commhistory-qt5)
+BuildRequires:  libcommhistory-qt5 >= 1.6.18
 BuildRequires:  pkgconfig(TelepathyQt5)
 BuildRequires:  pkgconfig(mlite5)
 BuildRequires:  pkgconfig(mlocale5)
 BuildRequires:  pkgconfig(mce)
 BuildRequires:  pkgconfig(ngf-qt5)
 BuildRequires:  pkgconfig(qt5-boostable)
+BuildRequires:  pkgconfig(nemonotifications-qt5)
 BuildRequires:  qt5-qttools
 BuildRequires:  qt5-qttools-linguist
 BuildRequires:  python

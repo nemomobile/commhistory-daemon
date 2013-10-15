@@ -2,8 +2,9 @@
 **
 ** This file is part of commhistory-daemon.
 **
+** Copyright (C) 2013 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: Reto Zingg <reto.zingg@nokia.com>
+** Contact: John Brooks <john.brooks@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -20,48 +21,64 @@
 **
 ******************************************************************************/
 
-#include <QHash>
 #include "notificationgroup.h"
+#include "personalnotification.h"
+#include "notificationmanager.h"
+#include "locstrings.h"
+#include "constants.h"
+#include "debug.h"
+
+#include <notification.h>
+
+#include <MLocale>
+
+#include <CommHistory/commonutils.h>
+#include <CommHistory/Event>
 
 using namespace RTComLogger;
 
-NotificationGroup::NotificationGroup(QObject* parent) : QObject(parent),
-    m_type(-1)
+NotificationGroup::NotificationGroup(int type, QObject *parent)
+    : QObject(parent), m_type(type), mGroup(0)
 {
+    updateTimer.setInterval(0);
+    updateTimer.setSingleShot(true);
+    connect(&updateTimer, SIGNAL(timeout()), SLOT(updateGroup()));
+
+    connect(this, SIGNAL(changed()), SLOT(updateGroupLater()));
 }
 
-NotificationGroup::NotificationGroup(int notificationGroupType,
-                                         QObject* parent) :
-    QObject(parent), m_type(notificationGroupType)
+NotificationGroup::NotificationGroup(Notification *group, QObject *parent)
+    : QObject(parent), m_type(eventType(group->category())), mGroup(group)
 {
+    updateTimer.setInterval(0);
+    updateTimer.setSingleShot(true);
+    connect(&updateTimer, SIGNAL(timeout()), SLOT(updateGroup()));
+
+    connect(this, SIGNAL(changed()), SLOT(updateGroupLater()));
 }
 
-NotificationGroup::NotificationGroup(const NotificationGroup& other) :
-    QObject(other.parent())
+NotificationGroup::~NotificationGroup()
 {
-    *this = other;
+    qDeleteAll(mNotifications);
+    delete mGroup;
 }
 
-NotificationGroup& NotificationGroup::operator=(const NotificationGroup& other)
+QString NotificationGroup::groupType(int eventType)
 {
-    setParent(other.parent());
-    setType(other.type());
-    return *this;
+    for (int i = 0; i < _eventTypesCount; i++) {
+        if (_eventTypes[i].type == eventType)
+            return QLatin1String(_eventTypes[i].event);
+    }
+    return QString();
 }
 
-bool NotificationGroup::operator == (const NotificationGroup& other) const
+int NotificationGroup::eventType(const QString &groupType)
 {
-    return (type() == other.type());
-}
-
-bool NotificationGroup::operator != (const NotificationGroup& other) const
-{
-    return !(*this == other);
-}
-
-bool NotificationGroup::isValid() const
-{
-    return (m_type != -1);
+    for (int i = 0; i < _eventTypesCount; i++) {
+        if (_eventTypes[i].event == groupType)
+            return _eventTypes[i].type;
+    }
+    return -1;
 }
 
 int NotificationGroup::type() const
@@ -69,24 +86,155 @@ int NotificationGroup::type() const
     return m_type;
 }
 
-void NotificationGroup::setType(int notificationType)
+Notification *NotificationGroup::notification()
 {
-    m_type = notificationType;
+    if (!mGroup && !mNotifications.isEmpty())
+        updateGroup();
+    return mGroup;
 }
 
-QDataStream& operator<<(QDataStream &out, const RTComLogger::NotificationGroup &key)
+QList<PersonalNotification*> NotificationGroup::notifications() const
 {
-    key.serialize(out, key);
-    return out;
+    return mNotifications;
 }
 
-QDataStream& operator>>(QDataStream &in, RTComLogger::NotificationGroup &key)
+void NotificationGroup::updateGroup()
 {
-    key.deSerialize(in, key);
-    return in;
+    if (mNotifications.isEmpty()) {
+        removeGroup();
+        return;
+    }
+
+    // Publish group notification, not including preview banners/sounds.
+    if (!mGroup)
+        mGroup = new Notification(this);
+
+    // Disable feedback from the notification definition; it's played by individual banners
+    mGroup->setHintValue("x-nemo-feedback", QString());
+    mGroup->setCategory(groupType(type()));
+    mGroup->setBody(notificationGroupText());
+    mGroup->setItemCount(mNotifications.size());
+    NotificationManager::instance()->setNotificationAction(mGroup, mNotifications[0],
+            countConversations() > 1);
+
+    QString name;
+    ML10N::MLocale tempLocale;
+    if (type() != CommHistory::Event::VoicemailEvent)
+        name = tempLocale.joinStringList(contactNames());
+    mGroup->setSummary(name);
+    mGroup->publish();
+
+    foreach (PersonalNotification *pn, mNotifications) {
+        if (pn->hasPendingEvents())
+            pn->publishNotification();
+    }
 }
 
-uint qHash(const RTComLogger::NotificationGroup& group)
+void NotificationGroup::updateGroupLater()
 {
-    return qHash(group.type());
+    updateTimer.start();
 }
+
+QStringList NotificationGroup::contactNames()
+{
+    QStringList names;
+    foreach (PersonalNotification *pn, mNotifications) {
+        QString name = pn->notificationName();
+        if (!names.contains(name))
+            names.append(name);
+    }
+
+    return names;
+}
+
+int NotificationGroup::countConversations()
+{
+    QSet<QPair<QString, QString> > seen;
+    foreach (PersonalNotification *pn, mNotifications)
+        seen.insert(qMakePair(pn->account(), pn->remoteUid()));
+    return seen.count();
+}
+
+QString NotificationGroup::notificationGroupText()
+{
+    QString message;
+    int notifications = mNotifications.size();
+    if (!notifications)
+        return QString();
+
+    switch (type())
+    {
+        case CommHistory::Event::IMEvent:
+        case CommHistory::Event::SMSEvent:
+        case CommHistory::Event::MMSEvent:
+        {
+            if (notifications > 1)
+                message = txt_qtn_msg_notification_new_message(notifications);
+            else
+                message = mNotifications[0]->notificationText();
+            break;
+        }
+        case CommHistory::Event::CallEvent:
+        {
+            message = txt_qtn_call_missed(notifications);
+            break;
+        }
+        case CommHistory::Event::VoicemailEvent:
+        {
+            // The amount of new / not listened voicemails
+            message = mNotifications[0]->notificationText();
+            break;
+        }
+        default:
+            break;
+    }
+
+    return message;
+}
+
+void NotificationGroup::removeGroup()
+{
+    if (mGroup) {
+        mGroup->close();
+        delete mGroup;
+        mGroup = 0;
+    }
+
+    while (!mNotifications.isEmpty())
+        removeNotification(mNotifications.first());
+}
+
+void NotificationGroup::addNotification(PersonalNotification *notification)
+{
+    if (mNotifications.contains(notification))
+        return;
+
+    // If notification->hasPendingEvents, the updateGroup slot will also publish the notification
+    connect(notification, SIGNAL(hasPendingEventsChanged(bool)), SLOT(onNotificationChanged()));
+    mNotifications.append(notification);
+    emit changed();
+}
+
+bool NotificationGroup::removeNotification(PersonalNotification *&notification)
+{
+    if (mNotifications.removeOne(notification)) {
+        notification->removeNotification();
+        delete notification;
+        notification = 0;
+        emit changed();
+        return true;
+    }
+
+    return false;
+}
+
+void NotificationGroup::onNotificationChanged()
+{
+    PersonalNotification *pn = qobject_cast<PersonalNotification*>(sender());
+    if (!pn || !mNotifications.contains(pn))
+        return;
+
+    if (pn->hasPendingEvents())
+        emit changed();
+}
+

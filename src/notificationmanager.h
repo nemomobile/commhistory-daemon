@@ -2,8 +2,9 @@
 **
 ** This file is part of commhistory-daemon.
 **
+** Copyright (C) 2013 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: Reto Zingg <reto.zingg@nokia.com>
+** Contact: John Brooks <john.brooks@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -34,21 +35,14 @@
 #include <QMultiHash>
 #include <QModelIndex>
 
-#include <QContact>
-#include <QContactManager>
-#include <QContactFetchRequest>
-#include <QContactFilter>
-
 #include <CommHistory/Event>
 #include <CommHistory/Group>
+#include <CommHistory/GroupModel>
+#include <CommHistory/contactlistener.h>
 
 // our includes
 #include "notificationgroup.h"
 #include "personalnotification.h"
-
-QTCONTACTS_USE_NAMESPACE
-
-class MNotificationGroup;
 
 namespace CommHistory {
     class GroupModel;
@@ -71,6 +65,8 @@ typedef QPair<QString,QString> TpContactUid;
 class NotificationManager : public QObject
 {
     Q_OBJECT
+
+    typedef CommHistory::ContactListener::ContactAddress ContactAddress;
 
 public:
     /*!
@@ -112,15 +108,7 @@ public:
      */
     void playClass0SMSAlert();
 
-    /*!
-     * \brief Get the QContactManager.
-     */
-    QContactManager* contactManager();
-
-    int pendingRequestCount() const;
-
-Q_SIGNALS:
-    void pendingRequestCountChanged();
+    void setNotificationAction(Notification *notification, PersonalNotification *pn, bool grouped);
 
 public Q_SLOTS:
     /*!
@@ -138,115 +126,54 @@ private Q_SLOTS:
     void slotObservedConversationsChanged(const QVariantList &conversations);
     void slotInboxObservedChanged();
     void slotCallHistoryObservedChanged(bool observed);
-    void slotResultsAvailable();
-    void slotResultsAvailableForUnknown();
-    void fireNotifications();
-    void slotContactsAdded(const QList<QContactId> &contactIds);
-    void slotContactsRemoved(const QList<QContactId> &contactIds);
-    void slotContactsChanged(const QList<QContactId> &contactIds);
-    void fireUnknownContactsRequest();
-    void slotOnModelReady(bool status);
     void slotGroupRemoved(const QModelIndex &index, int start, int end);
     void slotMWICountChanged(int count);
-    void slotContactRequestTimeout();
     void slotGroupDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
     void slotNgfEventFinished(quint32 id);
+    void slotContactUpdated(quint32 localId, const QString &name, const QList<ContactAddress> &addresses);
+    void slotContactRemoved(quint32 localId);
+    void slotContactUnknown(const QPair<QString,QString> &address);
+    void slotNotificationGroupChanged();
 
 private:
-
     NotificationManager( QObject* parent = 0);
     ~NotificationManager();
     bool isCurrentlyObservedByUI(const CommHistory::Event& event,
                                  const QString &channelTargetId,
                                  CommHistory::Group::ChatType chatType);
-    void addNotification(PersonalNotification notification);
-    NotificationGroup notificationGroup(int type);
 
-    void showLatestNotification(const NotificationGroup& group,
-                                PersonalNotification& notification);
-    int countContacts(const NotificationGroup& group);
-    int countNotifications(const NotificationGroup& group);
-
-    QString action(const NotificationGroup& group,
-                   const PersonalNotification& notification,
-                   bool grouped);
-    QString notificationText(const CommHistory::Event& event);
-    QString notificationGroupText(const NotificationGroup& group,
-                                  const PersonalNotification& notification);
-    static QString eventType(int type);
-    void updateNotificationGroup(const NotificationGroup& group);
-
-    /* actions */
-    QString createActionInbox();
-    QString createActionCallHistory();
-    QString createActionConversation(const QString& accountPath,
-                                     const QString& remoteUid,
-                                     CommHistory::Group::ChatType chatType);
-    QString createActionVoicemail();
-
-    /* persistent notification support */
-    void createDataDir();
-    bool openStorageFile(QIODevice::OpenModeFlag flag);
-    void saveState();
-    void loadState();
-
-    /* contacts fetching */
-    void requestContact(TpContactUid contactUid);
-    void resolveEvents();
-    QString contactName(const QString &localUid, const QString &remoteUid);
-    QStringList contactNames(const NotificationGroup& group);
-
-    /* uses MeeGoTouch notification framework */
-    void addGroup(int type);
-    void updateGroup(int eventType,
-                     int notificationCount,
-                     const QString& contactName,
-                     const QString& message,
-                     const QString& action);
-    void removeGroup(int type);
-
-    void startNotificationTimer();
-    void startContactsTimer();
-    bool canShowNotification();
+    void resolveNotification(PersonalNotification *notification);
+    void addNotification(PersonalNotification *notification);
 
     void removeConversationNotifications(const QString &localId,
                                          const QString &remoteId,
                                          CommHistory::Group::ChatType chatType);
 
-    QContactFetchRequest* startContactRequest(QContactFilter &filter,
-                                              const char *resultSlot);
-    void updateNotificationContacts(const QList<QContactId> &contactIds);
     bool hasMessageNotification() const;
 
     void syncNotifications();
+    int pendingEventCount();
     void clearPendingEvents(const NotificationGroup &group);
     void removeNotPendingEvents(const NotificationGroup &group);
 
-    void clearContactsCache();
-    QString notificationName(const PersonalNotification &notification);
     bool isFilteredInbox();
     QString filteredInboxAccountPath();
-    bool updateEditedEvent(const CommHistory::Event& event);
+    bool updateEditedEvent(const CommHistory::Event &event);
 
 private:
     static NotificationManager* m_pInstance;
-    QMultiHash<NotificationGroup,PersonalNotification> m_Notifications;
-    QHash<int, MNotificationGroup*> m_MgtGroups;
-    QFile m_Storage;
+    QMap<int, NotificationGroup*> m_Groups;
     bool m_Initialised;
 
-    QContactManager *m_pContactManager;
-    QQueue<PersonalNotification> m_unresolvedEvents;
-    QHash<TpContactUid, QContact> m_contacts;
-    QHash<QContactFetchRequest*, TpContactUid> m_requests;
+    QList<PersonalNotification*> m_unresolvedEvents;
+
+    QString notificationText(const CommHistory::Event &event);
 
     // Delayed notifications
     QTimer m_NotificationTimer;
 
+    QSharedPointer<CommHistory::ContactListener> m_contactListener;
     CommHistory::GroupModel *m_GroupModel;
-    // contact request for unknown/modified group contact
-    QContactFilter m_ContactFilter;
-    QTimer m_ContactsTimer;
 
     MWIListener *m_pMWIListener;
     Ngf::Client *m_ngfClient;
