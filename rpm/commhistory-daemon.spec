@@ -11,7 +11,7 @@ BuildRequires:  pkgconfig(Qt5DBus)
 BuildRequires:  pkgconfig(Qt5Contacts)
 BuildRequires:  pkgconfig(Qt5Versit)
 BuildRequires:  pkgconfig(Qt5Test)
-BuildRequires:  libcommhistory-qt5 >= 1.6.18
+BuildRequires:  libcommhistory-qt5-devel >= 1.6.18
 BuildRequires:  pkgconfig(TelepathyQt5)
 BuildRequires:  pkgconfig(mlite5)
 BuildRequires:  pkgconfig(mlocale5)
