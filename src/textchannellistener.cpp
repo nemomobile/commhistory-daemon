@@ -995,7 +995,7 @@ bool TextChannelListener::recoverDeliveryEcho(const Tp::Message &message,
             QString content = parts[1].value(PART_CONTENT).variant().toString();
 
             if (contentType == TXT_CONTENT_TYPE) {
-                event.setFreeText(content);
+                event.setFreeText(content.trimmed());
                 result = true;
             } else if (contentType == VCARD_CONTENT_TYPE) {
                 checkVCard(parts, event);
@@ -1425,7 +1425,7 @@ void TextChannelListener::fillEventFromMessage(const Tp::Message &message,
     }
 
     event.setLocalUid(m_Account->objectPath());
-    event.setFreeText(message.text());
+    event.setFreeText(message.text().trimmed());
 
     // do not set / create group id for class0 messages
     if (!m_isClassZeroSMS) {
