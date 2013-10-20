@@ -69,7 +69,11 @@ bool PersonalNotification::restore(Notification *n)
         m_notification = 0;
     }
 
+    // Support old style binary data, but use base64 normally
     QByteArray data = n->hintValue("x-commhistoryd-data").toByteArray();
+    if (!data.contains((char)0))
+        data = QByteArray::fromBase64(data);
+
     if (data.isEmpty())
         return false;
 
@@ -106,7 +110,7 @@ void PersonalNotification::publishNotification()
         m_notification = new Notification(this);
 
     m_notification->setCategory(NotificationGroup::groupType(m_eventType));
-    m_notification->setHintValue("x-commhistoryd-data", serialized());
+    m_notification->setHintValue("x-commhistoryd-data", serialized().toBase64());
     NotificationManager::instance()->setNotificationAction(m_notification, this, false);
 
     // No preview banner for existing notifications
