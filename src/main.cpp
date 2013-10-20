@@ -153,7 +153,8 @@ Q_DECL_EXPORT int main(int argc, char **argv)
 
     ConnectionUtils *utils = new ConnectionUtils(&app);
 
-    new ContactAuthorizationListener(utils, chService);
+    // ContactAuthorizationListener needs to be updated with nemo-notifications and new UI handling
+    //new ContactAuthorizationListener(utils, chService);
 
     AccountPresenceService *apService = new AccountPresenceService(utils->accountManager(), &app);
     if (!apService->isRegistered()) {
