@@ -177,7 +177,7 @@ void AccountPresenceService::globalPresenceUpdate(int state, const QString &mess
     if (presence.isValid()) {
         // Set all enabled accounts to have the same presence information
         foreach (Tp::AccountPtr account, m_accountManager->enabledAccounts()->accounts()) {
-            if (!presenceUpdate(account, presence)) {
+            if (account->cmName() != QLatin1String("ring") && !presenceUpdate(account, presence)) {
                 qWarning() << "Unable to set global presence for account:" << account->displayName();
             }
         }
@@ -189,7 +189,7 @@ void AccountPresenceService::globalPresenceUpdate(int state, const QString &mess
 void AccountPresenceService::accountPresenceUpdate(const QString &accountUri, int state, const QString &message)
 {
     Tp::AccountPtr account = m_accountManager->accountForPath(accountUri);
-    if (account && account->isValidAccount()) {
+    if (account && account->isValidAccount() && account->cmName() != QLatin1String("ring")) {
         Tp::Presence presence = presenceValue(state, message);
         if (presence.isValid()) {
             if (!presenceUpdate(account, presence)) {
