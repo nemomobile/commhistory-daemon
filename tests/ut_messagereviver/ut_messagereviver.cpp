@@ -133,7 +133,7 @@ void Ut_MessageReviver::revive()
     QVERIFY(sm->ut_getDeliveredMessages().isEmpty());
 
     QMetaObject::invokeMethod(&reviver,
-                              "onConnectionReady",
+                              "checkConnection",
                               Qt::DirectConnection,
                               Q_ARG(Tp::ConnectionPtr, conn));
 
