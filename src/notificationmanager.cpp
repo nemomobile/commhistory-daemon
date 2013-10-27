@@ -24,7 +24,6 @@
 // Qt includes
 #include <QCoreApplication>
 #include <QDBusReply>
-#include <QTimer>
 #include <QDir>
 
 // CommHistory includes
@@ -101,11 +100,6 @@ void NotificationManager::init()
     connect(service, SIGNAL(observedConversationsChanged(QVariantList)),
                      SLOT(slotObservedConversationsChanged(QVariantList)));
 
-    // For notifications fired when inbox is observed, clear them after NOTIFICATION_THRESHOLD
-    m_NotificationTimer.setSingleShot(true);
-    m_NotificationTimer.setInterval(NOTIFICATION_THRESHOLD);
-    connect(&m_NotificationTimer, SIGNAL(timeout()), this, SLOT(slotInboxObservedChanged()));
-
     if (hasMessageNotification())
         groupModel();
 
@@ -135,7 +129,6 @@ void NotificationManager::syncNotifications()
                 continue;
             }
 
-            connect(group, SIGNAL(changed()), SLOT(slotNotificationGroupChanged()));
             m_Groups.insert(group->type(), group);
         } else {
             PersonalNotification *pn = new PersonalNotification(this);
@@ -208,15 +201,17 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
 {
     DEBUG() << Q_FUNC_INFO << event.id() << channelTargetId << chatType;
 
-    if (event.isRead() || isCurrentlyObservedByUI(event, channelTargetId, chatType)) {
+    bool inboxObserved = CommHistoryService::instance()->inboxObserved();
+    if (inboxObserved || event.isRead() || isCurrentlyObservedByUI(event, channelTargetId, chatType)) {
         if (!m_ngfClient->isConnected())
             m_ngfClient->connect();
 
         if (!m_ngfEvent) {
-            if (event.type() == CommHistory::Event::SMSEvent || event.type() == CommHistory::Event::MMSEvent)
-                m_ngfEvent = m_ngfClient->play(QLatin1Literal("sms_fg"));
-            else
-                m_ngfEvent = m_ngfClient->play(QLatin1Literal("chat_fg"));
+            if (event.type() == CommHistory::Event::SMSEvent || event.type() == CommHistory::Event::MMSEvent) {
+                m_ngfEvent = m_ngfClient->play(QLatin1Literal(inboxObserved ? "sms" : "sms_fg"));
+            } else {
+                m_ngfEvent = m_ngfClient->play(QLatin1Literal(inboxObserved ? "chat" : "chat_fg"));
+            }
         }
 
         return;
@@ -448,16 +443,6 @@ QString NotificationManager::filteredInboxAccountPath()
     return CommHistoryService::instance()->inboxFilterAccount();
 }
 
-void NotificationManager::slotNotificationGroupChanged()
-{
-    NotificationGroup *group = qobject_cast<NotificationGroup*>(sender());
-    if (!group)
-        return;
-
-    if (CommHistoryService::instance()->inboxObserved())
-        m_NotificationTimer.start();
-}
-
 bool NotificationManager::removeNotificationGroup(int type)
 {
     DEBUG() << Q_FUNC_INFO << type;
@@ -480,7 +465,6 @@ void NotificationManager::addNotification(PersonalNotification *notification)
     NotificationGroup *group = m_Groups.value(eventType);
     if (!group) {
         group = new NotificationGroup(eventType, this);
-        connect(group, SIGNAL(changed()), SLOT(slotNotificationGroupChanged()));
         m_Groups.insert(eventType, group);
     }
 
