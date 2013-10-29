@@ -4,7 +4,7 @@ After=pre-user-session.target booster-qt5.service
 Requires=dbus.socket booster-qt5.service
 
 [Service]
-ExecStart=/usr/bin/invoker --type=qt5 /usr/bin/commhistoryd
+ExecStart=/usr/bin/invoker -o --type=qt5 /usr/bin/commhistoryd
 Restart=always
 
 [Install]
