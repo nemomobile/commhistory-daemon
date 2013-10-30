@@ -356,6 +356,7 @@ void Ut_TextChannelListener::receiving()
         CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
                 conn->interface<CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface>();
         QVERIFY(storedMessages);
+        QTest::qWait(4000); // let expunging run off the loop
         QStringList sm = storedMessages->ut_getExpungedMessages();
         QVERIFY(sm.contains(token));
     }
@@ -500,6 +501,7 @@ void Ut_TextChannelListener::smsSending()
     CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
             conn->interface<CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface>();
     QVERIFY(storedMessages);
+    QTest::qWait(4000); // let expunging run off the loop
     QStringList sm = storedMessages->ut_getExpungedMessages();
     QVERIFY(sm.contains(acceptedToken));
     QVERIFY(sm.contains(deliveredToken));
@@ -777,6 +779,7 @@ void Ut_TextChannelListener::receiveVCard()
     CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
             conn->interface<CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface>();
     QVERIFY(storedMessages);
+    QTest::qWait(4000); // let expunging run off the loop
     QVERIFY(storedMessages->ut_getExpungedMessages().contains(token));
 }
 
