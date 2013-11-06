@@ -31,7 +31,6 @@
 #include <QDBusInterface>
 #include <QFile>
 #include <QQueue>
-#include <QTimer>
 #include <QMultiHash>
 #include <QModelIndex>
 
@@ -133,7 +132,6 @@ private Q_SLOTS:
     void slotContactUpdated(quint32 localId, const QString &name, const QList<ContactAddress> &addresses);
     void slotContactRemoved(quint32 localId);
     void slotContactUnknown(const QPair<QString,QString> &address);
-    void slotNotificationGroupChanged();
 
 private:
     NotificationManager( QObject* parent = 0);
@@ -168,9 +166,6 @@ private:
     QList<PersonalNotification*> m_unresolvedEvents;
 
     QString notificationText(const CommHistory::Event &event);
-
-    // Delayed notifications
-    QTimer m_NotificationTimer;
 
     QSharedPointer<CommHistory::ContactListener> m_contactListener;
     CommHistory::GroupModel *m_GroupModel;
