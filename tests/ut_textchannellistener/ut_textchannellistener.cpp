@@ -122,6 +122,27 @@ void Ut_TextChannelListener::initTestCase()
  */
 void Ut_TextChannelListener::cleanupTestCase()
 {
+    {
+        CommHistory::GroupModel model;
+
+        QSignalSpy modelReady(&model, SIGNAL(modelReady(bool)));
+        model.getGroups(IM_ACCOUNT_PATH);
+        QVERIFY(waitSignal(modelReady, 5000));
+
+        while (model.rowCount() != 0)
+            QVERIFY(model.deleteGroups(QList<int>() << model.group(model.index(0,0)).id()));
+    }
+
+    {
+        CommHistory::GroupModel model;
+
+        QSignalSpy modelReady(&model, SIGNAL(modelReady(bool)));
+        model.getGroups(SMS_ACCOUNT_PATH);
+        QVERIFY(waitSignal(modelReady, 5000));
+
+        while (model.rowCount() != 0)
+            QVERIFY(model.deleteGroups(QList<int>() << model.group(model.index(0,0)).id()));
+    }
 }
 
 /*!

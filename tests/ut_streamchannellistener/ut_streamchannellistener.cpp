@@ -90,6 +90,15 @@ void Ut_StreamChannelListener::initTestCase()
  */
 void Ut_StreamChannelListener::cleanupTestCase()
 {
+    CommHistory::CallModel model;
+
+    QSignalSpy modelReady(&model, SIGNAL(modelReady(bool)));
+    model.setFilterAccount(ACCOUNT_PATH);
+    model.getEvents();
+    QVERIFY(waitSignal(modelReady, 5000));
+
+    while (model.rowCount() != 0)
+        QVERIFY(model.deleteEvent(model.event(model.index(0,0)).id()));
 }
 
 /*!
