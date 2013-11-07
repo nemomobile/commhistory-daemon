@@ -122,6 +122,27 @@ void Ut_TextChannelListener::initTestCase()
  */
 void Ut_TextChannelListener::cleanupTestCase()
 {
+    {
+        CommHistory::GroupModel model;
+
+        QSignalSpy modelReady(&model, SIGNAL(modelReady(bool)));
+        model.getGroups(IM_ACCOUNT_PATH);
+        QVERIFY(waitSignal(modelReady, 5000));
+
+        while (model.rowCount() != 0)
+            QVERIFY(model.deleteGroups(QList<int>() << model.group(model.index(0,0)).id()));
+    }
+
+    {
+        CommHistory::GroupModel model;
+
+        QSignalSpy modelReady(&model, SIGNAL(modelReady(bool)));
+        model.getGroups(SMS_ACCOUNT_PATH);
+        QVERIFY(waitSignal(modelReady, 5000));
+
+        while (model.rowCount() != 0)
+            QVERIFY(model.deleteGroups(QList<int>() << model.group(model.index(0,0)).id()));
+    }
 }
 
 /*!
@@ -218,9 +239,9 @@ void Ut_TextChannelListener::imSending()
     uint timestamp = QDateTime::currentDateTime().toTime_t();
     Tp::Message msg(timestamp, (uint)Tp::ChannelTextMessageTypeNormal, message);
     QString token = QUuid::createUuid().toString();
+    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
     Tp::TextChannelPtr::dynamicCast(ch)->ut_sendMessage(msg, Tp::MessageSendingFlagReportDelivery, token);
 
-    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
     QVERIFY(waitSignal(eventCommitted, 5000));
 
     CommHistory::Group g = fetchGroup(IM_ACCOUNT_PATH, IM_USERNAME, true);
@@ -323,9 +344,9 @@ void Ut_TextChannelListener::receiving()
     sender->ut_setId(username);
     msg.ut_setSender(sender);
 
+    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
     Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(msg);
 
-    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
     QVERIFY(waitSignal(eventCommitted, 5000));
 
     CommHistory::Group g = fetchGroup(accountPath, username, true);
@@ -356,6 +377,7 @@ void Ut_TextChannelListener::receiving()
         CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
                 conn->interface<CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface>();
         QVERIFY(storedMessages);
+        QTest::qWait(4000); // let expunging run off the loop
         QStringList sm = storedMessages->ut_getExpungedMessages();
         QVERIFY(sm.contains(token));
     }
@@ -410,9 +432,9 @@ void Ut_TextChannelListener::smsSending()
     uint timestamp = QDateTime::currentDateTime().toTime_t();
     Tp::Message msg(timestamp, (uint)Tp::ChannelTextMessageTypeNormal, message);
     QString token = QUuid::createUuid().toString();
+    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
     Tp::TextChannelPtr::dynamicCast(ch)->ut_sendMessage(msg, Tp::MessageSendingFlagReportDelivery, token);
 
-    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
     QVERIFY(waitSignal(eventCommitted, 5000));
 
     CommHistory::Group g = fetchGroup(SMS_ACCOUNT_PATH, SMS_NUMBER, true);
@@ -500,6 +522,7 @@ void Ut_TextChannelListener::smsSending()
     CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
             conn->interface<CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface>();
     QVERIFY(storedMessages);
+    QTest::qWait(4000); // let expunging run off the loop
     QStringList sm = storedMessages->ut_getExpungedMessages();
     QVERIFY(sm.contains(acceptedToken));
     QVERIFY(sm.contains(deliveredToken));
@@ -735,9 +758,9 @@ void Ut_TextChannelListener::receiveVCard()
     sender->ut_setId(SMS_NUMBER);
     msg.ut_setSender(sender);
 
+    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
     Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(msg);
 
-    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
     QVERIFY(waitSignal(eventCommitted, 5000));
 
     CommHistory::Group g = fetchGroup(SMS_ACCOUNT_PATH, SMS_NUMBER, true);
@@ -777,6 +800,7 @@ void Ut_TextChannelListener::receiveVCard()
     CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface* storedMessages =
             conn->interface<CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface>();
     QVERIFY(storedMessages);
+    QTest::qWait(4000); // let expunging run off the loop
     QVERIFY(storedMessages->ut_getExpungedMessages().contains(token));
 }
 
@@ -784,8 +808,8 @@ void Ut_TextChannelListener::groups()
 {
     {
         CommHistory::GroupModel gm;
-        gm.getGroups(SMS_ACCOUNT_PATH, SMS_NUMBER);
         QSignalSpy ready(&gm, SIGNAL(modelReady(bool)));
+        gm.getGroups(SMS_ACCOUNT_PATH, SMS_NUMBER);
         QVERIFY(waitSignal(ready, 5000));
         QSignalSpy groupsCommitted(&gm, SIGNAL(groupsCommitted(const QList<int>&, bool)));
         gm.deleteAll();
@@ -845,9 +869,9 @@ void Ut_TextChannelListener::groups()
         sender->ut_setId(SMS_NUMBER);
         msg.ut_setSender(sender);
 
+        QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
         Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(msg);
 
-        QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
         QVERIFY(waitSignal(eventCommitted, 5000));
 
         QTest::qWait(100); //let group model in tcl to handle eventsAdded
@@ -892,9 +916,9 @@ void Ut_TextChannelListener::groups()
         sender->ut_setId(SMS_NUMBER);
         msg.ut_setSender(sender);
 
+        QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
         Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(msg);
 
-        QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
         QVERIFY(waitSignal(eventCommitted, 5000));
 
         QTest::qWait(100); //let group model in tcl to handle eventsAdded
@@ -967,9 +991,9 @@ void Ut_TextChannelListener::receivingFromSelf()
     sender->ut_setId(IM_USERNAME);
     msg.ut_setSender(sender);
 
+    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
     Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(msg);
 
-    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
     QVERIFY(waitSignal(eventCommitted, 5000));
 
     CommHistory::Group g = fetchGroup(IM_ACCOUNT_PATH, IM_REMOTE_ID, true);
@@ -1044,9 +1068,9 @@ void Ut_TextChannelListener::supersedes()
     sender->ut_setId(IM_USERNAME);
     msg.ut_setSender(sender);
 
+    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
     Tp::TextChannelPtr::dynamicCast(ch)->ut_receiveMessage(msg);
 
-    QSignalSpy eventCommitted(&tcl.eventModel(), SIGNAL(eventsCommitted(const QList<CommHistory::Event>&, bool)));
     QVERIFY(waitSignal(eventCommitted, 5000));
 
     CommHistory::Group g = fetchGroup(IM_ACCOUNT_PATH, IM_USERNAME, true);

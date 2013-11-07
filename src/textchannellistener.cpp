@@ -2053,7 +2053,7 @@ void TextChannelListener::channelReady()
         checkStoredMessagesIf();
         connect(&eventModel(), SIGNAL(eventsCommitted(QList<CommHistory::Event>,bool)),
                 SLOT(slotEventsCommitted(QList<CommHistory::Event>,bool)),
-                Qt::UniqueConnection);
+                (Qt::ConnectionType) (Qt::UniqueConnection | Qt::QueuedConnection));
         // call this last as it may start handle pending messages
         requestConversationId();
     } else {
