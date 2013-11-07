@@ -1536,11 +1536,6 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
         event.setReportDelivery(true);
     }
 
-    if (event.type() == CommHistory::Event::IMEvent
-        && areRemotePartiesOffline()) {
-        event.setStatus(CommHistory::Event::TemporarilyFailedOfflineStatus);
-    }
-
     QStringList recipients;
     recipients <<  event.toList() << event.ccList() << event.bccList();
     if (recipients.isEmpty()) {
