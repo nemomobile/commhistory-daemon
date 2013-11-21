@@ -52,7 +52,7 @@ Daemon for logging communications (IM, SMS and call) in history database.
 %build
 unset LD_AS_NEEDED
 %qmake5
-make %{?jobs:-j%jobs}
+make %{?_smp_mflags}
 
 %install
 rm -rf %{buildroot}
