@@ -223,7 +223,12 @@ bool AccountPresenceService::presenceUpdate(Tp::AccountPtr account, const Tp::Pr
     if (current) {
         po = account->setRequestedPresence(presence);
     } else {
-        po = account->setAutomaticPresence(presence);
+        if (presence.type() == Tp::ConnectionPresenceTypeOffline) {
+            po = account->setConnectsAutomatically(false);
+        } else {
+            account->setConnectsAutomatically(true);
+            po = account->setAutomaticPresence(presence);
+        }
     }
 
     if (!po)
