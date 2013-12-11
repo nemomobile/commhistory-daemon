@@ -1,6 +1,7 @@
 [Unit]
 Description=Communication history daemon
-After=pre-user-session.target booster-qt5.service
+# lipstick.service needed for org.freedesktop.Notifications
+After=pre-user-session.target booster-qt5.service lipstick.service
 Requires=dbus.socket booster-qt5.service
 
 [Service]
