@@ -67,8 +67,6 @@ namespace RTComLogger {
 #define CSD_SIM_STATUS_NO_SIM      QLatin1String("NoSIM")
 
 #define RING_ACCOUNT_PATH QLatin1String("/org/freedesktop/Telepathy/Account/ring/tel/ring")
-#define MMS_ACCOUNT_PATH  QLatin1String("/org/freedesktop/Telepathy/Account/mmscm/mms/mms0")
-#define MAP_MMS_TO_RING(x) ((x) == MMS_ACCOUNT_PATH ? RING_ACCOUNT_PATH : (x))
 
 #define CONTACT_SEPARATOR_IN_NOTIFICATION_GROUP QLatin1String(", ")
 

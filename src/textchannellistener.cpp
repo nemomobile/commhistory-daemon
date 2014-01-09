@@ -380,7 +380,7 @@ void TextChannelListener::slotGroupDataChanged(const QModelIndex &topLeft, const
 
 void TextChannelListener::slotGroupInserted(const QModelIndex &index, int start, int end)
 {
-    DEBUG() << Q_FUNC_INFO << "Account path handled by this listener: " << MAP_MMS_TO_RING(m_Account->objectPath());
+    DEBUG() << Q_FUNC_INFO << "Account path handled by this listener: " << m_Account->objectPath();
     DEBUG() << Q_FUNC_INFO << "Target handled by this listener: " << targetId();
 
     for (int i = start; i <= end; i++) {
@@ -391,7 +391,7 @@ void TextChannelListener::slotGroupInserted(const QModelIndex &index, int start,
         DEBUG() << Q_FUNC_INFO << "Inserted group's target: " << group.remoteUids().first();
 
         if (group.isValid()
-            && group.localUid() == MAP_MMS_TO_RING(m_Account->objectPath())
+            && group.localUid() == m_Account->objectPath()
             && CommHistory::remoteAddressMatch(group.remoteUids().first(),
                                                targetId())) {
             DEBUG() << Q_FUNC_INFO << "found listener for group" << group.id();
@@ -403,7 +403,7 @@ void TextChannelListener::slotGroupInserted(const QModelIndex &index, int start,
 
 void TextChannelListener::slotGroupRemoved(const QModelIndex &index, int start, int end)
 {
-    DEBUG() << Q_FUNC_INFO << "Account path handled by this listener: " << MAP_MMS_TO_RING(m_Account->objectPath());
+    DEBUG() << Q_FUNC_INFO << "Account path handled by this listener: " << m_Account->objectPath();
     DEBUG() << Q_FUNC_INFO << "Target handled by this listener: " << targetId();
 
     if (!m_Group.isValid())
@@ -434,7 +434,7 @@ int TextChannelListener::groupIdForRecipient(const QString &remoteUid)
             QModelIndex index = m_GroupModel->index(row, 0);
             CommHistory::Group group = m_GroupModel->group(index);
             if (group.isValid()
-                && group.localUid() == MAP_MMS_TO_RING(m_Account->objectPath())
+                && group.localUid() == m_Account->objectPath()
                 && CommHistory::remoteAddressMatch(group.remoteUids().first(), remoteUid)) {
                 groupId = group.id();
                 DEBUG() << Q_FUNC_INFO << "found existing group:" << groupId;
@@ -445,7 +445,7 @@ int TextChannelListener::groupIdForRecipient(const QString &remoteUid)
         if (groupId == -1) {
             // add a new group
             CommHistory::Group group;
-            group.setLocalUid(MAP_MMS_TO_RING(m_Account->objectPath()));
+            group.setLocalUid(m_Account->objectPath());
 
             group.setRemoteUids(QStringList() << remoteUid);
             if (!m_GroupModel->addGroup(group)) {
@@ -469,10 +469,8 @@ int TextChannelListener::groupId()
         if (m_GroupModel->isReady()
             && m_Account) { // m_Account not need to be ready
 
-            // If account path if mms then we need to change it to ring because all groups are presented
-            // with ring account info in db:
             CommHistory::Group group;
-            group.setLocalUid(MAP_MMS_TO_RING(m_Account->objectPath()));
+            group.setLocalUid(m_Account->objectPath());
 
             QStringList remoteUids;
             DEBUG() << Q_FUNC_INFO << targetId();
@@ -594,7 +592,7 @@ void TextChannelListener::slotOnModelReady(bool status)
             QModelIndex index = m_GroupModel->index(row, 0);
             CommHistory::Group group = m_GroupModel->group(index);
             if (group.isValid()
-                && group.localUid() == MAP_MMS_TO_RING(m_Account->objectPath())
+                && group.localUid() == m_Account->objectPath()
                 && CommHistory::remoteAddressMatch(group.remoteUids().first(),
                                                    targetId())) {
                 m_Group = group;
@@ -1032,7 +1030,7 @@ bool TextChannelListener::getEventById(int eventId, CommHistory::Event &event)
     model.setQueryMode(CommHistory::SingleEventModel::SyncQuery);
 
     if (model.getEventById(eventId)) {
-        if (model.rowCount() > 0) 
+        if (model.rowCount() > 0)
             event = model.event(model.index(0, 0));
         return true;
     } else {

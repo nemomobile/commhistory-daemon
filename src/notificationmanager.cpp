@@ -309,7 +309,7 @@ bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& even
         if (values.size() != 3)
             continue;
 
-        if (MAP_MMS_TO_RING(event.localUid()) != values[0].toString())
+        if (event.localUid() != values[0].toString())
             continue;
 
         if (!CommHistory::remoteAddressMatch(remoteMatch, values[1].toString()))
@@ -344,7 +344,7 @@ void NotificationManager::removeNotifications(const QString &accountPath, bool m
 
         foreach (PersonalNotification *notification, group->notifications()) {
             // Remove only a notification matching to the account:
-            if (MAP_MMS_TO_RING(notification->account()) == accountPath) {
+            if (notification->account() == accountPath) {
                 DEBUG() << Q_FUNC_INFO << "Removing notification: accountPath: " << notification->account() << " remoteUid: " << notification->remoteUid();
                 group->removeNotification(notification);
             }
@@ -353,7 +353,7 @@ void NotificationManager::removeNotifications(const QString &accountPath, bool m
 
     for (QList<PersonalNotification*>::iterator it = m_unresolvedEvents.begin();
             it != m_unresolvedEvents.end(); ) {
-        if (MAP_MMS_TO_RING((*it)->account()) == accountPath) {
+        if ((*it)->account() == accountPath) {
             delete *it;
             it = m_unresolvedEvents.erase(it);
         } else
@@ -381,7 +381,7 @@ void NotificationManager::removeConversationNotifications(const QString &localUi
             else
                 notificationRemoteUidStr = notification->targetId();
 
-            if (MAP_MMS_TO_RING(notification->account()) == localUid
+            if (notification->account() == localUid
                     && CommHistory::remoteAddressMatch(notificationRemoteUidStr, remoteUid)
                     && (CommHistory::Group::ChatType)(notification->chatType()) == chatType) {
                 group->removeNotification(notification);
