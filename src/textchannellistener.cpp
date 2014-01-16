@@ -93,31 +93,10 @@
 
 #define VCARD_EXTENSION   QLatin1String("vcf")
 
-// MMS
-#define MMS_MESSAGE_SUBJECT   QLatin1String("message-subject")
-#define MMS_CONTENT_LOCATION  QLatin1String("x-mms-content-location")
-#define MMS_MESSAGE_SIZE      QLatin1String("x-mms-message-size")
-#define MMS_PART_TYPE         PART_CONTENT_TYPE
-#define MMS_PART_CONTENT      PART_CONTENT
-#define MMS_PART_LOCATION     QLatin1String("content-location")
-#define MMS_PART_ID           QLatin1String("identifier")
-#define MMS_MESSAGE_CC        QLatin1String("message-cc")
-#define MMS_MESSAGE_BCC       QLatin1String("message-bcc")
-#define MMS_MESSAGE_TO        QLatin1String("message-to")
-#define MMS_ADDRESS_SEPARATOR QChar(';')
-#define MMS_DEFAULT_FROM      QLatin1String("MMS")
-
-// mms read report
-#define MMS_MESSAGE_ID      QLatin1String("x-mms-message-id")
-#define MMS_READ_REPORT     QLatin1String("x-mms-read-report")
-#define MMS_READ_STATUS     QLatin1String("read-status")
-#define MMS_READ_BY         QLatin1String("read-by")
-
 // message editing support
 #define SUPERSEDES_TOKEN    QLatin1String("supersedes")
 
 #define PROTOCOL_TEL QLatin1String("tel")
-#define PROTOCOL_MMS QLatin1String("mms")
 
 // tp properties
 #define CHANNEL_PROPERTY_NAME QLatin1String("name")
@@ -154,7 +133,6 @@ static CommHistory::Event::PropertySet deliveryHandlingProperties = CommHistory:
                                                  << CommHistory::Event::ReportDelivery
                                                  << CommHistory::Event::ReadStatus
                                                  << CommHistory::Event::ReportReadRequested
-                                                 << CommHistory::Event::MmsId
                                                  << CommHistory::Event::ReportRead
                                                  << CommHistory::Event::ParentId;
 
@@ -707,51 +685,13 @@ void TextChannelListener::handleMessages()
             break;
         }
         case Tp::ChannelTextMessageTypeNormal: {
-           CommHistory::Event mmsNotification;
-
-           if (m_Account->protocolName() == PROTOCOL_MMS) {
-               getEventForToken(message.messageToken(),
-                                QString(), // mmsId
-                                -1, // groupId could differ for mms notifications
-                                mmsNotification);
-           }
-
             // fills event properties
             handleReceivedMessage(message, event);
 
             QString replaceTypeValue = replaceType(message.header());
 
-            if (mmsNotification.isValid()) {
-                DEBUG() << __FUNCTION__ << "found MMS notification, overwriting";
-                // overwrite MMS notification with downloaded message
-                event.setId(mmsNotification.id());
-                //notification may have "failed" status, so overwrite it with default value
-                event.setStatus(CommHistory::Event::UnknownStatus);
-                if (event.type() == CommHistory::Event::MMSEvent && event.remoteUid() == MMS_DEFAULT_FROM) {
-                    // MMS has no message-from so keep notification's From and group
-                    DEBUG() << __FUNCTION__ << "MMS has no From. Copy From and groupId from notification";
-                    event.setRemoteUid(mmsNotification.remoteUid()); // keep
-                    event.setGroupId(mmsNotification.groupId());
-                } else if (mmsNotification.groupId()!=event.groupId()) {
-                    //MMS notification and real MMS are from different groups, so we need to update From and move it
-                    mmsNotification.setRemoteUid(event.remoteUid());
-                    if (!eventModel().moveEvent(mmsNotification, event.groupId())) {
-                        qWarning() << "Move events failed" << event.id();
-                    }
-                }
-
-                int groupId = event.groupId();
-                modifyEvents[groupId] << event;
-                modifyMessages[groupId] << message;
-
-                QString token = message.messageToken();
-                if (token.isEmpty())
-                    token = event.messageToken();
-
-                modifyTokens[groupId].insertMulti(event.id(), token);
-
             // class 0 sms
-            } else if(m_isClassZeroSMS){
+            if (m_isClassZeroSMS) {
                 // just ack message, expunge would be called
                 // as soon as user reads message
                 DEBUG() << __FUNCTION__ << "Adding class 0 sms";
@@ -1063,13 +1003,6 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
 
     DEBUG() << "[DELIVERY] Message token is: " << deliveryToken;
 
-    QVariant mmsIdVar = header.value(MMS_MESSAGE_ID).variant();
-    QString mmsId;
-    if (mmsIdVar.isValid()) {
-        mmsId = mmsIdVar.value<QString>();
-        DEBUG() << "[DELIVERY] Mms-id is: " << mmsId;
-    }
-
     if (pendingCommit(deliveryToken)) {
         DEBUG() << "[DELIVERY] Original message is not committed yet, wait for it";
         return DeliveryHandlingPending;
@@ -1079,10 +1012,8 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
     QVariant status = header.value(DELIVERY_STATUS).variant();
 
     bool messageFound = false;
-    if (!deliveryToken.isEmpty() || !mmsId.isEmpty()) {
-        //use only delivery-token when status is "accepted"
-        QString mmsIdForRequest = (status.isValid() && status.value<int>() == Tp::DeliveryStatusAccepted) ? QString() : mmsId;
-        if (!getEventForToken(deliveryToken, mmsIdForRequest, m_Group.id(), event))
+    if (!deliveryToken.isEmpty()) {
+        if (!getEventForToken(deliveryToken, QString(), m_Group.id(), event))
             return DeliveryHandlingFailed;
         messageFound = event.isValid();
     }
@@ -1119,7 +1050,7 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
     }
 
     DEBUG() << "[DELIVERY] Event match: id:" << event.id()
-             << "token:" << event.messageToken() << "mmsId:" << event.mmsId();
+             << "token:" << event.messageToken();
 
     // If variant is not valid, then we cant update status
     if (!status.isValid())
@@ -1146,11 +1077,6 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
     case Tp::DeliveryStatusAccepted: {
         event.setStatus(CommHistory::Event::SentStatus);
         event.setStartTime(deliveryTime);
-        // set MMS message id
-        if (!mmsId.isEmpty()) {
-            event.setMmsId(mmsId);
-        }
-
         break;
     }
     case Tp::DeliveryStatusTemporarilyFailed:
@@ -1191,51 +1117,6 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
     result = DeliveryHandlingResolved;
 
     return result;
-}
-
-void TextChannelListener::slotSingleModelReady(bool status)
-{
-    Q_UNUSED(status);
-    DEBUG() << Q_FUNC_INFO;
-
-    CommHistory::SingleEventModel *request= qobject_cast<CommHistory::SingleEventModel*>(sender());
-
-    if (m_sendMms.contains(request)) {
-        QMutableHashIterator<CommHistory::SingleEventModel*, CommHistory::Event> i(m_sendMms);
-        while (i.hasNext()) {
-            i.next();
-            CommHistory::SingleEventModel *model = i.key();
-            if (model->isReady()) {
-                bool addMessage = true;
-                CommHistory::Event event = i.value();
-
-                if (model->rowCount() > 0) {
-                    CommHistory::Event oldEvent = model->event(model->index(0,0));
-                    if (oldEvent.isValid()) {
-                        event.setId(oldEvent.id());
-                        CommHistory::Group group = getGroupById(event.groupId());
-                        if (group.isValid() && eventModel().modifyEventsInGroup(
-                                QList<CommHistory::Event>() << event, group)) {
-                            m_EventTokens.insertMulti(event.id(), event.messageToken());
-                            addMessage = false;
-                        } else {
-                            qWarning() << "Failed modify mms event";
-                        }
-                    }
-                }
-                i.remove();
-                model->deleteLater();
-                if (addMessage)
-                    saveMessage(event);
-            } else {
-                break;
-            }
-        }
-    } else {
-        handleMessages();
-    }
-
-    tryToClose();
 }
 
 bool TextChannelListener::areRemotePartiesOffline()
@@ -1336,39 +1217,6 @@ void TextChannelListener::showErrorNote(const QString &errorMsg, BannerType type
     }
 }
 
-void TextChannelListener::parseMMSHeaders(const Tp::Message &message,
-                                          CommHistory::Event &event)
-{
-    QString subject = message.header().value(MMS_MESSAGE_SUBJECT).variant().toString();
-    if (!subject.isEmpty())
-        event.setSubject(subject);
-    event.setReportReadRequested(message.header().value(MMS_READ_REPORT).variant().toBool());
-    event.setMmsId(message.header().value(MMS_MESSAGE_ID).variant().toString());
-
-    event.setContentLocation(message.header().value(MMS_CONTENT_LOCATION).variant().toString());
-    event.setBytesReceived(message.header().value(MMS_MESSAGE_SIZE).variant().toUInt());
-    event.setCcList(message.header().value(MMS_MESSAGE_CC).variant().toString()
-                    .split(MMS_ADDRESS_SEPARATOR, QString::SkipEmptyParts));
-    event.setBccList(message.header().value(MMS_MESSAGE_BCC).variant().toString()
-                     .split(MMS_ADDRESS_SEPARATOR, QString::SkipEmptyParts));
-
-    event.setToList(message.header().value(MMS_MESSAGE_TO).variant().toString()
-                     .split(MMS_ADDRESS_SEPARATOR, QString::SkipEmptyParts));
-
-    // skip part 0, it's the message header
-    for (int i = 1; i < message.size(); i++) {
-
-        Tp::MessagePart part = message.part(i);
-        CommHistory::MessagePart messagePart;
-        messagePart.setContentId(part.value(MMS_PART_ID).variant().toString());
-        messagePart.setContentType(part.value(MMS_PART_TYPE).variant().toString());
-        messagePart.setPlainTextContent(part.value(MMS_PART_CONTENT).variant().toString());
-        messagePart.setContentLocation(part.value(MMS_PART_LOCATION).variant().toString());
-
-        event.addMessagePart(messagePart);
-    }
-}
-
 CommHistory::Event::EventType TextChannelListener::eventType() const
 {
     CommHistory::Event::EventType type = CommHistory::Event::UnknownType;
@@ -1378,8 +1226,6 @@ CommHistory::Event::EventType TextChannelListener::eventType() const
         } else {
             type = CommHistory::Event::SMSEvent;
         }
-    } else if (m_Account->protocolName() == PROTOCOL_MMS) {
-        type = CommHistory::Event::MMSEvent;
     } else {
         type = CommHistory::Event::IMEvent;
     }
@@ -1408,9 +1254,6 @@ void TextChannelListener::fillEventFromMessage(const Tp::Message &message,
                                                CommHistory::Event &event)
 {
     event.setType(eventType());
-
-    if (event.type() == CommHistory::Event::MMSEvent)
-        parseMMSHeaders(message, event);
 
     checkVCard(message.parts(), event);
 
@@ -1524,8 +1367,7 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
 
     // according to latest ui spec, sending status
     // should be set only for sms / mms messages
-    if(m_Account->protocolName() == PROTOCOL_TEL
-       || m_Account->protocolName() == PROTOCOL_MMS) {
+    if(m_Account->protocolName() == PROTOCOL_TEL) {
         event.setStatus(CommHistory::Event::SendingStatus);
     }
 
@@ -1534,37 +1376,7 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
         event.setReportDelivery(true);
     }
 
-    QStringList recipients;
-    recipients <<  event.toList() << event.ccList() << event.bccList();
-    if (recipients.isEmpty()) {
-        recipients << event.remoteUid();
-    }
-
-    foreach (const QString& recipient, recipients) {
-        bool addMessage = true;
-        if (m_Account->protocolName() == PROTOCOL_MMS) {
-            int groupId = groupIdForRecipient(recipient);
-
-            event.setRemoteUid(recipient);
-            event.setGroupId(groupId);
-            event.setId(-1);
-
-            CommHistory::SingleEventModel *request = new CommHistory::SingleEventModel(this);
-            if (request->getEventByTokens(event.messageToken(),
-                                          QString(), //mmsId
-                                          groupId)) {
-                m_sendMms.insert(request, event);
-                connect(request, SIGNAL(modelReady(bool)), SLOT(slotSingleModelReady(bool)));
-                addMessage = false;
-            } else {
-                qWarning() << "Failed query single event model";
-                delete request;
-            }
-        }
-
-        if (addMessage)
-            saveMessage(event);
-    }
+    saveMessage(event);
 
     if (event.type() == CommHistory::Event::IMEvent
         && areRemotePartiesOffline()
@@ -2249,8 +2061,7 @@ void TextChannelListener::slotHandleOwnersChanged(const Tp::HandleOwnerMap &hand
 
 bool TextChannelListener::hasPendingOperations() const
 {
-    return !(m_sendMms.isEmpty()
-             && m_expungeTokens.isEmpty()
+    return !(m_expungeTokens.isEmpty()
              && m_EventTokens.isEmpty()
              && m_pendingGroups.isEmpty()
              && m_failedSaveEvents.isEmpty()
