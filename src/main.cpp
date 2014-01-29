@@ -37,6 +37,8 @@
 #include "connectionutils.h"
 #include "lastdialedcache.h"
 #include "accountoperationsobserver.h"
+#include "mmshandler.h"
+#include "mmshandler_adaptor.h"
 #include "debug.h"
 
 using namespace RTComLogger;
@@ -180,6 +182,9 @@ Q_DECL_EXPORT int main(int argc, char **argv)
 
     // Init account operations observer to monitor account removals and to react to them.
     new AccountOperationsObserver(utils->accountManager(), &app);
+
+    MmsHandler *mmsHandler = new MmsHandler(&app);
+    new MmsHandlerAdaptor(mmsHandler);
 
     int result = app.exec();
 
