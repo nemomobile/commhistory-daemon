@@ -103,7 +103,6 @@ private Q_SLOTS:
     void slotListPropertiesFinished(QDBusPendingCallWatcher *watcher);
     void slotGetPropertiesFinished(QDBusPendingCallWatcher *watcher);
     void slotExpungeMessages();
-    void slotSingleModelReady(bool status);
     void slotSaveFailedEvents();
     void slotJoinedGroupChat(Tp::PendingOperation *operation);
     void slotPendingMessageRemoved(const Tp::ReceivedMessage &message);
@@ -135,7 +134,6 @@ private:
     DeliveryHandlingStatus handleDeliveryReport(const Tp::ReceivedMessage &message,
                                                 CommHistory::Event &event);
     // MMS
-    void parseMMSHeaders(const Tp::Message &message, CommHistory::Event &event);
     // normal message
     void fillEventFromMessage(const Tp::Message &message, CommHistory::Event &event);
     void handleReceivedMessage(const Tp::ReceivedMessage &message,
@@ -222,8 +220,6 @@ private:
 
     // internal copy of message queue
     QList<Tp::ReceivedMessage> m_messageQueue;
-     // serately handle mms saving as it needs event lookup before saving
-    QHash<CommHistory::SingleEventModel*, CommHistory::Event> m_sendMms;
     // flag to destroy listener as soon as all pending operations (updating events, expunging) complete
     bool m_channelClosed;
     // groups that have added events but have not yet emitted updated signal
