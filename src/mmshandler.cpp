@@ -22,12 +22,14 @@
 #include "mmshandler.h"
 #include "mmspart.h"
 #include "constants.h"
+#include "notificationmanager.h"
 #include "debug.h"
 #include <CommHistory/Event>
 #include <CommHistory/EventModel>
 #include <CommHistory/SingleEventModel>
 #include <CommHistory/groupmanager.h>
 
+using namespace RTComLogger;
 using namespace CommHistory;
 
 MmsHandler::MmsHandler(QObject* parent)
@@ -243,6 +245,7 @@ void MmsHandler::messageReceived(const QString &recId, const QString &mmsId, con
         return;
     }
 
+    NotificationManager::instance()->showNotification(event, from, Group::ChatTypeP2P);
     DEBUG() << "MMS message " << recId << "received with" << eventParts.size() << "parts:" << event.toString();
 }
 
