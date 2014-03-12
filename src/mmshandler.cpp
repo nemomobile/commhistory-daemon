@@ -311,31 +311,136 @@ bool MmsHandler::setGroupForEvent(Event &event)
     return true;
 }
 
-void MmsHandler::deliveryReport(const QString &imsi, const QString &mmsId, const QString &recipient, int status)
-{
-    Q_UNUSED(imsi);
-    Q_UNUSED(mmsId);
-    Q_UNUSED(recipient);
-    Q_UNUSED(status);
-}
-
 void MmsHandler::messageSendStateChanged(const QString &recId, int state)
 {
-    Q_UNUSED(recId);
-    Q_UNUSED(state);
+    enum MessageSendState {
+        Encoding = 0,
+        TooBig,
+        Sending,
+        Deferred,
+        NoSpace,
+        SendError,
+        Refused
+    };
+
+    Event event;
+    SingleEventModel model;
+    if (model.getEventById(recId.toInt()))
+        event = model.event(model.index(0, 0));
+
+    if (!event.isValid()) {
+        qWarning() << "Ignoring MMS message send state for unknown event" << recId;
+        return;
+    }
+
+    Event::EventStatus newStatus = event.status();
+    switch (state) {
+        case Encoding:
+        case Sending:
+        case Deferred:
+            newStatus = Event::SendingStatus;
+            break;
+        case TooBig:
+        case NoSpace:
+        case SendError:
+            newStatus = Event::TemporarilyFailedStatus;
+            break;
+        case Refused:
+            newStatus = Event::PermanentlyFailedStatus;
+            break;
+    }
+
+    if (newStatus != event.status()) {
+        event.setStatus(newStatus);
+        if (!model.modifyEvent(event))
+            qWarning() << "Failed updating MMS event status for" << recId;
+    }
 }
 
 void MmsHandler::messageSent(const QString &recId, const QString &mmsId)
 {
-    Q_UNUSED(recId);
-    Q_UNUSED(mmsId);
+    Event event;
+    SingleEventModel model;
+    if (model.getEventById(recId.toInt()))
+        event = model.event(model.index(0, 0));
+
+    if (!event.isValid()) {
+        qWarning() << "Ignoring MMS message sent state for unknown event" << recId;
+        return;
+    }
+
+    event.setStatus(Event::SentStatus);
+    event.setMmsId(mmsId);
+    if (!model.modifyEvent(event))
+        qWarning() << "Failed updating MMS event sent status for" << recId;
+}
+
+void MmsHandler::deliveryReport(const QString &imsi, const QString &mmsId, const QString &recipient, int status)
+{
+    Q_UNUSED(imsi);
+    Q_UNUSED(recipient); // No handling for read/delivery reports from multiple recipients
+
+    enum DeliveryStatus {
+        Indeterminate = 0,
+        Expired,
+        Retrieved,
+        Rejected,
+        Deferred,
+        Unrecognized,
+        Forwarded
+    };
+
+    Event event;
+    SingleEventModel model;
+    if (model.getEventByTokens(QString(), mmsId, -1))
+        event = model.event(model.index(0, 0));
+
+    if (!event.isValid()) {
+        qWarning() << "Ignoring MMS message delivery state for unknown event" << mmsId;
+        return;
+    }
+
+    switch (status) {
+        case Expired:
+        case Rejected:
+        case Unrecognized:
+            event.setStatus(Event::TemporarilyFailedStatus);
+            break;
+        case Retrieved:
+            event.setStatus(Event::DeliveredStatus);
+            break;
+        case Indeterminate:
+        case Deferred:
+        case Forwarded:
+            // Are there any more appropriate states here?
+            break;
+    }
+
+    if (!model.modifyEvent(event))
+        qWarning() << "Failed updating MMS event sent status for" << mmsId;
 }
 
 void MmsHandler::readReport(const QString &imsi, const QString &mmsId, const QString &recipient, int status)
 {
     Q_UNUSED(imsi);
-    Q_UNUSED(mmsId);
-    Q_UNUSED(recipient);
-    Q_UNUSED(status);
+    Q_UNUSED(recipient); // No handling for read/delivery reports from multiple recipients
+
+    Event event;
+    SingleEventModel model;
+    if (model.getEventByTokens(QString(), mmsId, -1))
+        event = model.event(model.index(0, 0));
+
+    if (!event.isValid()) {
+        qWarning() << "Ignoring MMS message read state for unknown event" << mmsId;
+        return;
+    }
+
+    if (status == 0)
+        event.setReadStatus(Event::ReadStatusRead);
+    else
+        event.setReadStatus(Event::ReadStatusDeleted);
+
+    if (!model.modifyEvent(event))
+        qWarning() << "Failed updating MMS event sent status for" << mmsId;
 }
 
