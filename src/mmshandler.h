@@ -28,7 +28,10 @@
 namespace CommHistory {
     class Event;
     class GroupManager;
+    class MessagePart;
 }
+
+class QDBusPendingCallWatcher;
 
 class MmsHandler : public QObject
 {
@@ -50,11 +53,20 @@ public Q_SLOTS:
     void messageSent(const QString &recId, const QString &mmsId);
     void readReport(const QString &imsi, const QString &mmsId, const QString &recipient, int status);
 
+    int sendMessage(const QStringList &to, const QStringList &cc, const QStringList &bcc,
+            const QString &subject, MmsPartList parts);
+    void sendMessageFromEvent(int eventId);
+
+private Q_SLOTS:
+    void sendMessageFinished(QDBusPendingCallWatcher *call);
+
 private:
     bool m_isRegistered;
     CommHistory::GroupManager *groupManager;
 
+    void sendMessageFromEvent(CommHistory::Event &event);
     bool setGroupForEvent(CommHistory::Event &event);
+    bool copyMmsPartFiles(const MmsPartList &parts, int eventId, QList<CommHistory::MessagePart> &eventParts, QString &freeText);
     QString copyMessagePartFile(const QString &sourcePath, int eventId, const QString &contentId);
 };
 
