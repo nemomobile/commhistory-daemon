@@ -20,12 +20,8 @@
 #
 ###############################################################################
 
-include( ../common-project-config.pri )
-include( ../common-vars.pri )
-
 include( ../common-installs-config.pri )
-
-TEMPLATE = subdirs
+TEMPLATE = aux
 
 client.path = $${INSTALL_PREFIX}/share/telepathy/clients
 client.files = CommHistory.client
@@ -33,4 +29,10 @@ client.files = CommHistory.client
 service.path = $${INSTALL_PREFIX}/lib/systemd/user
 service.files = commhistoryd.service
 
-INSTALLS += client service
+dbus_conf.path = /etc/dbus-1/system.d/
+dbus_conf.files = org.nemomobile.MmsHandler.conf
+
+notification_types.path  = $${INSTALL_PREFIX}/share/lipstick/notificationcategories
+notification_types.files = notifications/*.conf
+
+INSTALLS += client service dbus_conf notification_types

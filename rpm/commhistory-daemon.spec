@@ -11,7 +11,7 @@ BuildRequires:  pkgconfig(Qt5DBus)
 BuildRequires:  pkgconfig(Qt5Contacts)
 BuildRequires:  pkgconfig(Qt5Versit)
 BuildRequires:  pkgconfig(Qt5Test)
-BuildRequires:  libcommhistory-qt5-devel >= 1.6.18
+BuildRequires:  libcommhistory-qt5-devel >= 1.7.5
 BuildRequires:  pkgconfig(TelepathyQt5)
 BuildRequires:  pkgconfig(mlite5)
 BuildRequires:  pkgconfig(mlocale5)
@@ -69,6 +69,7 @@ ln -s ../commhistoryd.service %{buildroot}%{_libdir}/systemd/user/user-session.t
 %{_datadir}/translations/commhistoryd_eng_en.qm
 %{_datadir}/lipstick/notificationcategories/*
 %{_datadir}/telepathy/clients/CommHistory.client
+%{_sysconfdir}/dbus-1/system.d/org.nemomobile.MmsHandler.conf
 
 %files tests
 %defattr(-,root,root,-)

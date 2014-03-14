@@ -52,6 +52,11 @@
 #define txt_qtn_msg_contact_card_label qtTrId("qtn_msg_contact_card_label")
 //% "%1 | %2"
 #define txt_qtn_msg_notification_new_vcard(STR) qtTrId("qtn_msg_received_contact_card").arg(txt_qtn_msg_contact_card_label).arg(STR)
+//% "%n attachment(s)"
+#define txt_qtn_mms_notification_attachment(NUM) qtTrId("qtn_mms_notification_attachment", NUM)
+//% "%1 | %2"
+//: Notification text for MMS. %1 is attachment text, %2 subject/message. e.g. "1 attachment | Kitty!"
+#define txt_qtn_mms_notification_with_text(NUMATTACHMENTS,STR) qtTrId("qtn_mms_notification_with_text").arg(txt_qtn_mms_notification_attachment(NUMATTACHMENTS)).arg(STR)
 
 //% "%n missed call(s)"
 #define txt_qtn_call_missed(NUM) qtTrId("qtn_call_missed", NUM)

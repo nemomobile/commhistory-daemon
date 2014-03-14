@@ -491,8 +491,26 @@ QString NotificationManager::notificationText(const CommHistory::Event& event)
         }
         case CommHistory::Event::MMSEvent:
         {
-            // TODO : not specified what to show in notification in case of single MMS
-            text = event.subject();
+            if (!event.subject().isEmpty())
+                text = event.subject();
+            else
+                text = event.freeText();
+
+            int attachmentCount = 0;
+            foreach (const MessagePart &part, event.messageParts()) {
+                if (part.contentType().startsWith("image/") || part.contentType().startsWith("video/") ||
+                    part.contentType().startsWith("text/vcard"))
+                {
+                    attachmentCount++;
+                }
+            }
+
+            if (attachmentCount > 0) {
+                if (!text.isEmpty())
+                    text = txt_qtn_mms_notification_with_text(attachmentCount, text);
+                else
+                    text = txt_qtn_mms_notification_attachment(attachmentCount);
+            }
             break;
         }
 

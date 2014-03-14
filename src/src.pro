@@ -72,7 +72,9 @@ HEADERS += logger.h \
            accountpresenceifadaptor.h \
            accountpresenceservice.h \
            lastdialedcache.h \
-           debug.h
+           debug.h \
+           mmshandler.h \
+           mmspart.h
 
 SOURCES += main.cpp \
            logger.cpp \
@@ -94,7 +96,13 @@ SOURCES += main.cpp \
            accountoperationsobserver.cpp \
            accountpresenceifadaptor.cpp \
            accountpresenceservice.cpp \
-           lastdialedcache.cpp
+           lastdialedcache.cpp \
+           mmshandler.cpp
+
+DBUS_ADAPTORS += mmshandler
+mmshandler.files = org.nemomobile.MmsHandler.xml
+mmshandler.header_flags = -i mmspart.h -i mmshandler.h -l MmsHandler
+mmshandler.source_flags = -l MmsHandler
 
 # -----------------------------------------------------------------------------
 # Telepathy extensions.
@@ -197,10 +205,3 @@ QMAKE_EXTRA_COMPILERS += cli_connection_moc_cpp
 # properly setup.
 # -----------------------------------------------------------------------------
 include( ../common-installs-config.pri )
-
-# -----------------------------------------------------------------------------
-# Installation target for application resources
-# -----------------------------------------------------------------------------
-notification_types.path  = $${INSTALL_PREFIX}/share/lipstick/notificationcategories
-notification_types.files = $${_PRO_FILE_PWD_}/../data/notifications/*.conf
-INSTALLS                += notification_types
