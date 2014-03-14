@@ -27,7 +27,12 @@
 #include <CommHistory/Event>
 #include <CommHistory/EventModel>
 #include <CommHistory/SingleEventModel>
+#include <CommHistory/commonutils.h>
 #include <CommHistory/groupmanager.h>
+#include <QDBusConnection>
+#include <QDBusMessage>
+#include <QDBusPendingCall>
+#include <QDBusPendingCallWatcher>
 
 using namespace RTComLogger;
 using namespace CommHistory;
@@ -194,41 +199,19 @@ void MmsHandler::messageReceived(const QString &recId, const QString &mmsId, con
     }
 
     QList<MessagePart> eventParts;
-    bool storageFailed = false;
     QString freeText;
-    foreach (const MmsPart &part, parts) {
-        QString path = copyMessagePartFile(part.fileName, event.id(), part.contentId);
-        if (path.isEmpty()) {
-            qCritical() << "Failed copying message part to storage; message dropped:" << event.id() << part.fileName;
-            storageFailed = true;
-            break;
-        }
+    bool ok = copyMmsPartFiles(parts, event.id(), eventParts, freeText);
+    if (ok) {
+        event.setMessageParts(eventParts);
+        event.setFreeText(freeText);
 
-        MessagePart msgPart;
-        msgPart.setContentId(part.contentId);
-        msgPart.setContentType(part.contentType);
-        msgPart.setPath(path);
-        eventParts.append(msgPart);
-
-        // All text/ parts are concatenated for the message content
-        if (msgPart.contentType().startsWith("text/plain")) {
-            QString text = msgPart.plainTextContent();
-            if (!text.isEmpty()) {
-                if (!freeText.isEmpty())
-                    freeText.append('\n');
-                freeText.append(text);
-            }
+        if (!model.modifyEvent(event)) {
+            qCritical() << "Failed updating MMS received event:" << event.toString();
+            ok = false;
         }
     }
-    event.setMessageParts(eventParts);
-    event.setFreeText(freeText);
 
-    if (!storageFailed && !model.modifyEvent(event)) {
-        qCritical() << "Failed updating MMS received event:" << event.toString();
-        storageFailed = true;
-    }
-
-    if (storageFailed) {
+    if (!ok) {
         // Clean up copied MMS parts, and try to set TemporarilyFailed on the event
         foreach (const MessagePart &part, eventParts)
             QFile::remove(part.path());
@@ -258,6 +241,36 @@ static QString sanitizeName(QString name)
     return name;
 }
 
+// Caller is responsible for cleaning up copied files on failure
+bool MmsHandler::copyMmsPartFiles(const MmsPartList &parts, int eventId, QList<MessagePart> &eventParts, QString &freeText)
+{
+    foreach (const MmsPart &part, parts) {
+        QString path = copyMessagePartFile(part.fileName, eventId, part.contentId);
+        if (path.isEmpty()) {
+            qCritical() << "Failed copying message part to storage; message dropped:" << eventId << part.fileName;
+            return false;
+        }
+
+        MessagePart msgPart;
+        msgPart.setContentId(part.contentId);
+        msgPart.setContentType(part.contentType);
+        msgPart.setPath(path);
+        eventParts.append(msgPart);
+
+        // All text/ parts are concatenated for the message content
+        if (msgPart.contentType().startsWith("text/plain")) {
+            QString text = msgPart.plainTextContent();
+            if (!text.isEmpty()) {
+                if (!freeText.isEmpty())
+                    freeText.append('\n');
+                freeText.append(text);
+            }
+        }
+    }
+
+    return true;
+}
+
 QString MmsHandler::copyMessagePartFile(const QString &sourcePath, int eventId, const QString &contentId)
 {
     QDir dataDir(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/commhistory/data/%1/").arg(eventId));
@@ -273,7 +286,7 @@ QString MmsHandler::copyMessagePartFile(const QString &sourcePath, int eventId, 
         // If that fails, do a normal copy
         QFile file(sourcePath);
         if (!file.copy(filePath)) {
-            qCritical() << "Cannot copy message part file" << sourcePath << "to" << file.fileName();
+            qCritical() << "Cannot copy message part file" << sourcePath << "to" << filePath;
             return QString();
         }
     }
@@ -311,31 +324,287 @@ bool MmsHandler::setGroupForEvent(Event &event)
     return true;
 }
 
-void MmsHandler::deliveryReport(const QString &imsi, const QString &mmsId, const QString &recipient, int status)
-{
-    Q_UNUSED(imsi);
-    Q_UNUSED(mmsId);
-    Q_UNUSED(recipient);
-    Q_UNUSED(status);
-}
-
 void MmsHandler::messageSendStateChanged(const QString &recId, int state)
 {
-    Q_UNUSED(recId);
-    Q_UNUSED(state);
+    enum MessageSendState {
+        Encoding = 0,
+        TooBig,
+        Sending,
+        Deferred,
+        NoSpace,
+        SendError,
+        Refused
+    };
+
+    Event event;
+    SingleEventModel model;
+    if (model.getEventById(recId.toInt()))
+        event = model.event(model.index(0, 0));
+
+    if (!event.isValid()) {
+        qWarning() << "Ignoring MMS message send state for unknown event" << recId;
+        return;
+    }
+
+    Event::EventStatus newStatus = event.status();
+    switch (state) {
+        case Encoding:
+        case Sending:
+        case Deferred:
+            newStatus = Event::SendingStatus;
+            break;
+        case TooBig:
+        case NoSpace:
+        case SendError:
+            newStatus = Event::TemporarilyFailedStatus;
+            break;
+        case Refused:
+            newStatus = Event::PermanentlyFailedStatus;
+            break;
+    }
+
+    if (newStatus != event.status()) {
+        event.setStatus(newStatus);
+        if (!model.modifyEvent(event))
+            qWarning() << "Failed updating MMS event status for" << recId;
+    }
 }
 
 void MmsHandler::messageSent(const QString &recId, const QString &mmsId)
 {
-    Q_UNUSED(recId);
-    Q_UNUSED(mmsId);
+    Event event;
+    SingleEventModel model;
+    if (model.getEventById(recId.toInt()))
+        event = model.event(model.index(0, 0));
+
+    if (!event.isValid()) {
+        qWarning() << "Ignoring MMS message sent state for unknown event" << recId;
+        return;
+    }
+
+    event.setStatus(Event::SentStatus);
+    event.setMmsId(mmsId);
+    if (!model.modifyEvent(event))
+        qWarning() << "Failed updating MMS event sent status for" << recId;
+}
+
+void MmsHandler::deliveryReport(const QString &imsi, const QString &mmsId, const QString &recipient, int status)
+{
+    Q_UNUSED(imsi);
+    Q_UNUSED(recipient); // No handling for read/delivery reports from multiple recipients
+
+    enum DeliveryStatus {
+        Indeterminate = 0,
+        Expired,
+        Retrieved,
+        Rejected,
+        Deferred,
+        Unrecognized,
+        Forwarded
+    };
+
+    Event event;
+    SingleEventModel model;
+    if (model.getEventByTokens(QString(), mmsId, -1))
+        event = model.event(model.index(0, 0));
+
+    if (!event.isValid()) {
+        qWarning() << "Ignoring MMS message delivery state for unknown event" << mmsId;
+        return;
+    }
+
+    switch (status) {
+        case Expired:
+        case Rejected:
+        case Unrecognized:
+            event.setStatus(Event::TemporarilyFailedStatus);
+            break;
+        case Retrieved:
+            event.setStatus(Event::DeliveredStatus);
+            break;
+        case Indeterminate:
+        case Deferred:
+        case Forwarded:
+            // Are there any more appropriate states here?
+            break;
+    }
+
+    if (!model.modifyEvent(event))
+        qWarning() << "Failed updating MMS event sent status for" << mmsId;
 }
 
 void MmsHandler::readReport(const QString &imsi, const QString &mmsId, const QString &recipient, int status)
 {
     Q_UNUSED(imsi);
-    Q_UNUSED(mmsId);
-    Q_UNUSED(recipient);
-    Q_UNUSED(status);
+    Q_UNUSED(recipient); // No handling for read/delivery reports from multiple recipients
+
+    Event event;
+    SingleEventModel model;
+    if (model.getEventByTokens(QString(), mmsId, -1))
+        event = model.event(model.index(0, 0));
+
+    if (!event.isValid()) {
+        qWarning() << "Ignoring MMS message read state for unknown event" << mmsId;
+        return;
+    }
+
+    if (status == 0)
+        event.setReadStatus(Event::ReadStatusRead);
+    else
+        event.setReadStatus(Event::ReadStatusDeleted);
+
+    if (!model.modifyEvent(event))
+        qWarning() << "Failed updating MMS event sent status for" << mmsId;
+}
+
+static QStringList normalizeNumberList(const QStringList &in)
+{
+    QStringList out;
+    out.reserve(in.size());
+    foreach (const QString &s, in)
+        out.append(CommHistory::normalizePhoneNumber(s));
+    return out;
+}
+
+int MmsHandler::sendMessage(const QStringList &to, const QStringList &cc, const QStringList &bcc,
+        const QString &subject, MmsPartList parts)
+{
+    Event event;
+    event.setType(Event::MMSEvent);
+    event.setStartTime(QDateTime::currentDateTime());
+    event.setEndTime(event.startTime());
+    event.setDirection(Event::Outbound);
+    event.setLocalUid(RING_ACCOUNT_PATH);
+    event.setSubject(subject);
+    event.setStatus(Event::SendingStatus);
+
+    event.setRemoteUid(CommHistory::normalizePhoneNumber(to[0])); // XXX Wrong for group conversations!
+    event.setToList(normalizeNumberList(to));
+    event.setCcList(normalizeNumberList(cc));
+    event.setBccList(normalizeNumberList(bcc));
+
+    // XXX Group conversations not yet supported
+    if (to.size() + cc.size() + bcc.size() > 1) {
+        qCritical() << "Ignoring outgoing group MMS event; this is not yet implemented:" << event.toString();
+        return -1;
+    }
+
+    if (!setGroupForEvent(event)) {
+        qCritical() << "Failed to handle group for MMS send event; message dropped:" << event.toString();
+        return -1;
+    }
+
+    // Save to get an event ID
+    SingleEventModel model;
+    if (!model.addEvent(event)) {
+        qCritical() << "Failed adding outgoing MMS event:" << event.toString();
+        return -1;
+    }
+
+    // Copy message parts
+    QList<MessagePart> eventParts;
+    QString freeText;
+    bool ok = copyMmsPartFiles(parts, event.id(), eventParts, freeText);
+    if (ok) {
+        event.setMessageParts(eventParts);
+        event.setFreeText(freeText);
+
+        if (!model.modifyEvent(event)) {
+            qCritical() << "Failed modifying outgoing MMS event:" << event.toString();
+            ok = false;
+        }
+    }
+
+    if (!ok) {
+        // Clean up copied MMS parts
+        foreach (const MessagePart &part, eventParts)
+            QFile::remove(part.path());
+        // Re-query event to avoid wiping out notification data
+        if (event.id() >= 0 && model.getEventById(event.id())) {
+            event = model.event(model.index(0, 0));
+            if (event.isValid()) {
+                event.setStatus(Event::PermanentlyFailedStatus);
+                model.modifyEvent(event);
+            }
+        }
+        return -1;
+    }
+
+    sendMessageFromEvent(event);
+    return event.id();
+}
+
+void MmsHandler::sendMessageFromEvent(int eventId)
+{
+    Event event;
+    SingleEventModel model;
+    if (model.getEventById(eventId))
+        event = model.event(model.index(0, 0));
+
+    if (!event.isValid() || event.type() != Event::MMSEvent || event.direction() != Event::Outbound) {
+        qCritical() << "Ignoring MMS sendMessageFromEvent with irrelevant event:" << event.toString();
+        return;
+    }
+
+    if (event.toList().size() + event.ccList().size() + event.bccList().size() < 1) {
+        qCritical() << "Ignoring MMS sendMessageFromEvent with no recipients:" << event.toString();
+        return;
+    }
+
+    if (event.messageParts().size() < 1) {
+        qCritical() << "Ignoring MMS sendMessageFromEvent with no parts:" << event.toString();
+        return;
+    }
+
+    if (event.status() != Event::SendingStatus) {
+        event.setStatus(Event::SendingStatus);
+        model.modifyEvent(event);
+    }
+
+    sendMessageFromEvent(event);
+}
+
+void MmsHandler::sendMessageFromEvent(Event &event)
+{
+    MmsPartList parts;
+    foreach (const MessagePart &part, event.messageParts()) {
+        MmsPart p = { part.path(), part.contentType(), part.contentId() };
+        parts.append(p);
+    }
+
+    QVariantList args;
+    args << event.id() << QString() << event.toList() << event.ccList() << event.bccList()
+         << event.subject() << unsigned(0) << QVariant::fromValue(parts);
+
+    QDBusMessage call = QDBusMessage::createMethodCall("org.nemomobile.MmsEngine", "/", "org.nemomobile.MmsEngine", "sendMessage");
+    call.setArguments(args);
+    QDBusPendingCall reply = QDBusConnection::systemBus().asyncCall(call);
+    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(reply, this);
+    watcher->setProperty("mms-event-id", event.id());
+    connect(watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), SLOT(sendMessageFinished(QDBusPendingCallWatcher*)));
+}
+
+void MmsHandler::sendMessageFinished(QDBusPendingCallWatcher *call)
+{
+    bool ok = false;
+    int eventId = call->property("mms-event-id").toInt(&ok);
+
+    Event event;
+    SingleEventModel model;
+    if (ok && model.getEventById(eventId))
+        event = model.event(model.index(0, 0));
+
+    QDBusPendingReply<QString> reply = *call;
+    if (reply.isError()) {
+        qCritical() << "Call to MmsEngine sendMessage failed:" << reply.error();
+        event.setStatus(Event::TemporarilyFailedStatus);
+    } else {
+        event.setExtraProperty("mms-notification-imsi", reply.value());
+    }
+
+    if (!model.modifyEvent(event))
+        qCritical() << "Updating outgoing MMS event after sendMessage call failed:" << event.toString();
+
+    call->deleteLater();
 }
 

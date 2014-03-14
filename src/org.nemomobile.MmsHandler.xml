@@ -200,6 +200,48 @@
     <!--
         ===============================================================
 
+        Create an event, copy part files to storage, and send a MMS
+        message to the engine. This is intended to be called from UI
+        level code to facilitate outgoing messages.
+
+        ===============================================================
+    -->
+    <method name="sendMessage">
+        <!-- To: list -->
+        <arg direction="in" type="as" name="to"/>
+        <!-- Cc: list -->
+        <arg direction="in" type="as" name="cc"/>
+        <!-- Bcc: list -->
+        <arg direction="in" type="as" name="bcc"/>
+        <!-- Subject -->
+        <arg direction="in" type="s" name="subject"/>
+        <!--
+             List of message parts in the usual format.
+             All files will be copied before this method returns.
+        -->
+        <arg direction="in" type="a(sss)" name="parts"/>
+        <annotation name="org.qtproject.QtDBus.QtTypeName.In4" value="MmsPartList"/>
+        <!-- Event ID if successful, otherwise -1 -->
+        <arg direction="out" type="i" name="eventId"/>
+    </method>
+
+    <!--
+        ===============================================================
+
+        Send an existing MMS event to the engine. Can be used to retry
+        sending a message, or send a message from an existing or
+        modified event.
+
+        ===============================================================
+    -->
+    <method name="sendMessageFromEvent">
+        <!-- Event ID -->
+        <arg direction="in" type="i" name="id"/>
+    </method>
+
+    <!--
+        ===============================================================
+
         Message send state update. These are intermediate states.
         Once the message has been uploaded to MMSC and operator
         accepts it for delivery, messageSent notification will be
