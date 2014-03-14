@@ -23,6 +23,7 @@ BuildRequires:  qt5-qttools
 BuildRequires:  qt5-qttools-linguist
 BuildRequires:  python
 Requires:  mapplauncherd-qt5
+Requires:  mms-engine
 
 Obsoletes: smshistory <= 0.1.8
 Provides: smshistory > 0.1.8
