@@ -259,7 +259,7 @@ bool MmsHandler::copyMmsPartFiles(const MmsPartList &parts, int eventId, QList<M
 
         // All text/ parts are concatenated for the message content
         if (msgPart.contentType().startsWith("text/plain")) {
-            QString text = msgPart.plainTextContent();
+            QString text = msgPart.plainTextContent().trimmed();
             if (!text.isEmpty()) {
                 if (!freeText.isEmpty())
                     freeText.append('\n');
