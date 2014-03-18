@@ -66,7 +66,7 @@ namespace RTComLogger {
 #define CSD_SIM_STATUS_REMOVED     QLatin1String("Removed")
 #define CSD_SIM_STATUS_NO_SIM      QLatin1String("NoSIM")
 
-#define RING_ACCOUNT_PATH QLatin1String("/org/freedesktop/Telepathy/Account/ring/tel/ring")
+#define RING_ACCOUNT_PATH QLatin1String("/org/freedesktop/Telepathy/Account/ring/tel/account0")
 
 #define CONTACT_SEPARATOR_IN_NOTIFICATION_GROUP QLatin1String(", ")
 
