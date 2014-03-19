@@ -477,6 +477,7 @@ int MmsHandler::sendMessage(const QStringList &to, const QStringList &cc, const 
     event.setLocalUid(RING_ACCOUNT_PATH);
     event.setSubject(subject);
     event.setStatus(Event::SendingStatus);
+    event.setIsRead(true);
 
     event.setRemoteUid(CommHistory::normalizePhoneNumber(to[0])); // XXX Wrong for group conversations!
     event.setToList(normalizeNumberList(to));
