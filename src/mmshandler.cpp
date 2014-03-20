@@ -124,6 +124,9 @@ void MmsHandler::messageReceiveStateChanged(const QString &recId, int state)
             break;
         case NoSpace:
         case RecvError:
+            // Avoid overwriting the status for cancelled receive calls
+            if (event.status() == Event::ManualNotificationStatus)
+                return;
             newStatus = Event::TemporarilyFailedStatus;
             break;
         case Garbage:
