@@ -32,6 +32,7 @@ namespace CommHistory {
 }
 
 class QDBusPendingCallWatcher;
+class ContextProperty;
 
 class MmsHandler : public QObject
 {
@@ -59,15 +60,21 @@ public Q_SLOTS:
 
 private Q_SLOTS:
     void sendMessageFinished(QDBusPendingCallWatcher *call);
+    void onDataProhibitedChanged();
 
 private:
     bool m_isRegistered;
     CommHistory::GroupManager *groupManager;
+    ContextProperty *m_cellularStatusProperty;
+    ContextProperty *m_roamingAllowedProperty;
+    QList<int> m_activeEvents;
 
     void sendMessageFromEvent(CommHistory::Event &event);
     bool setGroupForEvent(CommHistory::Event &event);
     bool copyMmsPartFiles(const MmsPartList &parts, int eventId, QList<CommHistory::MessagePart> &eventParts, QString &freeText);
     QString copyMessagePartFile(const QString &sourcePath, int eventId, const QString &contentId);
+
+    bool isDataProhibited();
 };
 
 #endif // MMSHANDLER_H
