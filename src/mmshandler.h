@@ -60,12 +60,14 @@ public Q_SLOTS:
 
 private Q_SLOTS:
     void sendMessageFinished(QDBusPendingCallWatcher *call);
+    void onDataProhibitedChanged();
 
 private:
     bool m_isRegistered;
     CommHistory::GroupManager *groupManager;
     ContextProperty *m_cellularStatusProperty;
     ContextProperty *m_roamingAllowedProperty;
+    QList<int> m_activeEvents;
 
     void sendMessageFromEvent(CommHistory::Event &event);
     bool setGroupForEvent(CommHistory::Event &event);

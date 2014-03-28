@@ -63,6 +63,9 @@ MmsHandler::MmsHandler(QObject* parent)
             m_isRegistered = true;
         }
     }
+
+    connect(m_cellularStatusProperty, SIGNAL(valueChanged()), SLOT(onDataProhibitedChanged()));
+    connect(m_roamingAllowedProperty, SIGNAL(valueChanged()), SLOT(onDataProhibitedChanged()));
 }
 
 QString MmsHandler::messageNotification(const QString &imsi, const QString &from,
@@ -94,6 +97,13 @@ QString MmsHandler::messageNotification(const QString &imsi, const QString &from
         return QString();
     }
 
+    if (!manualDownload) {
+        m_activeEvents.append(event.id());
+    } else {
+        // Show a notification when manual download is needed
+        NotificationManager::instance()->showNotification(event, from, Group::ChatTypeP2P);
+    }
+
     DEBUG() << "Created MMS notification event:" << event.toString();
     return manualDownload ? QString() : QString::number(event.id());
 }
@@ -116,6 +126,7 @@ void MmsHandler::messageReceiveStateChanged(const QString &recId, int state)
 
     if (!event.isValid()) {
         qWarning() << "Ignoring MMS message receive state for unknown event" << recId;
+        m_activeEvents.removeOne(recId.toInt());
         return;
     }
 
@@ -144,6 +155,9 @@ void MmsHandler::messageReceiveStateChanged(const QString &recId, int state)
         event.setStatus(newStatus);
         if (!model.modifyEvent(event))
             qWarning() << "Failed updating MMS event status for" << recId;
+
+        if (newStatus != Event::WaitingStatus && newStatus != Event::DownloadingStatus)
+            m_activeEvents.removeOne(event.id());
     }
 }
 
@@ -155,6 +169,8 @@ void MmsHandler::messageReceived(const QString &recId, const QString &mmsId, con
     SingleEventModel model;
     if (model.getEventById(recId.toInt()))
         event = model.event(model.index(0, 0));
+
+    m_activeEvents.removeOne(recId.toInt());
 
     if (!event.isValid()) {
         // Create new event
@@ -352,6 +368,7 @@ void MmsHandler::messageSendStateChanged(const QString &recId, int state)
 
     if (!event.isValid()) {
         qWarning() << "Ignoring MMS message send state for unknown event" << recId;
+        m_activeEvents.removeOne(recId.toInt());
         return;
     }
 
@@ -376,6 +393,9 @@ void MmsHandler::messageSendStateChanged(const QString &recId, int state)
         event.setStatus(newStatus);
         if (!model.modifyEvent(event))
             qWarning() << "Failed updating MMS event status for" << recId;
+
+        if (newStatus != Event::SendingStatus)
+            m_activeEvents.removeOne(event.id());
     }
 }
 
@@ -385,6 +405,8 @@ void MmsHandler::messageSent(const QString &recId, const QString &mmsId)
     SingleEventModel model;
     if (model.getEventById(recId.toInt()))
         event = model.event(model.index(0, 0));
+
+    m_activeEvents.removeOne(recId.toInt());
 
     if (!event.isValid()) {
         qWarning() << "Ignoring MMS message sent state for unknown event" << recId;
@@ -593,6 +615,8 @@ void MmsHandler::sendMessageFromEvent(Event &event)
     args << event.id() << QString() << event.toList() << event.ccList() << event.bccList()
          << event.subject() << unsigned(0) << QVariant::fromValue(parts);
 
+    m_activeEvents.append(event.id());
+
     QDBusMessage call = QDBusMessage::createMethodCall("org.nemomobile.MmsEngine", "/", "org.nemomobile.MmsEngine", "sendMessage");
     call.setArguments(args);
     QDBusPendingCall reply = QDBusConnection::systemBus().asyncCall(call);
@@ -632,10 +656,25 @@ bool MmsHandler::isDataProhibited()
     if (!m_roamingAllowedProperty->value().toBool())
         return true;
 
+    // TODO: This property should be monitored asynchronously to avoid blocking dbus queries
     QDBusInterface interface("com.jolla.Connectiond", "/Connectiond");
     // For now, treat "always ask" like "never"
     if (interface.property("askRoaming").toBool())
         return true;
     return false;
+}
+
+void MmsHandler::onDataProhibitedChanged()
+{
+    if (!m_activeEvents.isEmpty() && isDataProhibited()) {
+        qWarning() << "Cancelling" << m_activeEvents.size() << "active MMS events due to roaming restrictions";
+        // Cancel any active events to prevent automatic retries
+        foreach (int eventId, m_activeEvents) {
+            QDBusMessage call = QDBusMessage::createMethodCall("org.nemomobile.MmsEngine", "/", "org.nemomobile.MmsEngine", "cancel");
+            call.setArguments(QVariantList() << eventId);
+            QDBusConnection::systemBus().asyncCall(call);
+        }
+        m_activeEvents.clear();
+    }
 }
 
