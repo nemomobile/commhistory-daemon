@@ -142,17 +142,17 @@ void PersonalNotification::removeNotification()
 
 QString PersonalNotification::notificationName() const
 {
-    if (!chatName().isEmpty())
+    if (!chatName().isEmpty()) {
         return chatName();
-    else if (!contactName().isEmpty())
+    } else if (!contactName().isEmpty()) {
         return contactName();
-    else if (remoteUid() == QLatin1String("<hidden>"))
+    } else if (remoteUid() == QLatin1String("<hidden>")) {
         return txt_qtn_call_type_private;
-    else if (CommHistory::normalizePhoneNumber(remoteUid()).isEmpty())
+    } else if (CommHistory::localUidComparesPhoneNumbers(account())) {
+        ML10N::MLocale locale;
+        return locale.toLocalizedNumbers(remoteUid());
+    } else
         return remoteUid();
-
-    ML10N::MLocale locale;
-    return locale.toLocalizedNumbers(remoteUid());
 }
 
 QString PersonalNotification::remoteUid() const
