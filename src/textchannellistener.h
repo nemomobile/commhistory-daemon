@@ -140,9 +140,7 @@ private:
                                CommHistory::Event &event);
 
     void handleMessages();
-    QString fetchContactLabelFromVCard(const QByteArray &vcard);
     QByteArray fetchVCardFromMessage(const Tp::MessagePartList &parts);
-    bool storeVCard (const QByteArray &vcard, QString &name);
     bool checkStoredMessagesIf();
     void expungeMessage(const QString &token);
     void updateGroupChatName(ChangedChannelProperty changedChannelProperty,
@@ -179,6 +177,10 @@ private:
     bool areRemotePartiesOffline();
 
     CommHistory::ConversationModel& conversationModel();
+
+public:
+    static QString fetchContactLabelFromVCard(const QByteArray &vcard);
+    static bool storeVCard (const QByteArray &vcard, QString &name);
 
 private:
 

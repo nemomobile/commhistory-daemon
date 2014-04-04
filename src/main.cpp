@@ -39,6 +39,7 @@
 #include "accountoperationsobserver.h"
 #include "mmshandler.h"
 #include "mmshandler_adaptor.h"
+#include "smartmessaging_adaptor.h"
 #include "debug.h"
 
 using namespace RTComLogger;
@@ -185,6 +186,8 @@ Q_DECL_EXPORT int main(int argc, char **argv)
 
     MmsHandler *mmsHandler = new MmsHandler(&app);
     new MmsHandlerAdaptor(mmsHandler);
+
+    new SmartMessagingAgentAdaptor(new SmartMessaging(&app));
 
     int result = app.exec();
 
