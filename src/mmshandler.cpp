@@ -259,11 +259,7 @@ void MmsHandler::messageReceived(const QString &recId, const QString &mmsId, con
 
 static QString sanitizeName(QString name)
 {
-    for (int i = 0; i < name.size(); i++) {
-        if (name[i] < '0' || (name[i] > '9' && name[i] < 'A') || (name[i] > 'Z' && name[i] < 'a') || (name[i] > 'z'))
-            name[i] = '_';
-    }
-    return name;
+    return name.replace(QRegularExpression("[^-.0-9a-zA-Z]"), "_");
 }
 
 // Caller is responsible for cleaning up copied files on failure
