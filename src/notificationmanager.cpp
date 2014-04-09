@@ -312,7 +312,7 @@ bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& even
         if (event.localUid() != values[0].toString())
             continue;
 
-        if (!CommHistory::remoteAddressMatch(remoteMatch, values[1].toString()))
+        if (!CommHistory::remoteAddressMatch(event.localUid(), remoteMatch, values[1].toString()))
             continue;
 
         if (chatType != (CommHistory::Group::ChatType)values[2].toUInt())
@@ -382,7 +382,7 @@ void NotificationManager::removeConversationNotifications(const QString &localUi
                 notificationRemoteUidStr = notification->targetId();
 
             if (notification->account() == localUid
-                    && CommHistory::remoteAddressMatch(notificationRemoteUidStr, remoteUid)
+                    && CommHistory::remoteAddressMatch(localUid, notificationRemoteUidStr, remoteUid)
                     && (CommHistory::Group::ChatType)(notification->chatType()) == chatType) {
                 group->removeNotification(notification);
             }
@@ -635,7 +635,7 @@ void NotificationManager::slotContactUnknown(const QPair<QString,QString> &addre
         PersonalNotification *notification = *it;
 
         if (address.first == notification->account() &&
-                CommHistory::remoteAddressMatch(notification->remoteUid(), address.second)) {
+                CommHistory::remoteAddressMatch(address.first, notification->remoteUid(), address.second)) {
             DEBUG() << "Unknown contact for notification" << notification->account() << notification->remoteUid();
             addNotification(notification);
             it = m_unresolvedEvents.erase(it);
@@ -725,7 +725,7 @@ void NotificationManager::slotGroupDataChanged(const QModelIndex &topLeft, const
                 foreach (PersonalNotification *pn, g->notifications()) {
                     // If notification is for MUC and matches to changed group...
                     if (!pn->chatName().isEmpty() && pn->account() == localUid &&
-                            CommHistory::remoteAddressMatch(pn->targetId(), remoteUid))
+                            CommHistory::remoteAddressMatch(localUid, pn->targetId(), remoteUid))
                     {
                         QString newChatName;
                         if (group.chatName().isEmpty() && pn->chatName() != txt_qtn_msg_group_chat)

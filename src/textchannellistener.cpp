@@ -369,7 +369,8 @@ void TextChannelListener::slotGroupInserted(const QModelIndex &index, int start,
 
         if (group.isValid()
             && group.localUid() == m_Account->objectPath()
-            && CommHistory::remoteAddressMatch(group.remoteUids().first(),
+            && CommHistory::remoteAddressMatch(group.localUid(),
+                                               group.remoteUids().first(),
                                                targetId())) {
             DEBUG() << Q_FUNC_INFO << "found listener for group" << group.id();
             m_Group = group;
@@ -412,7 +413,7 @@ int TextChannelListener::groupIdForRecipient(const QString &remoteUid)
             CommHistory::Group group = m_GroupModel->group(index);
             if (group.isValid()
                 && group.localUid() == m_Account->objectPath()
-                && CommHistory::remoteAddressMatch(group.remoteUids().first(), remoteUid)) {
+                && CommHistory::remoteAddressMatch(group.localUid(), group.remoteUids().first(), remoteUid)) {
                 groupId = group.id();
                 DEBUG() << Q_FUNC_INFO << "found existing group:" << groupId;
                 break;
@@ -570,7 +571,8 @@ void TextChannelListener::slotOnModelReady(bool status)
             CommHistory::Group group = m_GroupModel->group(index);
             if (group.isValid()
                 && group.localUid() == m_Account->objectPath()
-                && CommHistory::remoteAddressMatch(group.remoteUids().first(),
+                && CommHistory::remoteAddressMatch(group.localUid(),
+                                                   group.remoteUids().first(),
                                                    targetId())) {
                 m_Group = group;
 
@@ -1164,15 +1166,15 @@ void TextChannelListener::handleMessageFailed(const Tp::ReceivedMessage &message
             if (!event.contactName().isEmpty()) {
                 // resolved name
                 recipient = event.contactName();
-            } else if (CommHistory::normalizePhoneNumber(event.remoteUid()).isEmpty()){
-                // IM address
-                recipient = event.remoteUid();
-            } else {
+            } else if (CommHistory::localUidComparesPhoneNumbers(event.localUid())) {
                 // phone number
                 ML10N::MLocale locale;
                 recipient = locale.toLocalizedNumbers(event.remoteUid());
                 recipient.insert(0, QChar(0x202A)); // left-to-right embedding
                 recipient.append(QChar(0x202C)); // pop directional formatting
+            } else {
+                // IM address
+                recipient = event.remoteUid();
             }
 
             // general error

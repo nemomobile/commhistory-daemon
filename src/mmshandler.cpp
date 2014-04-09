@@ -489,7 +489,7 @@ static QStringList normalizeNumberList(const QStringList &in)
     QStringList out;
     out.reserve(in.size());
     foreach (const QString &s, in)
-        out.append(CommHistory::normalizePhoneNumber(s));
+        out.append(CommHistory::normalizePhoneNumber(s, false));
     return out;
 }
 
@@ -506,7 +506,7 @@ int MmsHandler::sendMessage(const QStringList &to, const QStringList &cc, const 
     event.setStatus(Event::SendingStatus);
     event.setIsRead(true);
 
-    event.setRemoteUid(CommHistory::normalizePhoneNumber(to[0])); // XXX Wrong for group conversations!
+    event.setRemoteUid(CommHistory::normalizePhoneNumber(to[0], false)); // XXX Wrong for group conversations!
     event.setToList(normalizeNumberList(to));
     event.setCcList(normalizeNumberList(cc));
     event.setBccList(normalizeNumberList(bcc));
