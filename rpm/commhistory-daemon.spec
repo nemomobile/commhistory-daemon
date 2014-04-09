@@ -22,6 +22,7 @@ BuildRequires:  pkgconfig(nemonotifications-qt5)
 BuildRequires:  pkgconfig(contextkit-statefs)
 BuildRequires:  qt5-qttools
 BuildRequires:  qt5-qttools-linguist
+BuildRequires:  libqofono-qt5-devel
 BuildRequires:  python
 Requires:  mapplauncherd-qt5
 Requires:  mms-engine
