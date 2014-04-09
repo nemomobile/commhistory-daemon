@@ -39,31 +39,12 @@ using namespace RTComLogger;
 using namespace CommHistory;
 
 MmsHandler::MmsHandler(QObject* parent)
-    : QObject(parent)
-    , m_isRegistered(false)
-    , groupManager(0)
+    : MessageHandlerBase(parent, "/", "org.nemomobile.MmsHandler")
     , m_cellularStatusProperty(new ContextProperty("Cellular.Status", this))
     , m_roamingAllowedProperty(new ContextProperty("Cellular.DataRoamingAllowed", this))
 {
     qDBusRegisterMetaType<MmsPart>();
     qDBusRegisterMetaType<MmsPartList>();
-
-    QDBusConnection dbus = QDBusConnection::systemBus();
-    if (!dbus.isConnected()) {
-        qCritical() << "ERROR: No DBus system bus found!";
-        return;
-    }
-
-    if (parent) {
-        if (!dbus.registerObject("/", this)) {
-            qWarning() << "Object registration failed:" << dbus.lastError();;
-        } else if (!dbus.registerService("org.nemomobile.MmsHandler")) {
-            qWarning() << "Service registration failed:" << dbus.lastError();
-        } else {
-            m_isRegistered = true;
-        }
-    }
-
     connect(m_cellularStatusProperty, SIGNAL(valueChanged()), SLOT(onDataProhibitedChanged()));
     connect(m_roamingAllowedProperty, SIGNAL(valueChanged()), SLOT(onDataProhibitedChanged()));
 }
@@ -257,11 +238,6 @@ void MmsHandler::messageReceived(const QString &recId, const QString &mmsId, con
     DEBUG() << "MMS message " << recId << "received with" << eventParts.size() << "parts:" << event.toString();
 }
 
-static QString sanitizeName(QString name)
-{
-    return name.replace(QRegularExpression("[^-.0-9a-zA-Z]"), "_");
-}
-
 // Caller is responsible for cleaning up copied files on failure
 bool MmsHandler::copyMmsPartFiles(const MmsPartList &parts, int eventId, QList<MessagePart> &eventParts, QString &freeText)
 {
@@ -294,13 +270,7 @@ bool MmsHandler::copyMmsPartFiles(const MmsPartList &parts, int eventId, QList<M
 
 QString MmsHandler::copyMessagePartFile(const QString &sourcePath, int eventId, const QString &contentId)
 {
-    QDir dataDir(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/commhistory/data/%1/").arg(eventId));
-    if (!dataDir.exists() && !dataDir.mkpath(".")) {
-        qCritical() << "Cannot create directory for MMS message parts:" << dataDir.path();
-        return QString();
-    }
-
-    QString filePath = dataDir.filePath(sanitizeName(contentId));
+    QString filePath = messagePartPath(eventId, contentId);
 
     // First try to create a hard link
     if (link(sourcePath.toLatin1(), filePath.toLatin1()) < 0) {
@@ -313,36 +283,6 @@ QString MmsHandler::copyMessagePartFile(const QString &sourcePath, int eventId, 
     }
 
     return filePath;
-}
-
-bool MmsHandler::setGroupForEvent(Event &event)
-{
-    if (!groupManager) {
-        groupManager = new GroupManager(this);
-        if (!groupManager->getGroups(RING_ACCOUNT_PATH)) {
-            delete groupManager;
-            groupManager = 0;
-            return false;
-        }
-    }
-
-    GroupObject *group = groupManager->findGroup(RING_ACCOUNT_PATH, event.remoteUid());
-    if (group) {
-        event.setGroupId(group->id());
-        return true;
-    }
-
-    DEBUG() << "Creating new group for MMS" << event.remoteUid();
-    Group newGroup;
-    newGroup.setLocalUid(RING_ACCOUNT_PATH);
-    newGroup.setRemoteUids(QStringList() << event.remoteUid());
-    if (!groupManager->addGroup(newGroup)) {
-        qCritical() << "Failed adding new group for MMS" << newGroup.toString();
-        return false;
-    }
-
-    event.setGroupId(newGroup.id());
-    return true;
 }
 
 void MmsHandler::messageSendStateChanged(const QString &recId, int state)

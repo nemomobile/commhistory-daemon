@@ -2,8 +2,7 @@
 **
 ** This file is part of commhistory-daemon.
 **
-** Copyright (C) 2013 Jolla 
-** Contact: Joona Petrell <joona.petrell@jolla.com>
+** Copyright (C) 2014 Jolla Ltd.
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -20,16 +19,33 @@
 **
 ******************************************************************************/
 
-#ifndef DEBUG_H
-#define DEBUG_H
+#ifndef MESSAGEHANDLERBASE_H
+#define MESSAGEHANDLERBASE_H
 
-#include <QDebug>
+#include <QObject>
 
-// DEBUG_COMMHISTORY is defined in debug build (CONFIG += debug)
-#ifdef DEBUG_COMMHISTORY
-# define DEBUG qDebug
-#else
-# define DEBUG if (0) qDebug
-#endif
+namespace CommHistory {
+    class Event;
+    class GroupManager;
+}
 
-#endif // DEBUG_H
+// Base class for MmsHandler and SmartMessaging
+class MessageHandlerBase : public QObject
+{
+    Q_OBJECT
+
+protected:
+    MessageHandlerBase(QObject* parent, QString path, QString service);
+
+    bool isRegistered() const { return m_isRegistered; }
+    bool setGroupForEvent(CommHistory::Event& event);
+
+    static QString sanitizeName(QString name);
+    static QString messagePartPath(int eventId, QString contentId);
+
+private:
+    bool m_isRegistered;
+    CommHistory::GroupManager* groupManager;
+};
+
+#endif // MESSAGEHANDLERBASE_H
