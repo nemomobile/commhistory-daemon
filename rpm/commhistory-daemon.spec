@@ -22,6 +22,7 @@ BuildRequires:  pkgconfig(nemonotifications-qt5)
 BuildRequires:  pkgconfig(contextkit-statefs)
 BuildRequires:  qt5-qttools
 BuildRequires:  qt5-qttools-linguist
+BuildRequires:  libqofono-qt5-devel
 BuildRequires:  python
 Requires:  mapplauncherd-qt5
 Requires:  mms-engine
@@ -72,6 +73,7 @@ ln -s ../commhistoryd.service %{buildroot}%{_libdir}/systemd/user/user-session.t
 %{_datadir}/lipstick/notificationcategories/*
 %{_datadir}/telepathy/clients/CommHistory.client
 %{_sysconfdir}/dbus-1/system.d/org.nemomobile.MmsHandler.conf
+%{_sysconfdir}/dbus-1/system.d/org.ofono.SmartMessagingAgent.conf
 
 %files tests
 %defattr(-,root,root,-)

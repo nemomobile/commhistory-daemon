@@ -30,7 +30,7 @@ service.path = $${INSTALL_PREFIX}/lib/systemd/user
 service.files = commhistoryd.service
 
 dbus_conf.path = /etc/dbus-1/system.d/
-dbus_conf.files = org.nemomobile.MmsHandler.conf
+dbus_conf.files = org.nemomobile.MmsHandler.conf org.ofono.SmartMessagingAgent.conf
 
 notification_types.path  = $${INSTALL_PREFIX}/share/lipstick/notificationcategories
 notification_types.files = notifications/*.conf

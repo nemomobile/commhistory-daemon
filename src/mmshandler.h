@@ -22,19 +22,17 @@
 #ifndef MMSHANDLER_H
 #define MMSHANDLER_H
 
-#include <QObject>
+#include "messagehandlerbase.h"
 #include "mmspart.h"
 
 namespace CommHistory {
-    class Event;
-    class GroupManager;
     class MessagePart;
 }
 
 class QDBusPendingCallWatcher;
 class ContextProperty;
 
-class MmsHandler : public QObject
+class MmsHandler : public MessageHandlerBase
 {
     Q_OBJECT
 
@@ -63,14 +61,11 @@ private Q_SLOTS:
     void onDataProhibitedChanged();
 
 private:
-    bool m_isRegistered;
-    CommHistory::GroupManager *groupManager;
     ContextProperty *m_cellularStatusProperty;
     ContextProperty *m_roamingAllowedProperty;
     QList<int> m_activeEvents;
 
     void sendMessageFromEvent(CommHistory::Event &event);
-    bool setGroupForEvent(CommHistory::Event &event);
     bool copyMmsPartFiles(const MmsPartList &parts, int eventId, QList<CommHistory::MessagePart> &eventParts, QString &freeText);
     QString copyMessagePartFile(const QString &sourcePath, int eventId, const QString &contentId);
 
