@@ -137,8 +137,10 @@ void MmsHandler::messageReceiveStateChanged(const QString &recId, int state)
         if (!model.modifyEvent(event))
             qWarning() << "Failed updating MMS event status for" << recId;
 
-        if (newStatus != Event::WaitingStatus && newStatus != Event::DownloadingStatus)
+        if (newStatus != Event::WaitingStatus && newStatus != Event::DownloadingStatus) {
             m_activeEvents.removeOne(event.id());
+            NotificationManager::instance()->showNotification(event, event.remoteUid(), Group::ChatTypeP2P);
+        }
     }
 }
 
@@ -228,6 +230,7 @@ void MmsHandler::messageReceived(const QString &recId, const QString &mmsId, con
             if (event.isValid()) {
                 event.setStatus(Event::TemporarilyFailedStatus);
                 model.modifyEvent(event);
+                NotificationManager::instance()->showNotification(event, from, Group::ChatTypeP2P);
             }
         }
 
@@ -330,8 +333,10 @@ void MmsHandler::messageSendStateChanged(const QString &recId, int state)
         if (!model.modifyEvent(event))
             qWarning() << "Failed updating MMS event status for" << recId;
 
-        if (newStatus != Event::SendingStatus)
+        if (newStatus != Event::SendingStatus) {
             m_activeEvents.removeOne(event.id());
+            NotificationManager::instance()->showNotification(event, event.remoteUid(), Group::ChatTypeP2P);
+        }
     }
 }
 
@@ -495,17 +500,16 @@ int MmsHandler::sendMessage(const QStringList &to, const QStringList &cc, const 
                 model.modifyEvent(event);
             }
         }
-        return event.id();
-    }
-
-    if (isDataProhibited()) {
+    } else if (isDataProhibited()) {
         qWarning() << "Refusing to send MMS message due to data roaming restrictions";
         event.setStatus(Event::TemporarilyFailedStatus);
         model.modifyEvent(event);
-        return event.id();
+    } else {
+        sendMessageFromEvent(event);
     }
 
-    sendMessageFromEvent(event);
+    if (event.status() >= Event::TemporarilyFailedStatus)
+        NotificationManager::instance()->showNotification(event, event.remoteUid(), Group::ChatTypeP2P);
     return event.id();
 }
 
@@ -575,6 +579,7 @@ void MmsHandler::sendMessageFinished(QDBusPendingCallWatcher *call)
     if (reply.isError()) {
         qCritical() << "Call to MmsEngine sendMessage failed:" << reply.error();
         event.setStatus(Event::TemporarilyFailedStatus);
+        NotificationManager::instance()->showNotification(event, event.remoteUid(), Group::ChatTypeP2P);
     } else {
         event.setExtraProperty("mms-notification-imsi", reply.value());
     }

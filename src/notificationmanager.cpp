@@ -202,7 +202,7 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
     DEBUG() << Q_FUNC_INFO << event.id() << channelTargetId << chatType;
 
     bool inboxObserved = CommHistoryService::instance()->inboxObserved();
-    if (inboxObserved || event.isRead() || isCurrentlyObservedByUI(event, channelTargetId, chatType)) {
+    if (inboxObserved || isCurrentlyObservedByUI(event, channelTargetId, chatType)) {
         if (!m_ngfClient->isConnected())
             m_ngfClient->connect();
 
@@ -491,25 +491,34 @@ QString NotificationManager::notificationText(const CommHistory::Event& event)
         }
         case CommHistory::Event::MMSEvent:
         {
-            if (!event.subject().isEmpty())
-                text = event.subject();
-            else
-                text = event.freeText();
-
-            int attachmentCount = 0;
-            foreach (const MessagePart &part, event.messageParts()) {
-                if (part.contentType().startsWith("image/") || part.contentType().startsWith("video/") ||
-                    part.contentType().startsWith("text/vcard"))
-                {
-                    attachmentCount++;
-                }
-            }
-
-            if (attachmentCount > 0) {
-                if (!text.isEmpty())
-                    text = txt_qtn_mms_notification_with_text(attachmentCount, text);
+            if (event.status() == Event::ManualNotificationStatus) {
+                text = txt_qtn_mms_notification_manual_download;
+            } else if (event.status() >= Event::TemporarilyFailedStatus) {
+                if (event.direction() == Event::Inbound)
+                    text = txt_qtn_mms_notification_download_failed;
                 else
-                    text = txt_qtn_mms_notification_attachment(attachmentCount);
+                    text = txt_qtn_mms_notification_send_failed;
+            } else {
+                if (!event.subject().isEmpty())
+                    text = event.subject();
+                else
+                    text = event.freeText();
+
+                int attachmentCount = 0;
+                foreach (const MessagePart &part, event.messageParts()) {
+                    if (!part.contentType().startsWith("text/plain") &&
+                        !part.contentType().startsWith("application/smil"))
+                    {
+                        attachmentCount++;
+                    }
+                }
+
+                if (attachmentCount > 0) {
+                    if (!text.isEmpty())
+                        text = txt_qtn_mms_notification_with_text(attachmentCount, text);
+                    else
+                        text = txt_qtn_mms_notification_attachment(attachmentCount);
+                }
             }
             break;
         }
