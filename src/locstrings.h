@@ -73,6 +73,12 @@
 #define txt_qtn_msg_notification_read(STR) qtTrId("qtn_mms_info_msg_read").arg(STR)
 //% "Multimedia message was deleted without reading by %1"
 #define txt_qtn_msg_notification_deleted(STR) qtTrId("qtn_mms_info_delete_wo_reading").arg(STR)
+//% "MMS is ready to download"
+#define txt_qtn_mms_notification_manual_download qtTrId("qtn_mms_notification_manual_download")
+//% "MMS sending failed"
+#define txt_qtn_mms_notification_send_failed qtTrId("qtn_mms_notification_send_failed")
+//% "MMS downloading failed"
+#define txt_qtn_mms_notification_download_failed qtTrId("qtn_mms_notification_download_failed")
 
 //% "%1 has joined"
 #define txt_qtn_msg_group_chat_remote_joined(STR) qtTrId("qtn_msg_group_chat_remote_joined").arg(STR)
