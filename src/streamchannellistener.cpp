@@ -111,7 +111,11 @@ void StreamChannelListener::callStarted()
     m_Event.setEndTime(m_Event.startTime());
 
     struct timespec tp;
+#ifdef CLOCK_BOOTTIME
+    clock_gettime(CLOCK_BOOTTIME, &tp);
+#else
     clock_gettime(CLOCK_MONOTONIC, &tp);
+#endif
     m_callStartTime = tp.tv_sec;
 
     DEBUG() << Q_FUNC_INFO << m_Event.startTime();
@@ -128,7 +132,11 @@ void StreamChannelListener::callEnded()
 
     struct timespec tp;
     QDateTime endTime;
+#ifdef CLOCK_BOOTTIME
+    if (clock_gettime(CLOCK_BOOTTIME, &tp) != -1) {
+#else
     if (clock_gettime(CLOCK_MONOTONIC, &tp) != -1) {
+#endif
         int duration = tp.tv_sec - m_callStartTime;
         endTime = m_Event.startTime().addSecs(duration);
     } else {
