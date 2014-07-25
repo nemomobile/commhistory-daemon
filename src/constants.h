@@ -54,18 +54,6 @@ namespace RTComLogger {
 #define VOICEMAIL_METHOD       QLatin1String("voicemail")
 #define REPLACE_TYPE           QLatin1String("sms-replace-number")
 
-#define CSD_SIM_SERVICE_NAME       QLatin1String("com.nokia.csd.SIM")
-#define CSD_SIM_OBJECT_PATH        QLatin1String("/com/nokia/csd/sim")
-#define CSD_SIM_INTERFACE          QLatin1String("com.nokia.csd.SIM")
-#define CSD_SIM_SETTINGS_INTERFACE QLatin1String("com.nokia.csd.SIM.Settings")
-#define CSD_SIM_SET_MWI_METHOD     QLatin1String("SetMessageWaitingIndicationStatus")
-#define CSD_SIM_GET_MWI_METHOD     QLatin1String("GetMessageWaitingIndicationStatus")
-#define CSD_SIM_GET_SIM_STATUS     QLatin1String("GetSIMStatus")
-#define CSD_SIM_STATUS_SIGNAL      QLatin1String("SIMStatus")
-#define CSD_SIM_STATUS_OK          QLatin1String("Ok")
-#define CSD_SIM_STATUS_REMOVED     QLatin1String("Removed")
-#define CSD_SIM_STATUS_NO_SIM      QLatin1String("NoSIM")
-
 #define RING_ACCOUNT_PATH QLatin1String("/org/freedesktop/Telepathy/Account/ring/tel/account0")
 
 #define CONTACT_SEPARATOR_IN_NOTIFICATION_GROUP QLatin1String(", ")

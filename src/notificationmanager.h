@@ -53,8 +53,6 @@ namespace Ngf {
 
 namespace RTComLogger {
 
-class MWIListener;
-
 typedef QPair<QString,QString> TpContactUid;
 
 /*!
@@ -126,7 +124,6 @@ private Q_SLOTS:
     void slotInboxObservedChanged();
     void slotCallHistoryObservedChanged(bool observed);
     void slotGroupRemoved(const QModelIndex &index, int start, int end);
-    void slotMWICountChanged(int count);
     void slotGroupDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
     void slotNgfEventFinished(quint32 id);
     void slotContactUpdated(quint32 localId, const QString &name, const QList<ContactAddress> &addresses);
@@ -170,7 +167,6 @@ private:
     QSharedPointer<CommHistory::ContactListener> m_contactListener;
     CommHistory::GroupModel *m_GroupModel;
 
-    MWIListener *m_pMWIListener;
     Ngf::Client *m_ngfClient;
     quint32 m_ngfEvent;
 

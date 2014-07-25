@@ -69,7 +69,6 @@ HEADERS += logger.h \
            connectionutils.h \
            contactauthorizationlistener.h \
            contactauthorizer.h \
-           mwilistener.h \
            constants.h \
            accountoperationsobserver.h \
            accountpresenceifadaptor.h \
@@ -97,7 +96,6 @@ SOURCES += main.cpp \
            connectionutils.cpp \
            contactauthorizationlistener.cpp \
            contactauthorizer.cpp \
-           mwilistener.cpp \
            accountoperationsobserver.cpp \
            accountpresenceifadaptor.cpp \
            accountpresenceservice.cpp \

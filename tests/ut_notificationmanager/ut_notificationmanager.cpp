@@ -24,7 +24,6 @@
 #include "ut_notificationmanager.h"
 #include "locstrings.h"
 #include "constants.h"
-#include "mwilistener.h"
 
 // Qt includes
 #include <QDebug>
@@ -55,8 +54,6 @@ void Ut_NotificationManager::initTestCase()
 {
     nm = NotificationManager::instance();
     nm->m_Groups.clear();
-
-    nm->m_pMWIListener->disconnect(nm);
 }
 
 /*!

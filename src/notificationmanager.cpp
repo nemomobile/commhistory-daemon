@@ -47,7 +47,6 @@
 #include "notificationmanager.h"
 #include "locstrings.h"
 #include "constants.h"
-#include "mwilistener.h"
 #include "commhistoryservice.h"
 #include "debug.h"
 
@@ -102,12 +101,6 @@ void NotificationManager::init()
 
     if (hasMessageNotification())
         groupModel();
-
-    m_pMWIListener = new MWIListener(this);
-    connect(m_pMWIListener,
-            SIGNAL(MWICountChanged(int)),
-            this,
-            SLOT(slotMWICountChanged(int)));
 
     m_Initialised = true;
 }
@@ -692,21 +685,8 @@ void NotificationManager::slotGroupRemoved(const QModelIndex &index, int start, 
 }
 void NotificationManager::showVoicemailNotification(int count)
 {
-    m_pMWIListener->saveMWI(count);
-}
-
-void NotificationManager::slotMWICountChanged(int count)
-{
-    DEBUG() << Q_FUNC_INFO << count;
-
-    if (count < -1) {
-        qCritical() << "Invalid voicemail count" << count;
-        return;
-    }
-
-    if (count == 0) {
-        removeNotificationGroup(CommHistory::Event::VoicemailEvent);
-    }
+    Q_UNUSED(count)
+    qWarning() << Q_FUNC_INFO << "Stub";
 }
 
 bool NotificationManager::hasMessageNotification() const

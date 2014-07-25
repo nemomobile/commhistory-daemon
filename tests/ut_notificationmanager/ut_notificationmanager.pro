@@ -40,13 +40,11 @@ TEST_SOURCES += $$COMMHISTORYDSRCDIR/notificationmanager.cpp \
                 $$COMMHISTORYDSRCDIR/notificationgroup.cpp \
                 $$COMMHISTORYDSRCDIR/personalnotification.cpp \
                 $$COMMHISTORYDSRCDIR/serialisable.cpp \
-                $$COMMHISTORYDSRCDIR/mwilistener.cpp \
                 $$COMMHISTORYDSRCDIR/commhistoryservice.cpp
 TEST_HEADERS += $$COMMHISTORYDSRCDIR/notificationmanager.h \
                 $$COMMHISTORYDSRCDIR/notificationgroup.h \
                 $$COMMHISTORYDSRCDIR/personalnotification.h \
                 $$COMMHISTORYDSRCDIR/serialisable.h \
-                $$COMMHISTORYDSRCDIR/mwilistener.h \
                 $$COMMHISTORYDSRCDIR/commhistoryservice.h
 
 HEADERS     += ut_notificationmanager.h \
