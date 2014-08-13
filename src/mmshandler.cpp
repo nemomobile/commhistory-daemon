@@ -34,6 +34,7 @@
 #include <QDBusPendingCall>
 #include <QDBusPendingCallWatcher>
 #include <contextproperty.h>
+#include <mgconfitem.h>
 
 using namespace RTComLogger;
 using namespace CommHistory;
@@ -42,11 +43,16 @@ MmsHandler::MmsHandler(QObject* parent)
     : MessageHandlerBase(parent, "/", "org.nemomobile.MmsHandler")
     , m_cellularStatusProperty(new ContextProperty("Cellular.Status", this))
     , m_roamingAllowedProperty(new ContextProperty("Cellular.DataRoamingAllowed", this))
+    , m_subscriberIdentityProperty(new ContextProperty("Cellular.SubscriberIdentity", this))
+    , m_sendMessageFlags(NULL)
+    , m_automaticDownload(NULL)
 {
     qDBusRegisterMetaType<MmsPart>();
     qDBusRegisterMetaType<MmsPartList>();
     connect(m_cellularStatusProperty, SIGNAL(valueChanged()), SLOT(onDataProhibitedChanged()));
     connect(m_roamingAllowedProperty, SIGNAL(valueChanged()), SLOT(onDataProhibitedChanged()));
+    connect(m_subscriberIdentityProperty, SIGNAL(valueChanged()), SLOT(onSubscriberIdentityChanged()));
+    onSubscriberIdentityChanged();
 }
 
 QString MmsHandler::messageNotification(const QString &imsi, const QString &from,
@@ -64,7 +70,8 @@ QString MmsHandler::messageNotification(const QString &imsi, const QString &from
     event.setExtraProperty("mms-expiry", expiry);
     event.setExtraProperty("mms-push-data", data.toBase64());
 
-    bool manualDownload = isDataProhibited();
+    DEBUG() << "MmsHandler: automatic-download is " << (m_automaticDownload ? m_automaticDownload->value().toString() : QString(""));
+    bool manualDownload = isDataProhibited() ? true : m_automaticDownload ? !m_automaticDownload->value().toBool() : false;
     event.setStatus(manualDownload ? Event::ManualNotificationStatus : Event::WaitingStatus);
 
     if (!setGroupForEvent(event)) {
@@ -551,9 +558,12 @@ void MmsHandler::sendMessageFromEvent(Event &event)
         parts.append(p);
     }
 
+    unsigned int flags = m_sendMessageFlags ? m_sendMessageFlags->value().toInt() : 0;
+    DEBUG() << "MmsHandler: send flag are" << flags;
+
     QVariantList args;
     args << event.id() << QString() << event.toList() << event.ccList() << event.bccList()
-         << event.subject() << unsigned(0) << QVariant::fromValue(parts);
+         << event.subject() << flags << QVariant::fromValue(parts);
 
     m_activeEvents.append(event.id());
 
@@ -619,3 +629,18 @@ void MmsHandler::onDataProhibitedChanged()
     }
 }
 
+void MmsHandler::onSubscriberIdentityChanged()
+{
+    QString imsi = m_subscriberIdentityProperty->value().toString();
+    DEBUG() << "MmsHandler: SubscriberIdentity =" << m_subscriberIdentityProperty->value() << imsi;
+    if (m_sendMessageFlags) delete m_sendMessageFlags;
+    if (m_automaticDownload) delete m_automaticDownload;
+    if (imsi.isEmpty()) {
+        m_sendMessageFlags = NULL;
+        m_automaticDownload = NULL;
+    } else {
+        QString dir("/imsi/" + imsi + "/mms/");
+        m_sendMessageFlags = new MGConfItem(dir + "send-flags", this);
+        m_automaticDownload = new MGConfItem(dir + "automatic-download", this);
+    }
+}
