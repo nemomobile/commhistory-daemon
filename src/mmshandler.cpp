@@ -35,6 +35,7 @@
 #include <QDBusPendingCallWatcher>
 #include <contextproperty.h>
 #include <mgconfitem.h>
+#include <unistd.h>
 
 using namespace RTComLogger;
 using namespace CommHistory;
