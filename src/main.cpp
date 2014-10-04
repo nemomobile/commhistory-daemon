@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <syslog.h>
+#include <unistd.h>
 
 // Our includes
 #include "logger.h"
