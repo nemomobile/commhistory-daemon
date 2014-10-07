@@ -140,9 +140,6 @@ private:
                                CommHistory::Event &event);
 
     void handleMessages();
-    QString fetchContactLabelFromVCard(const QByteArray &vcard);
-    QByteArray fetchVCardFromMessage(const Tp::MessagePartList &parts);
-    bool storeVCard (const QByteArray &vcard, QString &name);
     bool checkStoredMessagesIf();
     void expungeMessage(const QString &token);
     void updateGroupChatName(ChangedChannelProperty changedChannelProperty,
@@ -161,7 +158,6 @@ private:
     bool recoverDeliveryEcho(const Tp::Message &message, CommHistory::Event &event);
 
     CommHistory::Event::EventType eventType() const;
-    void checkVCard(const Tp::MessagePartList &parts, CommHistory::Event &event);
     bool getEventForToken(const QString &token, const QString &mmsId,
                           int groupId, CommHistory::Event &event);
     bool getEventById(int eventId, CommHistory::Event &event);
