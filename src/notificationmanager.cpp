@@ -194,20 +194,25 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
 {
     DEBUG() << Q_FUNC_INFO << event.id() << channelTargetId << chatType;
 
-    bool inboxObserved = CommHistoryService::instance()->inboxObserved();
-    if (inboxObserved || isCurrentlyObservedByUI(event, channelTargetId, chatType)) {
-        if (!m_ngfClient->isConnected())
-            m_ngfClient->connect();
+    if (event.type() == CommHistory::Event::SMSEvent
+        || event.type() == CommHistory::Event::MMSEvent
+        || event.type() == CommHistory::Event::IMEvent)
+    {
+        bool inboxObserved = CommHistoryService::instance()->inboxObserved();
+        if (inboxObserved || isCurrentlyObservedByUI(event, channelTargetId, chatType)) {
+            if (!m_ngfClient->isConnected())
+                m_ngfClient->connect();
 
-        if (!m_ngfEvent) {
-            if (event.type() == CommHistory::Event::SMSEvent || event.type() == CommHistory::Event::MMSEvent) {
-                m_ngfEvent = m_ngfClient->play(QLatin1Literal(inboxObserved ? "sms" : "sms_fg"));
-            } else {
-                m_ngfEvent = m_ngfClient->play(QLatin1Literal(inboxObserved ? "chat" : "chat_fg"));
+            if (!m_ngfEvent) {
+                if (event.type() == CommHistory::Event::SMSEvent || event.type() == CommHistory::Event::MMSEvent) {
+                    m_ngfEvent = m_ngfClient->play(QLatin1Literal(inboxObserved ? "sms" : "sms_fg"));
+                } else {
+                    m_ngfEvent = m_ngfClient->play(QLatin1Literal(inboxObserved ? "chat" : "chat_fg"));
+                }
             }
-        }
 
-        return;
+            return;
+        }
     }
 
     // try to update notifications for existing event
