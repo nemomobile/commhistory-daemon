@@ -41,7 +41,6 @@ QMAKE_CXXFLAGS *= -Werror -Wall -fno-exceptions
 #-----------------------------------------------------------------------------
 COMMHISTORYD_DATADIR=".commhistoryd"
 DEFINES += COMMHISTORYD_DATADIR="\\\"$$COMMHISTORYD_DATADIR\\\""
-DEFINES += COMMHISTORYD_VCARDSDIR="\\\"$$COMMHISTORYD_DATADIR/vcards\\\""
 
 # End of File
 

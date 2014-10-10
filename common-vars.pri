@@ -40,6 +40,5 @@ PROJECT_VERSION = 0.4.5
 # -----------------------------------------------------------------------------
 COMMHISTORYD_DATADIR = ".commhistoryd"
 DEFINES += COMMHISTORYD_DATADIR="\\\"$$COMMHISTORYD_DATADIR\\\""
-DEFINES += COMMHISTORYD_VCARDSDIR="\\\"$$COMMHISTORYD_DATADIR/vcards\\\""
 DEFINES += COMMHISTORYD_NOTIFICATIONSDIR="\\\"/$$COMMHISTORYD_DATADIR/notifications\\\""
 DEFINES += COMMHISTORYD_NOTIFICATIONSSTORAGE="\\\"/$$COMMHISTORYD_DATADIR/notifications/storage.dat\\\""

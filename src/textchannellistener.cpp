@@ -89,9 +89,6 @@
 #define PART_CONTENT       QLatin1String("content")
 #define PART_CONTENT_TYPE  QLatin1String("content-type")
 #define TXT_CONTENT_TYPE   QLatin1String("text/plain")
-#define VCARD_CONTENT_TYPE QLatin1String("text/x-vcard")
-
-#define VCARD_EXTENSION   QLatin1String("vcf")
 
 // message editing support
 #define SUPERSEDES_TOKEN    QLatin1String("supersedes")
@@ -936,9 +933,6 @@ bool TextChannelListener::recoverDeliveryEcho(const Tp::Message &message,
             if (contentType == TXT_CONTENT_TYPE) {
                 event.setFreeText(content.trimmed());
                 result = true;
-            } else if (contentType == VCARD_CONTENT_TYPE) {
-                checkVCard(parts, event);
-                result = true;
             }
         }
     }
@@ -1233,30 +1227,10 @@ CommHistory::Event::EventType TextChannelListener::eventType() const
     return type;
 }
 
-void TextChannelListener::checkVCard(const Tp::MessagePartList &parts,
-                                     CommHistory::Event &event)
-{
-    QByteArray vcard = fetchVCardFromMessage(parts);
-    if (!vcard.isEmpty()) {
-        QString filename;
-        if (storeVCard(vcard, filename)) {
-            DEBUG() << "Stored vcard to file: " << filename;
-
-            QString label = fetchContactLabelFromVCard(vcard);
-            qDebug () << "Setting vcard with label: " << label;
-            event.setFromVCard(filename, label);
-        } else {
-            qWarning () << "Failed to store the vcard.";
-        }
-    }
-}
-
 void TextChannelListener::fillEventFromMessage(const Tp::Message &message,
                                                CommHistory::Event &event)
 {
     event.setType(eventType());
-
-    checkVCard(message.parts(), event);
 
     // Check for possible sms-replace-number header in Tp::Message:
     QString replaceTypeString = replaceType(message.header());
@@ -1588,94 +1562,6 @@ void TextChannelListener::slotExpungeMessages()
     }
 
     tryToClose();
-}
-
-QString TextChannelListener::fetchContactLabelFromVCard(const QByteArray &vcard)
-{
-    if (vcard.isEmpty())
-        return QString();
-
-    // Parse the input into QVersitDocument(s)
-    QVersitReader reader(vcard);
-    if (reader.startReading()) {
-        reader.waitForFinished();
-
-        // Import the QVersitDocument to a QContact
-        QVersitContactImporter importer;
-        if (importer.importDocuments(reader.results())) {
-            QList<QContact> contacts = importer.contacts();
-
-            if (!contacts.isEmpty()) {
-                QContact contact = contacts.first();
-                QString label = contact.detail<QContactDisplayLabel>().label();
-                if (label.isEmpty()) {
-                    qWarning() << __PRETTY_FUNCTION__ << "The contact has an empty label, dispite our efforts.";
-                }
-                return label;
-            }
-        }
-    }
-
-    return QString();
-}
-
-QByteArray TextChannelListener::fetchVCardFromMessage(const Tp::MessagePartList &parts)
-{
-    for (int i = 0; i < parts.size (); ++i) {
-        Tp::MessagePart part = parts.at(i);
-        if (part.value(PART_CONTENT_TYPE).variant() == VCARD_CONTENT_TYPE) {
-            DEBUG() << Q_FUNC_INFO << "VCard from message:" << part.value(PART_CONTENT).variant().toByteArray();
-            return part.value(PART_CONTENT).variant().toByteArray();
-        }
-    }
-
-    return QByteArray();
-}
-
-bool TextChannelListener::storeVCard(const QByteArray &vcard, QString &name)
-{
-    QUuid uuid;
-    QString dir_name = QDir::homePath() + "/"COMMHISTORYD_VCARDSDIR;
-    QDir dir(dir_name);
-
-    if (!dir.exists()) {
-        if (!dir.mkpath(dir_name)) {
-            qWarning() << "Could not create vcard directory.";
-            return false;
-        }
-    }
-
-    while (true) {
-        uuid = QUuid::createUuid();
-
-        name = QString("%1/%2.%3").arg(dir_name).arg(uuid.toString()).arg(VCARD_EXTENSION);
-
-        QFileInfo info(name);
-        if (!info.exists()) {
-            break;
-        } else {
-            // We do this here only because we're reasonably sure that it won't
-            // happen anyway.
-            name.clear();
-        }
-    }
-
-    QFile file(name);
-    if (!file.open(QIODevice::WriteOnly)) {
-        qWarning() << "Could not create vcard file:" << name;
-        file.close();
-        return false;
-    }
-
-    if (file.write(vcard) < 0) {
-
-        qWarning() << "Could not write vcard data into file:" << name;
-        file.close();
-        return false;
-    }
-    file.close();
-
-    return true;
 }
 
 void TextChannelListener::slotPresenceChanged(const Tp::Presence &presence)
