@@ -25,6 +25,7 @@
 
 #include <CommHistory/event.h>
 #include <CommHistory/groupmanager.h>
+#include <CommHistory/commhistorydatabasepath.h>
 
 #include <QDBusConnection>
 #include <QDBusError>
@@ -59,7 +60,7 @@ QString MessageHandlerBase::sanitizeName(QString name)
 
 QString MessageHandlerBase::messagePartPath(int eventId, QString contentId)
 {
-    QDir dataDir(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/commhistory/data/%1/").arg(eventId));
+    QDir dataDir(CommHistoryDatabasePath::dataDir(eventId));
     if (dataDir.exists() || dataDir.mkpath(".")) {
         return dataDir.filePath(sanitizeName(contentId));
     } else {
