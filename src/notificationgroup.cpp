@@ -139,11 +139,15 @@ QStringList NotificationGroup::contactNames()
 {
     QStringList names;
     foreach (PersonalNotification *pn, mNotifications) {
+        // events are ordered from most recent to oldest
         QString name = pn->notificationName();
-        if (!names.contains(name))
-            names.append(name);
+        if (!names.contains(name)) {
+            names.prepend(name);
+        } else if (names.size() > 1) {
+            names.removeOne(name);
+            names.prepend(name);
+        }
     }
-
     return names;
 }
 
