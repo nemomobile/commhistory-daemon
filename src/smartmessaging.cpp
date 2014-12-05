@@ -25,13 +25,11 @@
 #include "debug.h"
 
 #include "qofonomanager.h"
-#include "qofonosmartmessaging.h"
 
 #include <CommHistory/event.h>
 #include <CommHistory/messagepart.h>
 
-#define SMART_MESSAGING     "org.ofono.SmartMessaging"
-#define AGENT_PATH          "/SmartMessagingAgent"
+#define AGENT_PATH          "/commhistoryd/SmartMessagingAgent"
 #define AGENT_SERVICE       "org.ofono.SmartMessagingAgent"
 
 #define VCARD_CONTENT_TYPE  "text/x-vcard"
@@ -46,67 +44,50 @@ SmartMessaging::SmartMessaging(QObject* parent) :
     QOfonoManager* ofono = new QOfonoManager(this);
     connect(ofono, SIGNAL(modemAdded(QString)), this, SLOT(onModemAdded(QString)));
     connect(ofono, SIGNAL(modemRemoved(QString)), this, SLOT(onModemRemoved(QString)));
-    connect(ofono, SIGNAL(availableChanged(bool)), this, SLOT(onAvailableChanged(bool)));
     QStringList modems = ofono->modems();
     DEBUG() << "SmartMessaging" << modems;
     foreach (QString path, modems) addModem(path);
 }
 
+SmartMessaging::~SmartMessaging()
+{
+    qDeleteAll(interfaces.values());
+}
+
 void SmartMessaging::addModem(QString path)
 {
-    removeModem(path);
-    QOfonoModem* modem = new QOfonoModem(this);
-    modem->setModemPath(path);
-    modems.insert(path, modem);
-    registerAgent(modem, modem->interfaces());
-    connect(modem, SIGNAL(interfacesChanged(QStringList)), this, SLOT(onInterfacesChanged(QStringList)));
-}
-
-void SmartMessaging::removeModem(QString path)
-{
-    QOfonoModem* modem = modems.value(path);
-    if (modem) {
-        modems.remove(path);
-        delete modem;
-    }
-}
-
-void SmartMessaging::registerAgent(QOfonoModem* modem, QStringList interfaces)
-{
-    if (interfaces.contains(SMART_MESSAGING)) {
+    QOfonoSmartMessaging* sm = new QOfonoSmartMessaging(this);
+    sm->setModemPath(path);
+    interfaces.insert(path, sm);
+    if (sm->isValid()) {
         DEBUG() << "Registering SmartMessaging agent";
-        QOfonoSmartMessaging messaging;
-        messaging.setModemPath(modem->modemPath());
-        messaging.registerAgent(AGENT_PATH);
+        sm->registerAgent(AGENT_PATH);
     }
-}
-
-void SmartMessaging::onAvailableChanged(bool available)
-{
-    DEBUG() << "onAvailableChanged" << available;
-    if (!available) {
-        QStringList keys = modems.keys();
-        foreach (QString path, keys) removeModem(path);
-    }
+    connect(sm, SIGNAL(validChanged(bool)), this, SLOT(onValidChanged(bool)));
 }
 
 void SmartMessaging::onModemAdded(QString path)
 {
     DEBUG() << "onModemAdded" << path;
+    delete interfaces.take(path);
     addModem(path);
 }
 
 void SmartMessaging::onModemRemoved(QString path)
 {
     DEBUG() << "onModemRemoved" << path;
-    removeModem(path);
+    delete interfaces.take(path);
 }
 
-void SmartMessaging::onInterfacesChanged(QStringList interfaces)
+void SmartMessaging::onValidChanged(bool valid)
 {
-    QOfonoModem* modem = (QOfonoModem*)sender();
-    DEBUG() << "onInterfacesChanged" << modem->modemPath() << interfaces;
-    registerAgent(modem, modem->interfaces());
+    QOfonoSmartMessaging* sm = (QOfonoSmartMessaging*)sender();
+    if (valid) {
+        DEBUG() << "Registering SmartMessaging agent for" << sm->modemPath();
+        sm->registerAgent(AGENT_PATH);
+    } else {
+        DEBUG() << "No more SmartMessaging for " << sm->modemPath();
+    }
 }
 
 void SmartMessaging::ReceiveAppointment(QByteArray, QVariantHash)
