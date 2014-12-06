@@ -34,11 +34,3 @@ PROJECT_NAME = commhistory-daemon
 # remember to update debian/* files if you changes this
 # -----------------------------------------------------------------------------
 PROJECT_VERSION = 0.4.5
-
-# -----------------------------------------------------------------------------
-# Project's data directories
-# -----------------------------------------------------------------------------
-COMMHISTORYD_DATADIR = ".commhistoryd"
-DEFINES += COMMHISTORYD_DATADIR="\\\"$$COMMHISTORYD_DATADIR\\\""
-DEFINES += COMMHISTORYD_NOTIFICATIONSDIR="\\\"/$$COMMHISTORYD_DATADIR/notifications\\\""
-DEFINES += COMMHISTORYD_NOTIFICATIONSSTORAGE="\\\"/$$COMMHISTORYD_DATADIR/notifications/storage.dat\\\""
