@@ -38,8 +38,7 @@ INCLUDEPATH = ../stubs/ $${INCLUDEPATH}
 
 TARGET = ut_textchannellistener
 
-equals(QT_MAJOR_VERSION, 4): CONFIG += mlocale
-equals(QT_MAJOR_VERSION, 5): PKGCONFIG += mlocale5
+PKGCONFIG += mlocale5
 
 TEST_SOURCES += $$COMMHISTORYDSRCDIR/textchannellistener.cpp \
                 $$COMMHISTORYDSRCDIR/channellistener.cpp

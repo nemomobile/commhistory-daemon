@@ -83,11 +83,7 @@ namespace Tp
             }
         }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
         inline bool isNull() const { return !wd || !wd->d || wd->d->strongref.load() == 0; }
-#else
-        inline bool isNull() const { return !wd || !wd->d || wd->d->strongref == 0; }
-#endif
         inline operator bool() const { return !isNull(); }
         inline bool operator!() const { return isNull(); }
 
