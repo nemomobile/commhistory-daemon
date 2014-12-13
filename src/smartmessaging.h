@@ -23,7 +23,7 @@
 #define SMARTMESSAGING_H
 
 #include "messagehandlerbase.h"
-#include "qofonomodem.h"
+#include "qofonosmartmessaging.h"
 
 namespace CommHistory {
     class MessagePart;
@@ -35,26 +35,26 @@ class SmartMessaging: public MessageHandlerBase
 
 public:
     SmartMessaging(QObject* parent);
+    ~SmartMessaging();
 
-public Q_SLOTS:
-    void onAvailableChanged(bool available);
+private Q_SLOTS:
     void onModemAdded(QString path);
     void onModemRemoved(QString path);
-    void onInterfacesChanged(QStringList interfaces);
+    void onValidChanged(bool valid);
+
+public: // for SmartMessagingAgentAdaptor
     void ReceiveAppointment(QByteArray appointment, QVariantHash info);
     void ReceiveBusinessCard(QByteArray card, QVariantHash info);
     void Release();
 
 private:
     void addModem(QString path);
-    void removeModem(QString path);
-    void registerAgent(QOfonoModem* modem, QStringList interfaces);
 
 private:
     static bool save(int id, QByteArray vcard, CommHistory::MessagePart& part);
 
 private:
-    QHash<QString,QOfonoModem*> modems;
+    QHash<QString,QOfonoSmartMessaging*> interfaces;
 };
 
 #endif // SMARTMESSAGING_H

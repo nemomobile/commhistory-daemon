@@ -24,6 +24,7 @@ BuildRequires:  qt5-qttools
 BuildRequires:  qt5-qttools-linguist
 BuildRequires:  libqofono-qt5-devel
 BuildRequires:  python
+Requires:  libqofono-qt5 >= 0.66
 Requires:  mapplauncherd-qt5
 Requires:  mms-engine
 
