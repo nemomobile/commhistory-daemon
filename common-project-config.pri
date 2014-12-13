@@ -35,12 +35,3 @@ QT             -= thread
 
 # we don't like warnings...
 QMAKE_CXXFLAGS *= -Werror -Wall -fno-exceptions
-
-#-----------------------------------------------------------------------------
-# Project's data directories
-#-----------------------------------------------------------------------------
-COMMHISTORYD_DATADIR=".commhistoryd"
-DEFINES += COMMHISTORYD_DATADIR="\\\"$$COMMHISTORYD_DATADIR\\\""
-
-# End of File
-
