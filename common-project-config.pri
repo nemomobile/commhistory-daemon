@@ -34,4 +34,4 @@ UI_SOURCES_DIR  = ui/src
 QT             -= thread
 
 # we don't like warnings...
-QMAKE_CXXFLAGS *= -Werror -Wall -fno-exceptions
+QMAKE_CXXFLAGS *= -Werror -Wno-unused-parameter -Wall -fno-exceptions
