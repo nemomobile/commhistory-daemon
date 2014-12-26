@@ -35,7 +35,7 @@
 #define VCARD_EXTENSION     "vcf"
 
 #ifdef DEBUG_COMMHISTORY
-#  define DEBUG_(x) qDebug() << "SmartMessaging: " << x
+#  define DEBUG_(x) qDebug() << "SmartMessaging:" << x
 #else
 #  define DEBUG_(x) ((void)0)
 #endif
@@ -50,8 +50,11 @@ SmartMessaging::SmartMessaging(QObject* parent) :
     connect(ofono, SIGNAL(modemAdded(QString)), this, SLOT(onModemAdded(QString)));
     connect(ofono, SIGNAL(modemRemoved(QString)), this, SLOT(onModemRemoved(QString)));
     QStringList modems = ofono->modems();
-    DEBUG_(modems);
-    foreach (QString path, modems) addModem(path);
+    DEBUG_("created");
+    foreach (QString path, modems) {
+        DEBUG_("modem" << path);
+        addModem(path);
+    }
 }
 
 SmartMessaging::~SmartMessaging()
