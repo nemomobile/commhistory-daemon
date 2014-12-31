@@ -11,7 +11,7 @@ BuildRequires:  pkgconfig(Qt5DBus)
 BuildRequires:  pkgconfig(Qt5Contacts)
 BuildRequires:  pkgconfig(Qt5Versit)
 BuildRequires:  pkgconfig(Qt5Test)
-BuildRequires:  libcommhistory-qt5-devel >= 1.7.20
+BuildRequires:  libcommhistory-qt5-devel >= 1.8.1
 BuildRequires:  pkgconfig(TelepathyQt5)
 BuildRequires:  pkgconfig(mlite5)
 BuildRequires:  pkgconfig(mlocale5)
@@ -24,6 +24,7 @@ BuildRequires:  qt5-qttools
 BuildRequires:  qt5-qttools-linguist
 BuildRequires:  libqofono-qt5-devel
 BuildRequires:  python
+Requires:  libcommhistory-qt5 >= 1.8.1
 Requires:  libqofono-qt5 >= 0.66
 Requires:  mapplauncherd-qt5
 Requires:  mms-engine
