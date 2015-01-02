@@ -71,8 +71,18 @@ QString MmsHandler::messageNotification(const QString &imsi, const QString &from
     event.setExtraProperty("mms-expiry", expiry);
     event.setExtraProperty("mms-push-data", data.toBase64());
 
-    DEBUG() << "MmsHandler: automatic-download is " << (m_automaticDownload ? m_automaticDownload->value().toString() : QString(""));
-    bool manualDownload = isDataProhibited() ? true : m_automaticDownload ? !m_automaticDownload->value().toBool() : false;
+    bool manualDownload;
+    if (isDataProhibited()) {
+        manualDownload = true;
+    } else if (m_automaticDownload) {
+        // The value will be invalid if it was never set. The default
+        // action is to download MMS automatically
+        QVariant value = m_automaticDownload->value();
+        manualDownload = value.isValid() ? (!value.toBool()) : false;
+    } else {
+        manualDownload = true;
+    }
+    DEBUG() << "MmsHandler: manualDownload is" << manualDownload;
     event.setStatus(manualDownload ? Event::ManualNotificationStatus : Event::WaitingStatus);
 
     if (!setGroupForEvent(event)) {
