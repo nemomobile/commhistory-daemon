@@ -540,6 +540,19 @@ QString NotificationManager::notificationText(const CommHistory::Event& event)
     return text;
 }
 
+static QVariantMap dbusAction(const QString &service, const QString &path, const QString &iface,
+                              const QString &method, const QVariantList &arguments = QVariantList())
+{
+    QVariantMap action;
+    action.insert(QStringLiteral("name"), QStringLiteral("default"));
+    action.insert(QStringLiteral("service"), service);
+    action.insert(QStringLiteral("path"), path);
+    action.insert(QStringLiteral("iface"), iface);
+    action.insert(QStringLiteral("method"), method);
+    action.insert(QStringLiteral("arguments"), arguments);
+    return action;
+}
+
 void NotificationManager::setNotificationAction(Notification *notification, PersonalNotification *pn, bool grouped)
 {
     switch (pn->eventType()) {
@@ -548,42 +561,34 @@ void NotificationManager::setNotificationAction(Notification *notification, Pers
         case CommHistory::Event::MMSEvent:
         case VOICEMAIL_SMS_EVENT_TYPE:
             if (pn->eventType() != VOICEMAIL_SMS_EVENT_TYPE && grouped) {
-                notification->setRemoteDBusCallServiceName(MESSAGING_SERVICE_NAME);
-                notification->setRemoteDBusCallObjectPath(OBJECT_PATH);
-                notification->setRemoteDBusCallInterface(MESSAGING_INTERFACE);
-                notification->setRemoteDBusCallMethodName(SHOW_INBOX_METHOD);
-                notification->setRemoteDBusCallArguments(QVariantList());
+                notification->setRemoteAction(dbusAction(MESSAGING_SERVICE_NAME,
+                                                         OBJECT_PATH,
+                                                         MESSAGING_INTERFACE,
+                                                         SHOW_INBOX_METHOD));
             } else {
-                notification->setRemoteDBusCallServiceName(MESSAGING_SERVICE_NAME);
-                notification->setRemoteDBusCallObjectPath(OBJECT_PATH);
-                notification->setRemoteDBusCallInterface(MESSAGING_INTERFACE);
-                notification->setRemoteDBusCallMethodName(START_CONVERSATION_METHOD);
-
-                QVariantList args;
-                args << pn->account() << pn->targetId() << uint(pn->chatType());
-                notification->setRemoteDBusCallArguments(args);
+                notification->setRemoteAction(dbusAction(MESSAGING_SERVICE_NAME,
+                                                         OBJECT_PATH,
+                                                         MESSAGING_INTERFACE,
+                                                         START_CONVERSATION_METHOD,
+                                                         QVariantList() << pn->account()
+                                                                           << pn->targetId()
+                                                                           << static_cast<uint>(pn->chatType())));
             }
             break;
 
         case CommHistory::Event::CallEvent:
-            {
-                notification->setRemoteDBusCallServiceName(CALL_HISTORY_SERVICE_NAME);
-                notification->setRemoteDBusCallObjectPath(CALL_HISTORY_OBJECT_PATH);
-                notification->setRemoteDBusCallInterface(CALL_HISTORY_INTERFACE);
-                notification->setRemoteDBusCallMethodName(CALL_HISTORY_METHOD);
-
-                QVariantList args;
-                args << (QStringList() << CALL_HISTORY_PARAMETER);
-                notification->setRemoteDBusCallArguments(args);
-            }
+            notification->setRemoteAction(dbusAction(CALL_HISTORY_SERVICE_NAME,
+                                                     CALL_HISTORY_OBJECT_PATH,
+                                                     CALL_HISTORY_INTERFACE,
+                                                     CALL_HISTORY_METHOD,
+                                                     QVariantList() << CALL_HISTORY_PARAMETER));
             break;
 
         case CommHistory::Event::VoicemailEvent:
-            notification->setRemoteDBusCallServiceName(CALL_HISTORY_SERVICE_NAME);
-            notification->setRemoteDBusCallObjectPath(VOICEMAIL_OBJECT_PATH);
-            notification->setRemoteDBusCallInterface(VOICEMAIL_INTERFACE);
-            notification->setRemoteDBusCallMethodName(VOICEMAIL_METHOD);
-            notification->setRemoteDBusCallArguments(QVariantList());
+            notification->setRemoteAction(dbusAction(CALL_HISTORY_SERVICE_NAME,
+                                                     VOICEMAIL_OBJECT_PATH,
+                                                     VOICEMAIL_INTERFACE,
+                                                     VOICEMAIL_METHOD));
             break;
     }
 }
