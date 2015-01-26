@@ -104,6 +104,7 @@ public:
      * \brief Play class 0 SMS alert
      */
     void playClass0SMSAlert();
+    void requestClass0Notification(const CommHistory::Event &event);
 
     void setNotificationAction(Notification *notification, PersonalNotification *pn, bool grouped);
 
@@ -129,6 +130,7 @@ private Q_SLOTS:
     void slotContactUpdated(quint32 localId, const QString &name, const QList<ContactAddress> &addresses);
     void slotContactRemoved(quint32 localId);
     void slotContactUnknown(const QPair<QString,QString> &address);
+    void slotClassZeroError(const QDBusError &error);
 
 private:
     NotificationManager( QObject* parent = 0);

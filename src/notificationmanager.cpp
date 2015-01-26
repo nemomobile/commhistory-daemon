@@ -282,6 +282,20 @@ void NotificationManager::playClass0SMSAlert()
     QDBusConnection::systemBus().call(msg, QDBus::NoBlock);
 }
 
+void NotificationManager::requestClass0Notification(const CommHistory::Event &event)
+{
+    QDBusMessage msg = QDBusMessage::createMethodCall(QLatin1String("org.nemomobile.ClassZeroSmsNotification"),
+                                                      QLatin1String("/org/nemomobile/ClassZeroSmsNotification"),
+                                                      QLatin1String("org.nemomobile.ClassZeroSmsNotification"),
+                                                      QLatin1String("showNotification"));
+    QList<QVariant> arguments;
+    arguments << event.freeText();
+    msg.setArguments(arguments);
+    if (!QDBusConnection::sessionBus().callWithCallback(msg, this, 0, SLOT(slotClassZeroError(QDBusError)))) {
+        qWarning() << "Unable to create class 0 SMS notification request";
+    }
+}
+
 bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& event,
                                                   const QString &channelTargetId,
                                                   CommHistory::Group::ChatType chatType)
@@ -654,6 +668,11 @@ void NotificationManager::slotContactUnknown(const QPair<QString,QString> &addre
         } else
             it++;
     }
+}
+
+void NotificationManager::slotClassZeroError(const QDBusError &error)
+{
+    qWarning() << "Class 0 SMS notification failed:" << error.message();
 }
 
 CommHistory::GroupModel* NotificationManager::groupModel()
