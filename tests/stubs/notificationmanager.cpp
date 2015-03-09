@@ -54,6 +54,10 @@ void NotificationManager::playClass0SMSAlert()
 {
 }
 
+void NotificationManager::requestClass0Notification(const CommHistory::Event &)
+{
+}
+
 CommHistory::GroupModel* NotificationManager::groupModel()
 {
     return m_GroupModel;

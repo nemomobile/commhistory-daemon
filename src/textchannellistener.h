@@ -34,7 +34,6 @@
 namespace CommHistory {
     class GroupModel;
     class Event;
-    class ClassZeroSMSModel;
     class SingleEventModel;
     class ConversationModel;
 }
@@ -88,7 +87,6 @@ private Q_SLOTS:
     void slotGroupInserted(const QModelIndex &index, int start, int end);
     void slotGroupDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
     void slotEventsCommitted(QList<CommHistory::Event> events, bool status);
-    void slotClassZeroSMSRemoved(const QModelIndex&, int, int);
     void slotContactsReady(Tp::PendingOperation* operation);
     void slotPropertiesChanged(const Tp::PropertyValueList &props, bool listProps = false);
     void slotGroupMembersChanged(const Tp::Contacts &groupMembersAdded,
@@ -145,9 +143,6 @@ private:
     void updateGroupChatName(ChangedChannelProperty changedChannelProperty,
                              bool suppressGroupChatEvents);
 
-    /*! returns model, if model doesnt exist, creates one */
-    CommHistory::ClassZeroSMSModel* classZeroSMSModel();
-
     void fetchContacts();
     void handleMessageFailed(const Tp::ReceivedMessage &message,
                              const CommHistory::Event &event);
@@ -199,7 +194,6 @@ private:
 
     // indicates that channel contains class0 messages
     bool m_isClassZeroSMS;
-    CommHistory::ClassZeroSMSModel *m_pClassZeroSMSModel;
 
     Tp::HandleIdentifierMap m_HandleOwnerNames;
     Tp::Client::PropertiesInterfaceInterface *m_PropertiesIf;

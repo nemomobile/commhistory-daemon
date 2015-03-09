@@ -33,7 +33,6 @@
 #include <CommHistory/Event>
 #include <CommHistory/Group>
 #include <CommHistory/commonutils.h>
-#include <CommHistory/ClassZeroSMSModel>
 #include <CommHistory/SingleEventModel>
 #include <CommHistory/DatabaseIO>
 #include <CommHistory/ConversationModel>
@@ -109,7 +108,7 @@ QTVERSIT_USE_NAMESPACE
 
 namespace {
 
-static CommHistory::Event::PropertySet deliveryHandlingProperties = CommHistory::Event::PropertySet()
+CommHistory::Event::PropertySet deliveryHandlingProperties = CommHistory::Event::PropertySet()
                                                  << CommHistory::Event::Id
                                                  << CommHistory::Event::Type
                                                  << CommHistory::Event::StartTime
@@ -221,7 +220,6 @@ TextChannelListener::TextChannelListener(const Tp::AccountPtr &account,
       m_GroupRequested(false),
       m_ShowOfflineChatError(true),
       m_isClassZeroSMS(false),
-      m_pClassZeroSMSModel(0),
       m_PropertiesIf(0),
       m_IsGroupChat(false),
       m_channelClosed(false),
@@ -266,10 +264,6 @@ void TextChannelListener::channelListenerReady()
         if(property.isValid() && property.value<bool>() == true) {
             DEBUG() << __FUNCTION__ << "Channel contains class 0 property";
             m_isClassZeroSMS = true;
-            connect(classZeroSMSModel(),
-                    SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
-                    SLOT(slotClassZeroSMSRemoved(const QModelIndex&, int, int)),
-                    Qt::UniqueConnection);
         }
 
         handleMessages();
@@ -281,11 +275,9 @@ void TextChannelListener::channelListenerReady()
 
 bool TextChannelListener::checkStoredMessagesIf()
 {
-    bool result = false;
-
     if (m_Connection.isNull() || !m_Connection->isReady()) {
         qCritical() << Q_FUNC_INFO << "Connection is not ready when it should be";
-        return result;
+        return false;
     }
 
     return m_Connection->hasInterface(CommHistoryTp::Client::ConnectionInterfaceStoredMessagesInterface::staticInterfaceName());
@@ -690,13 +682,11 @@ void TextChannelListener::handleMessages()
 
             // class 0 sms
             if (m_isClassZeroSMS) {
-                // just ack message, expunge would be called
-                // as soon as user reads message
-                DEBUG() << __FUNCTION__ << "Adding class 0 sms";
+                DEBUG() << __FUNCTION__ << "Handling class 0 sms";
                 processedMessages << message;
-                classZeroSMSModel()->addEvent(event,true);
-                m_EventTokens.insertMulti(event.id(), event.messageToken());
                 nManager->playClass0SMSAlert();
+                nManager->requestClass0Notification(event);
+                expungeMessage(event.messageToken());
             // Replace sms
             } else if (!replaceTypeValue.isEmpty()) {
                 DEBUG() << __FUNCTION__ << "Replace type of sms";
@@ -1612,34 +1602,6 @@ void TextChannelListener::slotPresenceChanged(const Tp::Presence &presence)
         if (!eventModel().addEvent(event, true)) {
 
             DEBUG() << "*** Adding status message to data model has been failed.";
-        }
-    }
-}
-
-CommHistory::ClassZeroSMSModel* TextChannelListener::classZeroSMSModel()
-{
-    if (!m_pClassZeroSMSModel) {
-        m_pClassZeroSMSModel = new CommHistory::ClassZeroSMSModel(this);
-    }
-    return m_pClassZeroSMSModel;
-}
-
-void TextChannelListener::slotClassZeroSMSRemoved(const QModelIndex& index,
-                                                  int start,
-                                                  int end)
-{
-    Q_UNUSED(index)
-
-    DEBUG() << "Class zero SMS removed from model, expunging";
-
-    for (int row = start; row <= end; row++) {
-
-        QModelIndex index = classZeroSMSModel()->index(row, 0);
-        CommHistory::Event event = classZeroSMSModel()->event(index);
-        if (event.isValid() && !event.messageToken().isEmpty()) {
-            DEBUG() << "Expunged message: " << event.messageToken();
-            expungeMessage(event.messageToken());
-            m_EventTokens.remove(event.id(), event.messageToken());
         }
     }
 }

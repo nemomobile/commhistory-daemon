@@ -1,7 +1,7 @@
 Name:       commhistory-daemon
 Summary:    Communications event history database daemon
-Version:    0.5.33
-Release:    2
+Version:    0.5.34
+Release:    1
 Group:      Communications/Telephony and IM
 License:    LGPL
 URL:        https://github.com/nemomobile/commhistory-daemon
