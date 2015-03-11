@@ -2,7 +2,8 @@
 **
 ** This file is part of commhistory-daemon.
 **
-** Copyright (C) 2014 Jolla Ltd.
+** Copyright (C) 2014-2015 Jolla Ltd.
+** Contact: Slava Monich <slava.monich@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -58,9 +59,13 @@ public Q_SLOTS:
     void sendMessageFromEvent(int eventId);
 
 private Q_SLOTS:
-    void sendMessageFinished(QDBusPendingCallWatcher *call);
+    void onSendMessageFinished(QDBusPendingCallWatcher *call);
     void onDataProhibitedChanged();
     void onSubscriberIdentityChanged();
+    void onMmsEventsMarkedAsRead(const QList<CommHistory::Event> &events);
+
+private:
+    static QDBusPendingCall callEngine(const QString &method, const QVariantList &args);
 
 private:
     ContextProperty *m_cellularStatusProperty;
@@ -69,6 +74,7 @@ private:
     QList<int> m_activeEvents;
     MGConfItem* m_sendMessageFlags;
     MGConfItem* m_automaticDownload;
+    MGConfItem* m_sendReadReports;
 
     void sendMessageFromEvent(CommHistory::Event &event);
     bool copyMmsPartFiles(const MmsPartList &parts, int eventId, QList<CommHistory::MessagePart> &eventParts, QString &freeText);
