@@ -2,7 +2,8 @@
 **
 ** This file is part of commhistory-daemon.
 **
-** Copyright (C) 2014 Jolla Ltd.
+** Copyright (C) 2014-2015 Jolla Ltd.
+** Contact: Slava Monich <slava.monich@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -29,6 +30,8 @@
 #include <CommHistory/SingleEventModel>
 #include <CommHistory/commonutils.h>
 #include <CommHistory/groupmanager.h>
+#include <CommHistory/constants.h>
+#include <CommHistory/mmsconstants.h>
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QDBusPendingCall>
@@ -40,20 +43,43 @@
 using namespace RTComLogger;
 using namespace CommHistory;
 
+#ifdef DEBUG_COMMHISTORY
+#  define DEBUG_(x) qDebug() << "MmsHandler:" << x
+#else
+#  define DEBUG_(x) ((void)0)
+#endif
+
 MmsHandler::MmsHandler(QObject* parent)
-    : MessageHandlerBase(parent, "/", "org.nemomobile.MmsHandler")
+    : MessageHandlerBase(parent, MMS_HANDLER_PATH, MMS_HANDLER_SERVICE)
     , m_cellularStatusProperty(new ContextProperty("Cellular.Status", this))
     , m_roamingAllowedProperty(new ContextProperty("Cellular.DataRoamingAllowed", this))
     , m_subscriberIdentityProperty(new ContextProperty("Cellular.SubscriberIdentity", this))
     , m_sendMessageFlags(NULL)
     , m_automaticDownload(NULL)
+    , m_sendReadReports(NULL)
 {
     qDBusRegisterMetaType<MmsPart>();
     qDBusRegisterMetaType<MmsPartList>();
+    qDBusRegisterMetaType<QList<CommHistory::Event> >();
+
     connect(m_cellularStatusProperty, SIGNAL(valueChanged()), SLOT(onDataProhibitedChanged()));
     connect(m_roamingAllowedProperty, SIGNAL(valueChanged()), SLOT(onDataProhibitedChanged()));
     connect(m_subscriberIdentityProperty, SIGNAL(valueChanged()), SLOT(onSubscriberIdentityChanged()));
     onSubscriberIdentityChanged();
+
+    QDBusConnection dbus(QDBusConnection::sessionBus());
+    if (!dbus.connect(QString(), COMM_HISTORY_OBJECT_PATH, COMM_HISTORY_INTERFACE,
+        MMS_EVENTS_MARKED_AS_READ_SIGNAL, this, SLOT(onMmsEventsMarkedAsRead(QList<CommHistory::Event>)))) {
+        qWarning() << "MmsHandler: failed to register" << MMS_EVENTS_MARKED_AS_READ_SIGNAL << "handler";
+    }
+}
+
+QDBusPendingCall MmsHandler::callEngine(const QString &method, const QVariantList &args)
+{
+    QDBusMessage call(QDBusMessage::createMethodCall(MMS_ENGINE_SERVICE, MMS_ENGINE_PATH,
+        MMS_ENGINE_INTERFACE, method));
+    call.setArguments(args);
+    return MMS_ENGINE_BUS.asyncCall(call);
 }
 
 QString MmsHandler::messageNotification(const QString &imsi, const QString &from,
@@ -67,22 +93,16 @@ QString MmsHandler::messageNotification(const QString &imsi, const QString &from
     event.setLocalUid(RING_ACCOUNT_PATH);
     event.setRemoteUid(from);
     event.setSubject(subject);
-    event.setExtraProperty("mms-notification-imsi", imsi);
-    event.setExtraProperty("mms-expiry", expiry);
-    event.setExtraProperty("mms-push-data", data.toBase64());
+    event.setExtraProperty(MMS_PROPERTY_IMSI, imsi);
+    event.setExtraProperty(MMS_PROPERTY_EXPIRY, expiry);
+    event.setExtraProperty(MMS_PROPERTY_PUSH_DATA, data.toBase64());
 
-    bool manualDownload;
-    if (isDataProhibited()) {
-        manualDownload = true;
-    } else if (m_automaticDownload) {
-        // The value will be invalid if it was never set. The default
-        // action is to download MMS automatically
-        QVariant value = m_automaticDownload->value();
-        manualDownload = value.isValid() ? (!value.toBool()) : false;
-    } else {
-        manualDownload = true;
-    }
-    DEBUG() << "MmsHandler: manualDownload is" << manualDownload;
+    // The default action is to download MMS automatically
+    const bool manualDownload = (!isDataProhibited() && m_automaticDownload) ?
+        !m_automaticDownload->value(true).toBool() :
+        true;
+
+    DEBUG_("manualDownload is" << manualDownload);
     event.setStatus(manualDownload ? Event::ManualNotificationStatus : Event::WaitingStatus);
 
     if (!setGroupForEvent(event)) {
@@ -103,7 +123,7 @@ QString MmsHandler::messageNotification(const QString &imsi, const QString &from
         NotificationManager::instance()->showNotification(event, from, Group::ChatTypeP2P);
     }
 
-    DEBUG() << "Created MMS notification event:" << event.toString();
+    DEBUG_("Created MMS notification event:" << event.toString());
     return manualDownload ? QString() : QString::number(event.id());
 }
 
@@ -197,10 +217,11 @@ void MmsHandler::messageReceived(const QString &recId, const QString &mmsId, con
     Q_UNUSED(priority);
     Q_UNUSED(cls);
 
-    // Remove MMS notification properties
-    event.setExtraProperty("mms-notification-imsi", QVariant());
-    event.setExtraProperty("mms-expiry", QVariant());
-    event.setExtraProperty("mms-push-data", QVariant());
+    // We no longer need expiry and push data properties but we may need
+    // to keep IMSI property until the message is read
+    event.setExtraProperty(MMS_PROPERTY_EXPIRY, QVariant());
+    event.setExtraProperty(MMS_PROPERTY_PUSH_DATA, QVariant());
+    if (!readReport) event.setExtraProperty(MMS_PROPERTY_IMSI, QVariant());
 
     // Change UID/group if necessary
     if (event.remoteUid() != from) {
@@ -256,7 +277,7 @@ void MmsHandler::messageReceived(const QString &recId, const QString &mmsId, con
     }
 
     NotificationManager::instance()->showNotification(event, from, Group::ChatTypeP2P);
-    DEBUG() << "MMS message " << recId << "received with" << eventParts.size() << "parts:" << event.toString();
+    DEBUG_("message " << recId << "received with" << eventParts.size() << "parts:" << event.toString());
 }
 
 // Caller is responsible for cleaning up copied files on failure
@@ -570,7 +591,7 @@ void MmsHandler::sendMessageFromEvent(Event &event)
     }
 
     unsigned int flags = m_sendMessageFlags ? m_sendMessageFlags->value().toInt() : 0;
-    DEBUG() << "MmsHandler: send flag are" << flags;
+    DEBUG_("send flag are" << flags);
 
     QVariantList args;
     args << event.id() << QString() << event.toList() << event.ccList() << event.bccList()
@@ -578,15 +599,12 @@ void MmsHandler::sendMessageFromEvent(Event &event)
 
     m_activeEvents.append(event.id());
 
-    QDBusMessage call = QDBusMessage::createMethodCall("org.nemomobile.MmsEngine", "/", "org.nemomobile.MmsEngine", "sendMessage");
-    call.setArguments(args);
-    QDBusPendingCall reply = QDBusConnection::systemBus().asyncCall(call);
-    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(reply, this);
+    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(callEngine("sendMessage", args), this);
     watcher->setProperty("mms-event-id", event.id());
-    connect(watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), SLOT(sendMessageFinished(QDBusPendingCallWatcher*)));
+    connect(watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), SLOT(onSendMessageFinished(QDBusPendingCallWatcher*)));
 }
 
-void MmsHandler::sendMessageFinished(QDBusPendingCallWatcher *call)
+void MmsHandler::onSendMessageFinished(QDBusPendingCallWatcher *call)
 {
     bool ok = false;
     int eventId = call->property("mms-event-id").toInt(&ok);
@@ -602,7 +620,7 @@ void MmsHandler::sendMessageFinished(QDBusPendingCallWatcher *call)
         event.setStatus(Event::TemporarilyFailedStatus);
         NotificationManager::instance()->showNotification(event, event.remoteUid(), Group::ChatTypeP2P);
     } else {
-        event.setExtraProperty("mms-notification-imsi", reply.value());
+        event.setExtraProperty(MMS_PROPERTY_IMSI, reply.value());
     }
 
     if (!model.modifyEvent(event))
@@ -632,9 +650,7 @@ void MmsHandler::onDataProhibitedChanged()
         qWarning() << "Cancelling" << m_activeEvents.size() << "active MMS events due to roaming restrictions";
         // Cancel any active events to prevent automatic retries
         foreach (int eventId, m_activeEvents) {
-            QDBusMessage call = QDBusMessage::createMethodCall("org.nemomobile.MmsEngine", "/", "org.nemomobile.MmsEngine", "cancel");
-            call.setArguments(QVariantList() << eventId);
-            QDBusConnection::systemBus().asyncCall(call);
+            callEngine("cancel", QVariantList() << eventId);
         }
         m_activeEvents.clear();
     }
@@ -643,15 +659,52 @@ void MmsHandler::onDataProhibitedChanged()
 void MmsHandler::onSubscriberIdentityChanged()
 {
     QString imsi = m_subscriberIdentityProperty->value().toString();
-    DEBUG() << "MmsHandler: SubscriberIdentity =" << m_subscriberIdentityProperty->value() << imsi;
-    if (m_sendMessageFlags) delete m_sendMessageFlags;
-    if (m_automaticDownload) delete m_automaticDownload;
+    DEBUG_("SubscriberIdentity =" << m_subscriberIdentityProperty->value() << imsi);
+    delete m_sendMessageFlags;
+    delete m_automaticDownload;
+    delete m_sendReadReports;
     if (imsi.isEmpty()) {
         m_sendMessageFlags = NULL;
         m_automaticDownload = NULL;
+        m_sendReadReports = NULL;
     } else {
         QString dir("/imsi/" + imsi + "/mms/");
         m_sendMessageFlags = new MGConfItem(dir + "send-flags", this);
         m_automaticDownload = new MGConfItem(dir + "automatic-download", this);
+        m_sendReadReports = new MGConfItem(dir + "send-read-reports", this);
+    }
+}
+
+void MmsHandler::onMmsEventsMarkedAsRead(const QList<CommHistory::Event> &events)
+{
+    const bool sendReadReports = (!isDataProhibited() && m_sendReadReports) ?
+        m_sendReadReports->value(false).toBool() :
+        false;
+
+    if (sendReadReports) {
+        const int n = events.size();
+        for (int i=0; i<n; i++) {
+            CommHistory::Event event(events.at(i));
+            QString imsi(event.extraProperty(MMS_PROPERTY_IMSI).toString());
+            QString mmsId(event.mmsId());
+            if (imsi.isEmpty() || mmsId.isEmpty()) {
+                qWarning() << "MmsHandler: event" << event.id() << "has no MMS data";
+            }  else {
+                DEBUG_("message" << event.id() << "marked as read");
+                QVariantList args;
+                args << event.id() << imsi << mmsId << event.remoteUid() << 0;
+                callEngine("sendReadReport", args);
+
+                // We no longer need IMSI property. Even if sendReadReport
+                // fails it's not really a big deal.
+                event.setExtraProperty(MMS_PROPERTY_IMSI, QVariant());
+                SingleEventModel model;
+                if (!model.modifyEvent(event)) {
+                    qWarning() << "Failed to update MMS event" << event.id();
+                }
+            }
+        }
+    } else {
+        DEBUG_("read reports are disabled");
     }
 }
