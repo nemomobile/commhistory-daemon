@@ -2,8 +2,9 @@
 **
 ** This file is part of commhistory-daemon.
 **
+** Copyright (C) 2015 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: Reto Zingg <reto.zingg@nokia.com>
+** Contact: Reto Zingg <reto.zingg@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -30,9 +31,9 @@ namespace RTComLogger {
 // Used to generate duiremoteaction strings
 #define OBJECT_PATH QLatin1String("/")
 
-#define COMM_HISTORY_SERVICE_NAME    QLatin1String("org.nemomobile.CommHistory")
-#define COMM_HISTORY_OBJECT_PATH     QLatin1String("/org/nemomobile/CommHistory")
-#define COMM_HISTORY_INTERFACE       QLatin1String("org.nemomobile.CommHistoryIf")
+#define COMM_HISTORY_DAEMON_SERVICE_NAME QLatin1String("org.nemomobile.CommHistory")
+#define COMM_HISTORY_DAEMON_OBJECT_PATH  QLatin1String("/org/nemomobile/CommHistory")
+#define COMM_HISTORY_DAEMON_INTERFACE    QLatin1String("org.nemomobile.CommHistoryIf")
 
 #define ACCOUNT_PRESENCE_SERVICE_NAME    QLatin1String("org.nemomobile.AccountPresence")
 #define ACCOUNT_PRESENCE_OBJECT_PATH     QLatin1String("/org/nemomobile/AccountPresence")

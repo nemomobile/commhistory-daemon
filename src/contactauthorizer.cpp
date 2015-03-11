@@ -2,8 +2,9 @@
 **
 ** This file is part of commhistory-daemon.
 **
+** Copyright (C) 2015 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: Reto Zingg <reto.zingg@nokia.com>
+** Contact: Reto Zingg <reto.zingg@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -47,7 +48,7 @@ static const char* AuthorizationNotificationType = "x-nemo.messaging.authorizati
 #define OBJECT_PATH QLatin1String("/")
 #define BUDDY_AUTHORIZER_SERVICE_NAME    QLatin1String("com.nokia.buddyauthorizer-service")
 #define BUDDY_AUTHORIZER_INTERFACE_NAME  QLatin1String("com.nokia.buddyauthorizerinterface")
-#define ACTIVATE_AUTHIRIZATION_METHOD    QLatin1String("activateAuthorization")
+#define ACTIVATE_AUTHORIZATION_METHOD    QLatin1String("activateAuthorization")
 #define BUDDY_AUTHORIZER_UI_METHOD       QLatin1String("showAuthorisationQuery")
 #define BUDDY_AUTHORIZER_UI_SIGNAL       QLatin1String("dialogDismissed")
 
@@ -300,10 +301,10 @@ void ContactAuthorizer::queueAuthorization(const Tp::ContactPtr& contact,
                 args.append(QVariant(r.transactionId));
                 args.append(QVariant(m_account->uniqueIdentifier()));
 
-                MRemoteAction remoteAction(COMM_HISTORY_SERVICE_NAME,
-                                           COMM_HISTORY_OBJECT_PATH,
-                                           COMM_HISTORY_INTERFACE,
-                                           ACTIVATE_AUTHIRIZATION_METHOD,
+                MRemoteAction remoteAction(COMM_HISTORY_DAEMON_SERVICE_NAME,
+                                           COMM_HISTORY_DAEMON_OBJECT_PATH,
+                                           COMM_HISTORY_DAEMON_INTERFACE,
+                                           ACTIVATE_AUTHORIZATION_METHOD,
                                            args);
 
                 notificationFromList->setAction(remoteAction);
@@ -440,10 +441,10 @@ void ContactAuthorizer::fireAuthorisationRequest()
                                        request.contact->alias(),
                                    txt_qtn_pers_authorization_req);
 
-        MRemoteAction remoteAction(COMM_HISTORY_SERVICE_NAME,
-                                   COMM_HISTORY_OBJECT_PATH,
-                                   COMM_HISTORY_INTERFACE,
-                                   ACTIVATE_AUTHIRIZATION_METHOD,
+        MRemoteAction remoteAction(COMM_HISTORY_DAEMON_SERVICE_NAME,
+                                   COMM_HISTORY_DAEMON_OBJECT_PATH,
+                                   COMM_HISTORY_DAEMON_INTERFACE,
+                                   ACTIVATE_AUTHORIZATION_METHOD,
                                    args);
 
         notification.setAction(remoteAction);

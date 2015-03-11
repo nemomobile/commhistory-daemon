@@ -2,8 +2,9 @@
 **
 ** This file is part of commhistory-daemon.
 **
+** Copyright (C) 2015 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: Reto Zingg <reto.zingg@nokia.com>
+** Contact: Reto Zingg <reto.zingg@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -45,10 +46,10 @@ CommHistoryService::CommHistoryService( QObject* parent )
     }
 
     if (parent) {
-        if(!QDBusConnection::sessionBus().registerObject(COMM_HISTORY_OBJECT_PATH, this)) {
+        if(!QDBusConnection::sessionBus().registerObject(COMM_HISTORY_DAEMON_OBJECT_PATH, this)) {
             qWarning() << "Object registration failed!";
         } else {
-            if(!QDBusConnection::sessionBus().registerService(COMM_HISTORY_SERVICE_NAME)) {
+            if(!QDBusConnection::sessionBus().registerService(COMM_HISTORY_DAEMON_SERVICE_NAME)) {
                 qWarning() << "Unable to register commhistory service!"
                            << QDBusConnection::sessionBus().lastError();
             } else {
@@ -60,8 +61,8 @@ CommHistoryService::CommHistoryService( QObject* parent )
 
 CommHistoryService::~CommHistoryService()
 {
-    QDBusConnection::sessionBus().unregisterObject(COMM_HISTORY_OBJECT_PATH);
-    QDBusConnection::sessionBus().unregisterService(COMM_HISTORY_SERVICE_NAME);
+    QDBusConnection::sessionBus().unregisterObject(COMM_HISTORY_DAEMON_OBJECT_PATH);
+    QDBusConnection::sessionBus().unregisterService(COMM_HISTORY_DAEMON_SERVICE_NAME);
 }
 
 void CommHistoryService::activateAuthorization(const QString& contactId,
