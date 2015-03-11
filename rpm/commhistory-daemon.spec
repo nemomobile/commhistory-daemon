@@ -34,6 +34,9 @@ Provides: smshistory > 0.1.8
 Obsoletes: voicecallhistory <= 0.1.5
 Provides: voicecallhistory > 0.1.5
 
+%{!?qtc_qmake5:%define qtc_qmake5 %qmake5}
+%{!?qtc_make:%define qtc_make make}
+
 %package tests
 Summary: Unit tests for commhistory-daemon
 Group: Development/Libraries
@@ -56,8 +59,8 @@ Daemon for logging communications (IM, SMS and call) in history database.
 
 %build
 unset LD_AS_NEEDED
-%qmake5
-make %{?_smp_mflags}
+%qtc_qmake5
+%qtc_make %{?_smp_mflags}
 
 %install
 rm -rf %{buildroot}
