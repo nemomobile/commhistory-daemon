@@ -121,7 +121,7 @@ void MmsHandler::messageReceiveStateChanged(const QString &recId, int state)
     Event event;
     SingleEventModel model;
     if (model.getEventById(recId.toInt()))
-        event = model.event(model.index(0, 0));
+        event = model.event();
 
     if (!event.isValid()) {
         qWarning() << "Ignoring MMS message receive state for unknown event" << recId;
@@ -169,7 +169,7 @@ void MmsHandler::messageReceived(const QString &recId, const QString &mmsId, con
     Event event;
     SingleEventModel model;
     if (model.getEventById(recId.toInt()))
-        event = model.event(model.index(0, 0));
+        event = model.event();
 
     m_activeEvents.removeOne(recId.toInt());
 
@@ -244,7 +244,7 @@ void MmsHandler::messageReceived(const QString &recId, const QString &mmsId, con
 
         // Re-query event to avoid wiping out notification data
         if (model.getEventById(event.id())) {
-            event = model.event(model.index(0, 0));
+            event = model.event();
             if (event.isValid()) {
                 event.setStatus(Event::TemporarilyFailedStatus);
                 model.modifyEvent(event);
@@ -321,7 +321,7 @@ void MmsHandler::messageSendStateChanged(const QString &recId, int state)
     Event event;
     SingleEventModel model;
     if (model.getEventById(recId.toInt()))
-        event = model.event(model.index(0, 0));
+        event = model.event();
 
     if (!event.isValid()) {
         qWarning() << "Ignoring MMS message send state for unknown event" << recId;
@@ -363,7 +363,7 @@ void MmsHandler::messageSent(const QString &recId, const QString &mmsId)
     Event event;
     SingleEventModel model;
     if (model.getEventById(recId.toInt()))
-        event = model.event(model.index(0, 0));
+        event = model.event();
 
     m_activeEvents.removeOne(recId.toInt());
 
@@ -396,7 +396,7 @@ void MmsHandler::deliveryReport(const QString &imsi, const QString &mmsId, const
     Event event;
     SingleEventModel model;
     if (model.getEventByTokens(QString(), mmsId, -1))
-        event = model.event(model.index(0, 0));
+        event = model.event();
 
     if (!event.isValid()) {
         qWarning() << "Ignoring MMS message delivery state for unknown event" << mmsId;
@@ -431,7 +431,7 @@ void MmsHandler::readReport(const QString &imsi, const QString &mmsId, const QSt
     Event event;
     SingleEventModel model;
     if (model.getEventByTokens(QString(), mmsId, -1))
-        event = model.event(model.index(0, 0));
+        event = model.event();
 
     if (!event.isValid()) {
         qWarning() << "Ignoring MMS message read state for unknown event" << mmsId;
@@ -512,7 +512,7 @@ int MmsHandler::sendMessage(const QStringList &to, const QStringList &cc, const 
             QFile::remove(part.path());
         // Re-query event to avoid wiping out notification data
         if (event.id() >= 0 && model.getEventById(event.id())) {
-            event = model.event(model.index(0, 0));
+            event = model.event();
             if (event.isValid()) {
                 event.setStatus(Event::PermanentlyFailedStatus);
                 model.modifyEvent(event);
@@ -536,7 +536,7 @@ void MmsHandler::sendMessageFromEvent(int eventId)
     Event event;
     SingleEventModel model;
     if (model.getEventById(eventId))
-        event = model.event(model.index(0, 0));
+        event = model.event();
 
     if (!event.isValid() || event.type() != Event::MMSEvent || event.direction() != Event::Outbound) {
         qCritical() << "Ignoring MMS sendMessageFromEvent with irrelevant event:" << event.toString();
@@ -594,7 +594,7 @@ void MmsHandler::sendMessageFinished(QDBusPendingCallWatcher *call)
     Event event;
     SingleEventModel model;
     if (ok && model.getEventById(eventId))
-        event = model.event(model.index(0, 0));
+        event = model.event();
 
     QDBusPendingReply<QString> reply = *call;
     if (reply.isError()) {
