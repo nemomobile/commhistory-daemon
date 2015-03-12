@@ -2,7 +2,8 @@
 **
 ** This file is part of commhistory-daemon.
 **
-** Copyright (C) 2014 Jolla Ltd.
+** Copyright (C) 2014-2015 Jolla Ltd.
+** Contact: Slava Monich <slava.monich@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -27,6 +28,8 @@
 
 namespace CommHistory {
     class MessagePart;
+    class Event;
+    class Group;
 }
 
 class QDBusPendingCallWatcher;
@@ -52,15 +55,29 @@ public Q_SLOTS:
     void messageSendStateChanged(const QString &recId, int state);
     void messageSent(const QString &recId, const QString &mmsId);
     void readReport(const QString &imsi, const QString &mmsId, const QString &recipient, int status);
+    void readReportSendStatus(const QString &recId, int status);
 
     int sendMessage(const QStringList &to, const QStringList &cc, const QStringList &bcc,
             const QString &subject, MmsPartList parts);
     void sendMessageFromEvent(int eventId);
 
 private Q_SLOTS:
-    void sendMessageFinished(QDBusPendingCallWatcher *call);
+    void onSendMessageFinished(QDBusPendingCallWatcher *call);
     void onDataProhibitedChanged();
     void onSubscriberIdentityChanged();
+    void onEventsUpdated(const QList<CommHistory::Event> &events);
+    void onGroupsUpdatedFull(const QList<CommHistory::Group> &groups);
+
+private:
+    static QDBusPendingCall callEngine(const QString &method, const QVariantList &args);
+    void eventMarkedAsRead(CommHistory::Event &event);
+
+    void sendMessageFromEvent(CommHistory::Event &event);
+    bool copyMmsPartFiles(const MmsPartList &parts, int eventId, QList<CommHistory::MessagePart> &eventParts, QString &freeText);
+    QString copyMessagePartFile(const QString &sourcePath, int eventId, const QString &contentId);
+
+    bool isDataProhibited();
+    bool canSendReadReports();
 
 private:
     ContextProperty *m_cellularStatusProperty;
@@ -69,12 +86,7 @@ private:
     QList<int> m_activeEvents;
     MGConfItem* m_sendMessageFlags;
     MGConfItem* m_automaticDownload;
-
-    void sendMessageFromEvent(CommHistory::Event &event);
-    bool copyMmsPartFiles(const MmsPartList &parts, int eventId, QList<CommHistory::MessagePart> &eventParts, QString &freeText);
-    QString copyMessagePartFile(const QString &sourcePath, int eventId, const QString &contentId);
-
-    bool isDataProhibited();
+    MGConfItem* m_sendReadReports;
 };
 
 #endif // MMSHANDLER_H
