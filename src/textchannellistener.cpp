@@ -2,8 +2,9 @@
 **
 ** This file is part of commhistory-daemon.
 **
+** Copyright (C) 2014-2015 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: Reto Zingg <reto.zingg@nokia.com>
+** Contact: Reto Zingg <reto.zingg@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -941,7 +942,7 @@ bool TextChannelListener::getEventForToken(const QString &token,
 
     if (model.getEventByTokens(token, mmsId, groupId)) {
         if (model.rowCount() > 0)
-            event = model.event(model.index(0, 0));
+            event = model.event();
         return true;
     } else {
         qWarning() << "Failed query single event model";
@@ -956,7 +957,7 @@ bool TextChannelListener::getEventById(int eventId, CommHistory::Event &event)
 
     if (model.getEventById(eventId)) {
         if (model.rowCount() > 0)
-            event = model.event(model.index(0, 0));
+            event = model.event();
         return true;
     } else {
         qWarning() << "Failed query single event model";

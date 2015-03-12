@@ -2,8 +2,9 @@
 **
 ** This file is part of commhistory-daemon.
 **
+** Copyright (C) 2014-2015 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: Reto Zingg <reto.zingg@nokia.com>
+** Contact: Reto Zingg <reto.zingg@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -202,7 +203,7 @@ CommHistory::Event Ut_TextChannelListener::fetchEvent(int eventId)
         goto end;
 
     if(model.rowCount())
-        return model.event(model.index(0, 0));
+        return model.event();
 
 end:
     qWarning() << Q_FUNC_INFO << "Failed to fetch event" << eventId;
