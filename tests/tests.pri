@@ -30,7 +30,7 @@ TEMPLATE     = app
 INCLUDEPATH += . .. \
                ../../src
 
-PKGCONFIG += mlite5 commhistory-qt5
+PKGCONFIG += mlite5 commhistory-qt5 nemonotifications-qt5
 
 COMMHISTORYDSRCDIR = ../../src
 DEPENDPATH  += $${INCLUDEPATH}
