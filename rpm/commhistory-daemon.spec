@@ -1,6 +1,6 @@
 Name:       commhistory-daemon
 Summary:    Communications event history database daemon
-Version:    0.5.35
+Version:    0.5.36
 Release:    1
 Group:      Communications/Telephony and IM
 License:    LGPL
@@ -11,7 +11,7 @@ BuildRequires:  pkgconfig(Qt5DBus)
 BuildRequires:  pkgconfig(Qt5Contacts)
 BuildRequires:  pkgconfig(Qt5Versit)
 BuildRequires:  pkgconfig(Qt5Test)
-BuildRequires:  libcommhistory-qt5-devel >= 1.8.1
+BuildRequires:  libcommhistory-qt5-devel >= 1.8.5
 BuildRequires:  pkgconfig(TelepathyQt5)
 BuildRequires:  pkgconfig(mlite5)
 BuildRequires:  pkgconfig(mlocale5)
