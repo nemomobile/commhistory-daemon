@@ -147,7 +147,7 @@ private:
     void handleMessageFailed(const Tp::ReceivedMessage &message,
                              const CommHistory::Event &event);
     void sendGroupChatEvent(const QString &message);
-    void showErrorNote(const QString &errorMsg, BannerType type = ErrorBanner);
+    void showErrorNote(const QString &errorMsg, const QString &category = ErrorCategory);
 
     // attempt to read original message from delivery report
     bool recoverDeliveryEcho(const Tp::Message &message, CommHistory::Event &event);

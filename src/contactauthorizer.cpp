@@ -31,9 +31,8 @@
 #include <QDBusPendingCallWatcher>
 #include <QUuid>
 
-// MeeGo
-#include <MNotification>
-#include <MRemoteAction>
+// Nemomobile
+#include <notification.h>
 
 // Tp
 #include <TelepathyQt/AvatarData>
@@ -137,10 +136,9 @@ void ContactAuthorizer::slotPresencePublicationRequested(const Tp::Contacts &con
     DEBUG() << Q_FUNC_INFO;
 
     Tp::Contacts pendingContacts;
-    QList<MNotification*> notifications = MNotification::notifications();
+    QList<QObject *> notifications = Notification::notifications();
 
     foreach(Tp::ContactPtr contact, contacts) {
-        QString notificationIdentifier = contact->id() + m_account->objectPath();
         Tp::Contact::PresenceState state = contact->publishState();
         DEBUG() << Q_FUNC_INFO << "Publish state for contact " << contact->id() << " is " << state;
         if (state == Tp::Contact::PresenceStateAsk) {
@@ -154,11 +152,14 @@ void ContactAuthorizer::slotPresencePublicationRequested(const Tp::Contacts &con
 
             bool notificationExists = false;
             // Invitation requests should not be shown if they already exist as notifications
-            foreach (MNotification *n, notifications) {
-               if (n && notificationIdentifier == n->identifier()) {
-                   DEBUG() << Q_FUNC_INFO << "Invitation request is already being shown as a notification.";
-                   notificationExists = true;
-                   break;
+            foreach (QObject *obj, notifications) {
+                if (Notification *n = qobject_cast<Notification *>(obj)) {
+                    if (n->hintValue(ACCOUNT_PATH_HINT) == m_account->objectPath() &&
+                        n->hintValue(CONTACT_ID_HINT) == contact->id()) {
+                        DEBUG() << Q_FUNC_INFO << "Invitation request is already being shown as a notification.";
+                        notificationExists = true;
+                    }
+                    break;
                 }
             }
 
@@ -193,7 +194,7 @@ void ContactAuthorizer::slotPublishStateChanged(Tp::Contact::PresenceState state
     Tp::Contact *contact = qobject_cast<Tp::Contact*>(sender());
 
     if (state != Tp::Contact::PresenceStateAsk && contact) {
-        QList<MNotification*> notifications = MNotification::notifications();
+        QList<QObject *> notifications = Notification::notifications();
 
         //remove from requests list
         Request r;
@@ -208,11 +209,11 @@ void ContactAuthorizer::slotPublishStateChanged(Tp::Contact::PresenceState state
             m_ongoingRequest = Request();
 
         //remove from notifications
-        QString notificationIdentifier = contact->id() + m_account->objectPath();
-        foreach (MNotification *n, notifications) {
-            if (n && notificationIdentifier == n->identifier()) {
-                if (!n->remove()) {
-                    qWarning() << "Failed to remove notification";
+        foreach (QObject *obj, notifications) {
+            if (Notification *n = qobject_cast<Notification *>(obj)) {
+                if (n->hintValue(ACCOUNT_PATH_HINT) == m_account->objectPath() &&
+                    n->hintValue(CONTACT_ID_HINT) == contact->id()) {
+                    n->close();
                 }
                 break;
             }
@@ -280,36 +281,36 @@ void ContactAuthorizer::queueAuthorization(const Tp::ContactPtr& contact,
         Request r = m_publishedAuthRequests.value(index);
         if (r.filename != avatarFile) {
             DEBUG() << Q_FUNC_INFO << "Avatar file has really changed. Updating notification.";
-        r.filename = avatarFile;
+            r.filename = avatarFile;
             m_publishedAuthRequests.replace(index,r);
 
-            QList<MNotification*> notifications = MNotification::notifications();
-            MNotification *notificationFromList = 0;
-            foreach (MNotification *n, notifications) {
-               if (n && r.notificationId == n->identifier()) {
-                   notificationFromList = n;
-                   break;
-                }
+            QString accountPath(r.notificationId);
+            int index = accountPath.lastIndexOf("|");
+            if (index) {
+                accountPath = accountPath.mid(index + 1);
             }
 
-            if (notificationFromList && notificationFromList->isPublished()) {
-                QList<QVariant> args;
-                args.append(QVariant(r.contact->id()));
-                args.append(QVariant(m_account->objectPath()));
-                args.append(QVariant(r.filename));
-                args.append(QVariant(r.message));
-                args.append(QVariant(r.transactionId));
-                args.append(QVariant(m_account->uniqueIdentifier()));
-
-                MRemoteAction remoteAction(COMM_HISTORY_DAEMON_SERVICE_NAME,
-                                           COMM_HISTORY_DAEMON_OBJECT_PATH,
-                                           COMM_HISTORY_DAEMON_INTERFACE,
-                                           ACTIVATE_AUTHORIZATION_METHOD,
-                                           args);
-
-                notificationFromList->setAction(remoteAction);
-                notificationFromList->publish();
-                DEBUG() << Q_FUNC_INFO << "Notification updated and re-published.";
+            QList<QObject *> notifications = Notification::notifications();
+            foreach (QObject *obj, notifications) {
+                if (Notification *n = qobject_cast<Notification *>(obj)) {
+                    if (n->hintValue(ACCOUNT_PATH_HINT) == accountPath) {
+                        n->setRemoteAction(Notification::remoteAction("default",
+                                                                      "",
+                                                                      COMM_HISTORY_DAEMON_SERVICE_NAME,
+                                                                      COMM_HISTORY_DAEMON_OBJECT_PATH,
+                                                                      COMM_HISTORY_DAEMON_INTERFACE,
+                                                                      ACTIVATE_AUTHORIZATION_METHOD,
+                                                                      QVariantList() << r.contact->id()
+                                                                                     << m_account->objectPath()
+                                                                                     << r.filename
+                                                                                     << r.message
+                                                                                     << r.transactionId
+                                                                                     << m_account->uniqueIdentifier()));
+                        n->publish();
+                        DEBUG() << Q_FUNC_INFO << "Notification updated and re-published:" << n->replacesId();
+                    }
+                    break;
+                }
             }
 
             qDeleteAll(notifications);
@@ -427,31 +428,29 @@ void ContactAuthorizer::fireAuthorisationRequest()
             continue;
         }
 
-        QList<QVariant> args;
-        args.append(QVariant(id));
-        args.append(QVariant(m_account->objectPath()));
-        args.append(QVariant(filename));
-        args.append(QVariant(message));
-        args.append(QVariant(transactionId));
-        args.append(QVariant(m_account->uniqueIdentifier()));
+        request.notificationId = id + "|" + m_account->objectPath();
 
-        MNotification notification(AuthorizationNotificationType,
-                                   request.contact->alias().isEmpty() ?
-                                       request.contact->id() :
-                                       request.contact->alias(),
-                                   txt_qtn_pers_authorization_req);
-
-        MRemoteAction remoteAction(COMM_HISTORY_DAEMON_SERVICE_NAME,
-                                   COMM_HISTORY_DAEMON_OBJECT_PATH,
-                                   COMM_HISTORY_DAEMON_INTERFACE,
-                                   ACTIVATE_AUTHORIZATION_METHOD,
-                                   args);
-
-        notification.setAction(remoteAction);
-        notification.setIdentifier(id + m_account->objectPath());
+        Notification notification;
+        notification.setCategory(AuthorizationNotificationType);
+        notification.setSummary(request.contact->alias().isEmpty() ? request.contact->id() : request.contact->alias());
+        notification.setBody(txt_qtn_pers_authorization_req);
+        notification.setHintValue(CONTACT_ID_HINT, id);
+        notification.setHintValue(ACCOUNT_PATH_HINT, m_account->objectPath());
+        notification.setRemoteAction(Notification::remoteAction("default",
+                                                                "",
+                                                                COMM_HISTORY_DAEMON_SERVICE_NAME,
+                                                                COMM_HISTORY_DAEMON_OBJECT_PATH,
+                                                                COMM_HISTORY_DAEMON_INTERFACE,
+                                                                ACTIVATE_AUTHORIZATION_METHOD,
+                                                                QVariantList() << id
+                                                                               << m_account->objectPath()
+                                                                               << filename
+                                                                               << message
+                                                                               << transactionId
+                                                                               << m_account->uniqueIdentifier()));
         notification.publish();
-        request.notificationId = id + m_account->objectPath();
-        DEBUG() << Q_FUNC_INFO << "MNotification published with notification id: " << request.notificationId;
+
+        DEBUG() << Q_FUNC_INFO << "Notification published with notification id: " << request.notificationId;
         m_authRequests.removeOne(request);
         if(!m_publishedAuthRequests.contains(request)){
             DEBUG() << Q_FUNC_INFO << "Appending request to published auth requests queue";
@@ -514,7 +513,7 @@ void ContactAuthorizer::slotShowAuthorizationDialog(const QString& contactId,
         Tp::PendingContacts *pendingContacts;
         QVariant reqVariant;
 
-        req.notificationId = contactId + accountPath;
+        req.notificationId = contactId + "|" + accountPath;
         req.filename = filename;
         req.message = message;
         req.transactionId = transactionId;
@@ -668,13 +667,18 @@ void ContactAuthorizer::removeNotificationForOngoingRequest()
 {
     DEBUG() << Q_FUNC_INFO;
 
-    QList<MNotification*> notifications = MNotification::notifications();
-    foreach (MNotification *n, notifications) {
-       if (n && m_ongoingRequest.notificationId == n->identifier()) {
-           if (!n->remove()) {
-               qWarning() << "Failed to remove notification.";
-               return;
-           }
+    QString accountPath(m_ongoingRequest.notificationId);
+    int index = accountPath.lastIndexOf("|");
+    if (index) {
+        accountPath = accountPath.mid(index + 1);
+    }
+
+    QList<QObject *> notifications = Notification::notifications();
+    foreach (QObject *obj, notifications) {
+        if (Notification *n = qobject_cast<Notification *>(obj)) {
+            if (n->hintValue(ACCOUNT_PATH_HINT) == accountPath) {
+                n->close();
+            }
         }
     }
     qDeleteAll(notifications);

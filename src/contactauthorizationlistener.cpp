@@ -31,8 +31,8 @@
 #include <TelepathyQt/AccountManager>
 #include <TelepathyQt/AccountSet>
 
-// Meego
-#include <MNotification>
+// Nemomobile
+#include <notification.h>
 
 using namespace RTComLogger;
 
@@ -218,6 +218,7 @@ void ContactAuthorizationListener::slotShowUnableToAuthorizeDialog(const QString
     }
 
     bool showNotification = false;
+    QString accountPath;
     Tp::AccountManagerPtr accountManager = m_pConnectionUtils->accountManager();
     if (accountManager && accountManager->isReady()) {
         QVariantMap filter;
@@ -237,6 +238,7 @@ void ContactAuthorizationListener::slotShowUnableToAuthorizeDialog(const QString
             } else {
                 DEBUG() << "The account is offline: cannot authorize anyway.";
                 showNotification = true;
+                accountPath = account->objectPath();
             }
         }
     } else {
@@ -245,9 +247,12 @@ void ContactAuthorizationListener::slotShowUnableToAuthorizeDialog(const QString
     }
 
     if (showNotification) {
-        MNotification *notification = new MNotification(MNotification::DeviceEvent);
-        notification->setBody(txt_qtn_pers_offline);
-        notification->publish();
+        Notification notification;
+        notification.setBody(txt_qtn_pers_offline);
+        if (!accountPath.isEmpty()) {
+            notification.setHintValue(ACCOUNT_PATH_HINT, accountPath);
+        }
+        notification.publish();
     }
 }
 
@@ -269,16 +274,14 @@ void ContactAuthorizationListener::slotAccountRemoved() {
 
     Tp::Account *account = qobject_cast<Tp::Account*>(sender());
 
-    QList<MNotification*> notifications = MNotification::notifications();
-    foreach (MNotification *n, notifications) {
-       if (n->identifier().endsWith(account->objectPath())) {
-           if (!n->remove()) {
-               qWarning() << "Failed to remove notification.";
-           }
+    foreach (QObject *obj, Notification::notifications()) {
+        if (Notification *n = qobject_cast<Notification *>(obj)) {
+            if (n->hintValue(ACCOUNT_PATH_HINT) == account->objectPath()) {
+                n->close();
+            }
         }
+        delete obj;
     }
-    qDeleteAll(notifications);
-    notifications.clear();
 
     m_accounts.remove(account->objectPath());
 }

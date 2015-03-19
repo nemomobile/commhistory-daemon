@@ -55,6 +55,10 @@ namespace RTComLogger {
 #define VOICEMAIL_METHOD       QLatin1String("voicemail")
 #define REPLACE_TYPE           QLatin1String("sms-replace-number")
 
+// Custom hints for identifying notifications
+#define ACCOUNT_PATH_HINT   QLatin1String("x-org-nemomobile-qmlmessages.account.path")
+#define CONTACT_ID_HINT     QLatin1String("x-org-nemomobile-qmlmessages.contact.id")
+
 #define RING_ACCOUNT_PATH QLatin1String("/org/freedesktop/Telepathy/Account/ring/tel/account0")
 
 #define CONTACT_SEPARATOR_IN_NOTIFICATION_GROUP QLatin1String(", ")
@@ -106,9 +110,8 @@ static const EventTypes _eventTypes[] =
 static const int _eventTypesCount = sizeof(_eventTypes) / sizeof(EventTypes);
 }
 
-// Custom system info banner types for commhistoryd:
-typedef QString BannerType;
-const BannerType ErrorBanner = "x-nemo.messaging.error";
-const BannerType ErrorBannerStrong = "x-nemo.messaging.error.strong";
+// Custom system info notification types for commhistoryd:
+const QString ErrorCategory = "x-nemo.messaging.error";
+const QString StrongErrorCategory = "x-nemo.messaging.error.strong";
 
 #endif //#define CONSTANTS_H
