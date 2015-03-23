@@ -247,7 +247,10 @@ void ContactAuthorizationListener::slotShowUnableToAuthorizeDialog(const QString
     }
 
     if (showNotification) {
+        // TODO: No category for this notification?
         Notification notification;
+        notification.setAppName(txt_qtn_msg_notifications_group);
+        notification.setAppIcon("icon-lock-chat");
         notification.setBody(txt_qtn_pers_offline);
         if (!accountPath.isEmpty()) {
             notification.setHintValue(ACCOUNT_PATH_HINT, accountPath);

@@ -25,6 +25,7 @@
 #include "notificationmanager.h"
 #include "notificationgroup.h"
 #include "locstrings.h"
+#include "constants.h"
 #include "debug.h"
 #include <CommHistory/commonutils.h>
 #include <notification.h>
@@ -109,6 +110,7 @@ void PersonalNotification::publishNotification()
     if (!m_notification)
         m_notification = new Notification(this);
 
+    m_notification->setAppName(txt_qtn_msg_notifications_group);
     m_notification->setCategory(NotificationGroup::groupType(m_eventType));
     m_notification->setHintValue("x-commhistoryd-data", serialized().toBase64());
     NotificationManager::instance()->setNotificationAction(m_notification, this, false);

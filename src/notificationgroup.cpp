@@ -110,6 +110,7 @@ void NotificationGroup::updateGroup()
         mGroup = new Notification(this);
 
     // Disable feedback from the notification definition; it's played by individual banners
+    mGroup->setAppName(txt_qtn_msg_notifications_group);
     mGroup->setHintValue("x-nemo-feedback", QString());
     mGroup->setCategory(groupType(type()));
     mGroup->setBody(notificationGroupText());
