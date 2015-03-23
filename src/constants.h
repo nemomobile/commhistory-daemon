@@ -108,10 +108,10 @@ static const EventTypes _eventTypes[] =
 };
 
 static const int _eventTypesCount = sizeof(_eventTypes) / sizeof(EventTypes);
-}
 
 // Custom system info notification types for commhistoryd:
 const QString ErrorCategory = "x-nemo.messaging.error";
 const QString StrongErrorCategory = "x-nemo.messaging.error.strong";
+}
 
 #endif //#define CONSTANTS_H

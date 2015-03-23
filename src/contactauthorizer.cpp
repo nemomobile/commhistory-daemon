@@ -431,6 +431,7 @@ void ContactAuthorizer::fireAuthorisationRequest()
         request.notificationId = id + "|" + m_account->objectPath();
 
         Notification notification;
+        notification.setAppName(txt_qtn_msg_notifications_group);
         notification.setCategory(AuthorizationNotificationType);
         notification.setSummary(request.contact->alias().isEmpty() ? request.contact->id() : request.contact->alias());
         notification.setBody(txt_qtn_pers_authorization_req);

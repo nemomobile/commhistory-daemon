@@ -46,6 +46,11 @@
 
 #include <MLocale>
 
+//% "Messages"
+#define txt_qtn_msg_notifications_group qtTrId("qtn_msg_notifications_group")
+//% "Warnings"
+#define txt_qtn_msg_errors_group qtTrId("qtn_msg_errors_group")
+
 //% "%n new message(s)"
 #define txt_qtn_msg_notification_new_message(NUM) qtTrId("qtn_msg_notification_new_message", NUM)
 //% "Contact card"
