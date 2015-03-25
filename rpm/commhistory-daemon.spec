@@ -1,6 +1,6 @@
 Name:       commhistory-daemon
 Summary:    Communications event history database daemon
-Version:    0.5.39
+Version:    0.5.40
 Release:    1
 Group:      Communications/Telephony and IM
 License:    LGPL
