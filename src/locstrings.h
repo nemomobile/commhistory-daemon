@@ -50,6 +50,10 @@
 #define txt_qtn_msg_notifications_group qtTrId("qtn_msg_notifications_group")
 //% "Warnings"
 #define txt_qtn_msg_errors_group qtTrId("qtn_msg_errors_group")
+//% "Missed calls"
+#define txt_qtn_msg_missed_calls_group qtTrId("qtn_msg_missed_calls_group")
+//% "Voicemail"
+#define txt_qtn_msg_voicemail_group qtTrId("qtn_msg_voicemail_group")
 
 //% "%n new message(s)"
 #define txt_qtn_msg_notification_new_message(NUM) qtTrId("qtn_msg_notification_new_message", NUM)

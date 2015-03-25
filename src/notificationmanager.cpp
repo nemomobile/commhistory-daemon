@@ -554,11 +554,11 @@ QString NotificationManager::notificationText(const CommHistory::Event& event)
     return text;
 }
 
-static QVariantMap dbusAction(const QString &service, const QString &path, const QString &iface,
+static QVariantMap dbusAction(const QString &name, const QString &service, const QString &path, const QString &iface,
                               const QString &method, const QVariantList &arguments = QVariantList())
 {
     QVariantMap action;
-    action.insert(QStringLiteral("name"), QStringLiteral("default"));
+    action.insert(QStringLiteral("name"), name);
     action.insert(QStringLiteral("service"), service);
     action.insert(QStringLiteral("path"), path);
     action.insert(QStringLiteral("iface"), iface);
@@ -567,44 +567,80 @@ static QVariantMap dbusAction(const QString &service, const QString &path, const
     return action;
 }
 
-void NotificationManager::setNotificationAction(Notification *notification, PersonalNotification *pn, bool grouped)
+void NotificationManager::setNotificationProperties(Notification *notification, PersonalNotification *pn, bool grouped)
 {
+    QString appName;
+    QVariantList remoteActions;
+
     switch (pn->eventType()) {
         case CommHistory::Event::IMEvent:
         case CommHistory::Event::SMSEvent:
         case CommHistory::Event::MMSEvent:
         case VOICEMAIL_SMS_EVENT_TYPE:
+
+            appName = txt_qtn_msg_notifications_group;
+
             if (pn->eventType() != VOICEMAIL_SMS_EVENT_TYPE && grouped) {
-                notification->setRemoteAction(dbusAction(MESSAGING_SERVICE_NAME,
-                                                         OBJECT_PATH,
-                                                         MESSAGING_INTERFACE,
-                                                         SHOW_INBOX_METHOD));
+                remoteActions.append(dbusAction("default",
+                                                MESSAGING_SERVICE_NAME,
+                                                OBJECT_PATH,
+                                                MESSAGING_INTERFACE,
+                                                SHOW_INBOX_METHOD));
             } else {
-                notification->setRemoteAction(dbusAction(MESSAGING_SERVICE_NAME,
-                                                         OBJECT_PATH,
-                                                         MESSAGING_INTERFACE,
-                                                         START_CONVERSATION_METHOD,
-                                                         QVariantList() << pn->account()
-                                                                           << pn->targetId()
-                                                                           << static_cast<uint>(pn->chatType())));
+                remoteActions.append(dbusAction("default",
+                                                MESSAGING_SERVICE_NAME,
+                                                OBJECT_PATH,
+                                                MESSAGING_INTERFACE,
+                                                START_CONVERSATION_METHOD,
+                                                QVariantList() << pn->account()
+                                                               << pn->targetId()
+                                                               << static_cast<uint>(pn->chatType())));
             }
+
+            remoteActions.append(dbusAction("app",
+                                            MESSAGING_SERVICE_NAME,
+                                            OBJECT_PATH,
+                                            MESSAGING_INTERFACE,
+                                            SHOW_INBOX_METHOD));
             break;
 
         case CommHistory::Event::CallEvent:
-            notification->setRemoteAction(dbusAction(CALL_HISTORY_SERVICE_NAME,
-                                                     CALL_HISTORY_OBJECT_PATH,
-                                                     CALL_HISTORY_INTERFACE,
-                                                     CALL_HISTORY_METHOD,
-                                                     QVariantList() << CALL_HISTORY_PARAMETER));
+
+            appName = txt_qtn_msg_missed_calls_group;
+
+            remoteActions.append(dbusAction("default",
+                                            CALL_HISTORY_SERVICE_NAME,
+                                            CALL_HISTORY_OBJECT_PATH,
+                                            CALL_HISTORY_INTERFACE,
+                                            CALL_HISTORY_METHOD,
+                                            QVariantList() << CALL_HISTORY_PARAMETER));
+            remoteActions.append(dbusAction("app",
+                                            CALL_HISTORY_SERVICE_NAME,
+                                            CALL_HISTORY_OBJECT_PATH,
+                                            CALL_HISTORY_INTERFACE,
+                                            CALL_HISTORY_METHOD,
+                                            QVariantList() << CALL_HISTORY_PARAMETER));
             break;
 
         case CommHistory::Event::VoicemailEvent:
-            notification->setRemoteAction(dbusAction(CALL_HISTORY_SERVICE_NAME,
-                                                     VOICEMAIL_OBJECT_PATH,
-                                                     VOICEMAIL_INTERFACE,
-                                                     VOICEMAIL_METHOD));
+
+            appName = txt_qtn_msg_voicemail_group;
+
+            remoteActions.append(dbusAction("default",
+                                            CALL_HISTORY_SERVICE_NAME,
+                                            VOICEMAIL_OBJECT_PATH,
+                                            VOICEMAIL_INTERFACE,
+                                            VOICEMAIL_METHOD));
+            remoteActions.append(dbusAction("app",
+                                            CALL_HISTORY_SERVICE_NAME,
+                                            VOICEMAIL_OBJECT_PATH,
+                                            VOICEMAIL_INTERFACE,
+                                            VOICEMAIL_METHOD));
             break;
     }
+
+    notification->setAppName(appName);
+    notification->setRemoteActions(remoteActions);
 }
 
 void NotificationManager::slotContactUpdated(quint32 localId, const QString &contactName,
