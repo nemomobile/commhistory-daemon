@@ -115,7 +115,7 @@ void NotificationGroup::updateGroup()
     mGroup->setCategory(groupType(type()));
     mGroup->setBody(notificationGroupText());
     mGroup->setItemCount(mNotifications.size());
-    NotificationManager::instance()->setNotificationAction(mGroup, mNotifications[0],
+    NotificationManager::instance()->setNotificationProperties(mGroup, mNotifications[0],
             countConversations() > 1);
 
     QString name;

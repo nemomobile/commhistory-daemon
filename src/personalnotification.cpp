@@ -113,7 +113,7 @@ void PersonalNotification::publishNotification()
     m_notification->setAppName(txt_qtn_msg_notifications_group);
     m_notification->setCategory(NotificationGroup::groupType(m_eventType));
     m_notification->setHintValue("x-commhistoryd-data", serialized().toBase64());
-    NotificationManager::instance()->setNotificationAction(m_notification, this, false);
+    NotificationManager::instance()->setNotificationProperties(m_notification, this, false);
 
     // No preview banner for existing notifications
     if (m_notification->replacesId()) {

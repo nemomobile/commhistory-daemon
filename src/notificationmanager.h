@@ -106,7 +106,7 @@ public:
     void playClass0SMSAlert();
     void requestClass0Notification(const CommHistory::Event &event);
 
-    void setNotificationAction(Notification *notification, PersonalNotification *pn, bool grouped);
+    void setNotificationProperties(Notification *notification, PersonalNotification *pn, bool grouped);
 
 public Q_SLOTS:
     /*!
