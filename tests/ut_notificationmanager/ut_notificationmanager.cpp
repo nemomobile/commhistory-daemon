@@ -104,7 +104,8 @@ CommHistory::Event Ut_NotificationManager::createEvent(CommHistory::Event::Event
 
 PersonalNotification *Ut_NotificationManager::getNotification(const CommHistory::Event &event)
 {
-    NotificationGroup *group = nm->m_Groups.value(event.type());
+    NotificationManager::EventGroupProperties groupProperties(NotificationManager::eventGroup(PersonalNotification::collection(event.type()), event.localUid(), event.remoteUid()));
+    NotificationGroup *group = nm->m_Groups.value(groupProperties);
     foreach (PersonalNotification *pn, group->notifications()) {
         if (pn->eventToken() == event.messageToken())
             return pn;
@@ -129,7 +130,8 @@ void Ut_NotificationManager::testShowNotification()
     QTRY_VERIFY(n);
     QTRY_VERIFY(n->replacesId() > 0);
 
-    NotificationGroup *group = nm->m_Groups.value(event.type());
+    NotificationManager::EventGroupProperties groupProperties(NotificationManager::eventGroup(PersonalNotification::collection(event.type()), event.localUid(), event.remoteUid()));
+    NotificationGroup *group = nm->m_Groups.value(groupProperties);
     Notification *groupNotification = group->notification();
     QVERIFY(groupNotification);
     QVERIFY(groupNotification->replacesId() > 0);
