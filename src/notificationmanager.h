@@ -66,6 +66,22 @@ class NotificationManager : public QObject
     typedef CommHistory::ContactListener::ContactAddress ContactAddress;
 
 public:
+    struct EventGroupProperties {
+        PersonalNotification::EventCollection collection;
+        QString localUid;
+        QString remoteUid;
+
+        bool operator== (const EventGroupProperties &other) const { return (collection == other.collection && localUid == other.localUid && remoteUid == other.remoteUid); }
+    };
+
+    static EventGroupProperties eventGroup(PersonalNotification::EventCollection c, const QString &l, const QString &r) {
+        EventGroupProperties properties;
+        properties.collection = c;
+        properties.localUid = l;
+        properties.remoteUid = r;
+        return properties;
+    }
+
     /*!
      *  \param QObject parent object
      *  \returns Notification manager singleton
@@ -81,11 +97,9 @@ public:
                           CommHistory::Group::ChatType chatType = CommHistory::Group::ChatTypeP2P);
 
     /*!
-     * \brief removes notification
-     * \param event type of the group to be removed
-     * \returns whether NotificationGroup with event type existed
+     * \brief removes notifications whose event type is in the supplied list of types
      */
-    bool removeNotificationGroup(int type);
+    void removeNotificationTypes(const QList<int> &types);
 
     /*!
      * \brief return group model with all conversations
@@ -112,9 +126,8 @@ public Q_SLOTS:
     /*!
      * \brief Removes notifications belonging to a particular account having optionally certain remote uids.
      * \param accountPath Notifications of this account are to be removed.
-     * \param messagesOnly Remove only messaging related notifications.
      */
-    void removeNotifications(const QString &accountPath, bool messagesOnly = false);
+    void removeNotifications(const QString &accountPath, const QList<int> &removeTypes = QList<int>());
 
 private Q_SLOTS:
     /*!
@@ -146,8 +159,6 @@ private:
                                          const QString &remoteId,
                                          CommHistory::Group::ChatType chatType);
 
-    bool hasMessageNotification() const;
-
     void syncNotifications();
     int pendingEventCount();
     void clearPendingEvents(const NotificationGroup &group);
@@ -159,7 +170,7 @@ private:
 
 private:
     static NotificationManager* m_pInstance;
-    QMap<int, NotificationGroup*> m_Groups;
+    QHash<EventGroupProperties, NotificationGroup*> m_Groups;
     bool m_Initialised;
 
     QList<PersonalNotification*> m_unresolvedEvents;
@@ -176,6 +187,12 @@ private:
     friend class Ut_NotificationManager;
 #endif
 };
+
+inline uint qHash(const NotificationManager::EventGroupProperties &properties, uint seed)
+{
+    using ::qHash;
+    return qHash(properties.collection, seed) ^ qHash(properties.localUid, seed) ^ qHash(properties.remoteUid, seed);
+}
 
 } // namespace RTComLogger
 
