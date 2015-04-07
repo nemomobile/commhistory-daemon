@@ -1202,8 +1202,8 @@ void TextChannelListener::showErrorNote(const QString &errorMsg, const QString &
         Notification notification;
         notification.setAppName(txt_qtn_msg_errors_group);
         notification.setCategory(category);
-        notification.setBody(category);
-        notification.setPreviewBody(category);
+        notification.setBody(errorMsg);
+        notification.setPreviewBody(errorMsg);
         notification.publish();
     }
 }
