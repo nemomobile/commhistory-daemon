@@ -2,7 +2,7 @@
 **
 ** This file is part of commhistory-daemon.
 **
-** Copyright (C) 2013 Jolla Ltd.
+** Copyright (C) 2013-2015 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** Contact: John Brooks <john.brooks@jolla.com>
 **
@@ -145,14 +145,14 @@ NotificationManager* NotificationManager::instance()
     return m_pInstance;
 }
 
-bool NotificationManager::updateEditedEvent(const CommHistory::Event& event)
+bool NotificationManager::updateEditedEvent(const CommHistory::Event& event, const QString &text)
 {
     if (event.messageToken().isEmpty())
         return false;
 
     foreach (PersonalNotification *notification, m_unresolvedEvents) {
         if (notification->eventToken() == event.messageToken()) {
-            notification->setNotificationText(notificationText(event));
+            notification->setNotificationText(text);
             return true;
         }
     }
@@ -164,7 +164,7 @@ bool NotificationManager::updateEditedEvent(const CommHistory::Event& event)
 
     foreach (PersonalNotification *pn, eventGroup->notifications()) {
         if (pn->eventToken() == event.messageToken()) {
-            pn->setNotificationText(notificationText(event));
+            pn->setNotificationText(text);
             return true;
         }
     }
@@ -174,7 +174,8 @@ bool NotificationManager::updateEditedEvent(const CommHistory::Event& event)
 
 void NotificationManager::showNotification(const CommHistory::Event& event,
                                            const QString& channelTargetId,
-                                           CommHistory::Group::ChatType chatType)
+                                           CommHistory::Group::ChatType chatType,
+                                           const QString &details)
 {
     DEBUG() << Q_FUNC_INFO << event.id() << channelTargetId << chatType;
 
@@ -200,7 +201,8 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
     }
 
     // try to update notifications for existing event
-    if (event.isValid() && updateEditedEvent(event))
+    QString text(notificationText(event, details));
+    if (event.isValid() && updateEditedEvent(event, text))
         return;
 
     // Get MUC topic from group
@@ -222,7 +224,7 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
 
     PersonalNotification *notification = new PersonalNotification(event.remoteUid(),
             event.localUid(), event.type(), channelTargetId, chatType);
-    notification->setNotificationText(notificationText(event));
+    notification->setNotificationText(text);
     notification->setSmsReplaceNumber(event.headers().value(REPLACE_TYPE));
 
     if (!chatName.isEmpty())
@@ -462,7 +464,7 @@ int NotificationManager::pendingEventCount()
     return m_unresolvedEvents.size();
 }
 
-QString NotificationManager::notificationText(const CommHistory::Event& event)
+QString NotificationManager::notificationText(const CommHistory::Event& event, const QString &details)
 {
     QString text;
     switch(event.type())
@@ -480,10 +482,15 @@ QString NotificationManager::notificationText(const CommHistory::Event& event)
             if (event.status() == Event::ManualNotificationStatus) {
                 text = txt_qtn_mms_notification_manual_download;
             } else if (event.status() >= Event::TemporarilyFailedStatus) {
-                if (event.direction() == Event::Inbound)
-                    text = txt_qtn_mms_notification_download_failed;
-                else
-                    text = txt_qtn_mms_notification_send_failed;
+                QString trimmedDetails(details.trimmed());
+                if (trimmedDetails.isEmpty()) {
+                    if (event.direction() == Event::Inbound)
+                        text = txt_qtn_mms_notification_download_failed;
+                    else
+                        text = txt_qtn_mms_notification_send_failed;
+                } else {
+                    text = trimmedDetails;
+                }
             } else {
                 if (!event.subject().isEmpty())
                     text = event.subject();

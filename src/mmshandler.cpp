@@ -332,7 +332,7 @@ QString MmsHandler::copyMessagePartFile(const QString &sourcePath, int eventId, 
     return filePath;
 }
 
-void MmsHandler::messageSendStateChanged(const QString &recId, int state)
+void MmsHandler::messageSendStateChanged(const QString &recId, int state, const QString &details)
 {
     enum MessageSendState {
         Encoding = 0,
@@ -343,6 +343,8 @@ void MmsHandler::messageSendStateChanged(const QString &recId, int state)
         SendError,
         Refused
     };
+
+    DEBUG_("message" << recId << "state" << state << details);
 
     Event event;
     SingleEventModel model;
@@ -379,7 +381,7 @@ void MmsHandler::messageSendStateChanged(const QString &recId, int state)
 
         if (newStatus != Event::SendingStatus) {
             m_activeEvents.removeOne(event.id());
-            NotificationManager::instance()->showNotification(event, event.remoteUid(), Group::ChatTypeP2P);
+            NotificationManager::instance()->showNotification(event, event.remoteUid(), Group::ChatTypeP2P, details);
         }
     }
 }

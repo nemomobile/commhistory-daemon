@@ -52,7 +52,7 @@ public Q_SLOTS:
             const QString &cls, bool readReport, MmsPartList parts);
 
     void deliveryReport(const QString &imsi, const QString &mmsId, const QString &recipient, int status);
-    void messageSendStateChanged(const QString &recId, int state);
+    void messageSendStateChanged(const QString &recId, int state, const QString &details);
     void messageSent(const QString &recId, const QString &mmsId);
     void readReport(const QString &imsi, const QString &mmsId, const QString &recipient, int status);
     void readReportSendStatus(const QString &recId, int status);
