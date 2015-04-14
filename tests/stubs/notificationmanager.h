@@ -25,8 +25,8 @@ public:
     static NotificationManager* instance();
     void showNotification(const CommHistory::Event& event,
                           const QString &channelTargetId = QString(),
-                          CommHistory::Group::ChatType chatType = CommHistory::Group::ChatTypeP2P);
-
+                          CommHistory::Group::ChatType chatType = CommHistory::Group::ChatTypeP2P,
+                          const QString &details = QString());
 
     CommHistory::GroupModel* groupModel();
     void showVoicemailNotification(int count);

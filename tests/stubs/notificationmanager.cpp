@@ -33,9 +33,10 @@ NotificationManager* NotificationManager::instance()
 
 void NotificationManager::showNotification(const CommHistory::Event& event,
                       const QString &channelTargetId,
-                      CommHistory::Group::ChatType chatType)
+                      CommHistory::Group::ChatType chatType,
+                      const QString &details)
 {
-    qDebug() << event.toString() << channelTargetId << chatType;
+    qDebug() << event.toString() << channelTargetId << chatType << details;
     Notification n;
     n.event = event;
     n.channelTargetId = channelTargetId;

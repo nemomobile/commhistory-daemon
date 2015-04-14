@@ -2,7 +2,7 @@
 **
 ** This file is part of commhistory-daemon.
 **
-** Copyright (C) 2013 Jolla Ltd.
+** Copyright (C) 2013-2015 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** Contact: John Brooks <john.brooks@jolla.com>
 **
@@ -94,7 +94,8 @@ public:
      */
     void showNotification(const CommHistory::Event& event,
                           const QString &channelTargetId = QString(),
-                          CommHistory::Group::ChatType chatType = CommHistory::Group::ChatTypeP2P);
+                          CommHistory::Group::ChatType chatType = CommHistory::Group::ChatTypeP2P,
+                          const QString &details = QString());
 
     /*!
      * \brief removes notifications whose event type is in the supplied list of types
@@ -166,7 +167,7 @@ private:
 
     bool isFilteredInbox();
     QString filteredInboxAccountPath();
-    bool updateEditedEvent(const CommHistory::Event &event);
+    bool updateEditedEvent(const CommHistory::Event &event, const QString &text);
 
 private:
     static NotificationManager* m_pInstance;
@@ -175,7 +176,7 @@ private:
 
     QList<PersonalNotification*> m_unresolvedEvents;
 
-    QString notificationText(const CommHistory::Event &event);
+    QString notificationText(const CommHistory::Event &event, const QString &details);
 
     QSharedPointer<CommHistory::ContactListener> m_contactListener;
     CommHistory::GroupModel *m_GroupModel;
