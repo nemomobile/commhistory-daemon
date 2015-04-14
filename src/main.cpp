@@ -27,6 +27,7 @@
 #include <unistd.h>
 
 // Our includes
+#include <TelepathyQt/Debug>
 #include "logger.h"
 #include "notificationmanager.h"
 #include "commhistoryservice.h"
@@ -44,12 +45,17 @@
 #include "smartmessaging_adaptor.h"
 #include "debug.h"
 
+bool toggleDebug;
+
 using namespace RTComLogger;
 
 namespace {
 
 void messageHandler(QtMsgType type, const QMessageLogContext &, const QString &message)
 {
+    if (!toggleDebug)
+        return;
+
 #ifndef QT_DEBUG
     if (!(type == QtCriticalMsg || type == QtFatalMsg))
         return;
@@ -120,6 +126,12 @@ Q_DECL_EXPORT int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
 
+    if (argc > 1) {
+        if (strcmp(argv[1],"-d") == 0) {
+            toggleDebug = true;
+        }
+    }
+
     int logOption = LOG_NDELAY;
 
 #ifdef QT_DEBUG
@@ -172,6 +184,10 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     MessageReviver *reviver = new MessageReviver(utils, &app);
     DEBUG() << "Message reviver created, starting main loop";
 
+    if (toggleDebug) {
+        Tp::enableDebug(true);
+        Tp::enableWarnings(true);
+    }
     new Logger(utils->accountManager(),
                reviver,
                &app);

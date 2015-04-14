@@ -43,11 +43,7 @@
 using namespace RTComLogger;
 using namespace CommHistory;
 
-#ifdef DEBUG_COMMHISTORY
-#  define DEBUG_(x) qDebug() << "MmsHandler:" << x
-#else
-#  define DEBUG_(x) ((void)0)
-#endif
+#define DEBUG_(x) qDebug() << "MmsHandler:" << x
 
 MmsHandler::MmsHandler(QObject* parent)
     : MessageHandlerBase(parent, MMS_HANDLER_PATH, MMS_HANDLER_SERVICE)

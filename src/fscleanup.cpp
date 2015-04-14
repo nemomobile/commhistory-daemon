@@ -30,11 +30,7 @@
 #include <QDirIterator>
 #include <QDBusConnection>
 
-#ifdef DEBUG_COMMHISTORY
-#  define DEBUG_(x) qDebug() << "FsCleanup:" << x
-#else
-#  define DEBUG_(x) ((void)0)
-#endif
+#define DEBUG_(x) qDebug() << "FsCleanup:" << x
 
 FsCleanup::FsCleanup(QObject* aParent) :
     QObject(aParent)
