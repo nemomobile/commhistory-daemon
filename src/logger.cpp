@@ -46,10 +46,6 @@ Logger::Logger(const Tp::AccountManagerPtr &accountManager,
     : QObject(parent), m_Reviver(reviver)
 {
     Tp::registerTypes();
-#ifdef DEBUG_COMMHISTORY
-    Tp::enableDebug(true);
-    Tp::enableWarnings(true);
-#endif
 
     m_Registrar = ClientRegistrar::create(accountManager);
 

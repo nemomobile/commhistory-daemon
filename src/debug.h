@@ -25,11 +25,6 @@
 
 #include <QDebug>
 
-// DEBUG_COMMHISTORY is defined in debug build (CONFIG += debug)
-#ifdef DEBUG_COMMHISTORY
-# define DEBUG qDebug
-#else
-# define DEBUG if (0) qDebug
-#endif
+#define DEBUG qDebug
 
 #endif // DEBUG_H

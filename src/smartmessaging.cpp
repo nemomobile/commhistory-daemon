@@ -34,11 +34,7 @@
 #define VCARD_CONTENT_TYPE  "text/x-vcard"
 #define VCARD_EXTENSION     "vcf"
 
-#ifdef DEBUG_COMMHISTORY
-#  define DEBUG_(x) qDebug() << "SmartMessaging:" << x
-#else
-#  define DEBUG_(x) ((void)0)
-#endif
+#define DEBUG_(x) qDebug() << "SmartMessaging:" << x
 
 using namespace CommHistory;
 using namespace RTComLogger;
