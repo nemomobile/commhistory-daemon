@@ -102,6 +102,7 @@ public:
     QString chatName() const;
     QString eventToken() const;
     QString smsReplaceNumber() const;
+    QDateTime timestamp() const;
 
     void setRemoteUid(const QString& remoteUid);
     void setAccount(const QString& account);
