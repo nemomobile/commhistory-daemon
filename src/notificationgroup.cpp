@@ -123,12 +123,24 @@ void NotificationGroup::updateGroup()
     if (type() != CommHistory::Event::VoicemailEvent)
         name = tempLocale.joinStringList(contactNames());
     mGroup->setSummary(name);
-    mGroup->publish();
+
+    // Find the most recent timestamp from grouped notifications
+    QDateTime groupTimestamp;
 
     foreach (PersonalNotification *pn, mNotifications) {
-        if (pn->hasPendingEvents())
+        if (pn->hasPendingEvents()) {
             pn->publishNotification();
+        }
+
+        QDateTime timestamp(pn->timestamp());
+        if (groupTimestamp.isNull() || timestamp > groupTimestamp) {
+            groupTimestamp = timestamp;
+        }
     }
+
+    mGroup->setTimestamp(groupTimestamp);
+    mGroup->publish();
+
 }
 
 void NotificationGroup::updateGroupLater()
