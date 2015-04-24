@@ -109,8 +109,10 @@ void PersonalNotification::publishNotification()
     if (m_eventType != CommHistory::Event::VoicemailEvent)
         name = notificationName();
 
-    if (!m_notification)
+    if (!m_notification) {
         m_notification = new Notification(this);
+        m_notification->setTimestamp(QDateTime::currentDateTimeUtc());
+    }
 
     m_notification->setAppName(txt_qtn_msg_notifications_group);
     m_notification->setCategory(NotificationGroup::groupType(m_eventType));
@@ -236,6 +238,14 @@ QString PersonalNotification::eventToken() const
 QString PersonalNotification::smsReplaceNumber() const
 {
     return m_smsReplaceNumber;
+}
+
+QDateTime PersonalNotification::timestamp() const
+{
+    if (m_notification)
+        return m_notification->timestamp();
+
+    return QDateTime();
 }
 
 bool PersonalNotification::hidden() const
