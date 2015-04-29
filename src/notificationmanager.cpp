@@ -550,13 +550,10 @@ static QVariantMap dbusAction(const QString &name, const QString &service, const
 
 void NotificationManager::setNotificationProperties(Notification *notification, PersonalNotification *pn, bool grouped)
 {
-    QString appName;
     QVariantList remoteActions;
 
     switch (pn->collection()) {
         case PersonalNotification::Messaging:
-
-            appName = txt_qtn_msg_notifications_group;
 
             if (pn->eventType() != VOICEMAIL_SMS_EVENT_TYPE && grouped) {
                 remoteActions.append(dbusAction("default",
@@ -584,8 +581,6 @@ void NotificationManager::setNotificationProperties(Notification *notification, 
 
         case PersonalNotification::Voice:
 
-            appName = txt_qtn_msg_missed_calls_group;
-
             remoteActions.append(dbusAction("default",
                                             CALL_HISTORY_SERVICE_NAME,
                                             CALL_HISTORY_OBJECT_PATH,
@@ -602,8 +597,6 @@ void NotificationManager::setNotificationProperties(Notification *notification, 
 
         case PersonalNotification::Voicemail:
 
-            appName = txt_qtn_msg_voicemail_group;
-
             remoteActions.append(dbusAction("default",
                                             CALL_HISTORY_SERVICE_NAME,
                                             VOICEMAIL_OBJECT_PATH,
@@ -617,7 +610,6 @@ void NotificationManager::setNotificationProperties(Notification *notification, 
             break;
     }
 
-    notification->setAppName(appName);
     notification->setRemoteActions(remoteActions);
 }
 
