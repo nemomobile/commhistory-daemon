@@ -25,7 +25,6 @@
 TEMPLATE = subdirs
 SUBDIRS = ut_notificationmanager \
           ut_textchannellistener \
-          ut_streamchannellistener \
           ut_messagereviver
 
 # make sure the destination path exists

@@ -30,7 +30,6 @@
 #include "logger.h"
 #include "channellistener.h"
 #include "textchannellistener.h"
-#include "streamchannellistener.h"
 #include "loggerclientobserver.h"
 #include "messagereviver.h"
 #include "debug.h"
@@ -99,8 +98,6 @@ void Logger::createChannelListener(const QString &channelType,
         listener = new TextChannelListener(account, channel, context, this);
         connect(listener, SIGNAL(savingFailed(const Tp::ConnectionPtr&)),
                 m_Reviver, SLOT(checkConnection(const Tp::ConnectionPtr&)));
-    } else if ( channelType == QLatin1String(TP_QT_IFACE_CHANNEL_TYPE_STREAMED_MEDIA) ) {
-        listener = new StreamChannelListener(account, channel, context, this);
     }
 
     if(listener) {
