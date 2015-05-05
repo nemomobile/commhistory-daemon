@@ -113,30 +113,19 @@ void NotificationGroup::updateGroup()
 
     mGroup->setAppName(txt_qtn_msg_notifications_group);
     mGroup->setCategory("x-nemo.messaging.group");
-    mGroup->setSummary(mLocale.joinStringList(contactNames()));
     mGroup->setBody(notificationGroupText());
     mGroup->setItemCount(mNotifications.size());
     mGroup->setHintValue("x-nemo-hidden", mNotifications.size() < 2);
     NotificationManager::instance()->setNotificationProperties(mGroup, mNotifications[0],
             countConversations() > 1);
 
-    // Find the most recent timestamp from grouped notifications
-    QDateTime groupTimestamp;
-
-    foreach (PersonalNotification *pn, mNotifications) {
-        if (pn->hasPendingEvents()) {
-            pn->publishNotification();
-        }
-
-        QDateTime timestamp(pn->timestamp());
-        if (groupTimestamp.isNull() || timestamp > groupTimestamp) {
-            groupTimestamp = timestamp;
-        }
-    }
-
-    mGroup->setTimestamp(groupTimestamp);
+    mGroup->setSummary(mLocale.joinStringList(contactNames()));
     mGroup->publish();
 
+    foreach (PersonalNotification *pn, mNotifications) {
+        if (pn->hasPendingEvents())
+            pn->publishNotification();
+    }
 }
 
 void NotificationGroup::updateGroupLater()
