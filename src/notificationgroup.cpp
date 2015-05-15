@@ -148,7 +148,9 @@ void NotificationGroup::updateGroup()
     mGroup->setSummary(mLocale.joinStringList(contactNames()));
     mGroup->setBody(notificationGroupText());
     mGroup->setItemCount(mNotifications.size());
-    mGroup->setHintValue("x-nemo-hidden", mNotifications.size() < 2);
+
+    // This group is only visible if the members are hidden
+    mGroup->setHintValue("x-nemo-hidden", !mNotifications[0]->hidden());
 
     NotificationManager::instance()->setNotificationProperties(mGroup, mNotifications[0],
             countConversations() > 1);
@@ -257,12 +259,19 @@ void NotificationGroup::addNotification(PersonalNotification *notification)
     connect(notification, SIGNAL(hasPendingEventsChanged(bool)), SLOT(onNotificationChanged()));
     mNotifications.append(notification);
 
-    if (mNotifications.count() > 1) {
-        // Hide the member notification
-        notification->setHidden(true);
+    // Only missed call and voicemail notifications are grouped
+    if (m_collection == PersonalNotification::Voice ||
+        m_collection == PersonalNotification::Voicemail) {
+        if (mNotifications.count() > 1) {
+            // Hide the member notification
+            notification->setHidden(true);
 
-        // Also hide the first member, which would not have been hidden on addition
-        mNotifications.first()->setHidden(true);
+            // Also hide the first member, which would not have been hidden on addition
+            mNotifications.first()->setHidden(true);
+        } else {
+            // Ensure the notification is visible
+            notification->setHidden(false);
+        }
     }
 
     emit changed();
@@ -275,9 +284,12 @@ bool NotificationGroup::removeNotification(PersonalNotification *&notification)
         delete notification;
         notification = 0;
 
-        if (mNotifications.count() == 1) {
-            // Hide the member notification
-            mNotifications.first()->setHidden(false);
+        if (m_collection == PersonalNotification::Voice ||
+            m_collection == PersonalNotification::Voicemail) {
+            if (mNotifications.count() == 1) {
+                // Un-hide the member notification
+                mNotifications.first()->setHidden(false);
+            }
         }
 
         emit changed();
