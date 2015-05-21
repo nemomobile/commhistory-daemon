@@ -63,12 +63,8 @@ class PersonalNotification : public QObject, public Serialisable
                                   WRITE setEventToken)
     Q_PROPERTY(QString smsReplaceNumber READ smsReplaceNumber
                                         WRITE setSmsReplaceNumber)
-    Q_PROPERTY(bool hidden READ hidden
-                           WRITE setHidden)
 
 public:
-    enum EventCollection { Messaging = 0, Voicemail, Voice };
-
     PersonalNotification(QObject* parent = 0);
     PersonalNotification(const QString& remoteUid,
                          const QString& account,
@@ -90,9 +86,6 @@ public:
 
     QString notificationName() const;
 
-    EventCollection collection() const;
-    static EventCollection collection(uint eventType);
-
     QString remoteUid() const;
     QString account() const;
     uint eventType() const;
@@ -109,7 +102,6 @@ public:
     QString chatName() const;
     QString eventToken() const;
     QString smsReplaceNumber() const;
-    bool hidden() const;
 
     void setRemoteUid(const QString& remoteUid);
     void setAccount(const QString& account);
@@ -123,7 +115,6 @@ public:
     void setChatName(const QString& chatName);
     void setEventToken(const QString& eventToken);
     void setSmsReplaceNumber(const QString& number);
-    void setHidden(bool hide = true);
 
 signals:
     void hasPendingEventsChanged(bool hasPendingEvents);
@@ -141,7 +132,6 @@ private:
     QString m_chatName;
     QString m_eventToken;
     QString m_smsReplaceNumber;
-    bool m_hidden;
 
     Notification *m_notification;
 
