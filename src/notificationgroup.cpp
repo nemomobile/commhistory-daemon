@@ -73,38 +73,6 @@ int NotificationGroup::eventType(const QString &groupType)
     return -1;
 }
 
-QString NotificationGroup::groupName(PersonalNotification::EventCollection collection)
-{
-    switch (collection) {
-        case PersonalNotification::Voicemail:
-            return txt_qtn_msg_voicemail_group;
-
-        case PersonalNotification::Voice:
-            return txt_qtn_msg_missed_calls_group;
-
-        case PersonalNotification::Messaging:
-            return txt_qtn_msg_notifications_group;
-    }
-
-    return QString();
-}
-
-QString NotificationGroup::groupCategory(PersonalNotification::EventCollection collection)
-{
-    switch (collection) {
-        case PersonalNotification::Voicemail:
-            return QStringLiteral("x-nemo.messaging.voicemail.group");
-
-        case PersonalNotification::Voice:
-            return QStringLiteral("x-nemo.call.missed.group");
-
-        case PersonalNotification::Messaging:
-            return QStringLiteral("x-nemo.messaging.group");
-    }
-
-    return QString();
-}
-
 PersonalNotification::EventCollection NotificationGroup::collection() const
 {
     return m_collection;
@@ -143,13 +111,12 @@ void NotificationGroup::updateGroup()
     if (!mGroup)
         mGroup = new Notification(this);
 
-    mGroup->setAppName(groupName(m_collection));
-    mGroup->setCategory(groupCategory(m_collection));
+    mGroup->setAppName(txt_qtn_msg_notifications_group);
+    mGroup->setCategory("x-nemo.messaging.group");
     mGroup->setSummary(mLocale.joinStringList(contactNames()));
     mGroup->setBody(notificationGroupText());
     mGroup->setItemCount(mNotifications.size());
     mGroup->setHintValue("x-nemo-hidden", mNotifications.size() < 2);
-
     NotificationManager::instance()->setNotificationProperties(mGroup, mNotifications[0],
             countConversations() > 1);
 

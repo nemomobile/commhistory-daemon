@@ -50,9 +50,6 @@ public:
     static QString groupType(int eventType);
     static int eventType(const QString &groupType);
 
-    static QString groupName(PersonalNotification::EventCollection collection);
-    static QString groupCategory(PersonalNotification::EventCollection collection);
-
     PersonalNotification::EventCollection collection() const;
     const QString &localUid() const;
     const QString &remoteUid() const;

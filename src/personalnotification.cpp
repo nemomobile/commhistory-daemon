@@ -114,11 +114,10 @@ void PersonalNotification::publishNotification()
         m_notification->setTimestamp(QDateTime::currentDateTimeUtc());
     }
 
-    m_notification->setAppName(NotificationGroup::groupName(collection()));
+    m_notification->setAppName(txt_qtn_msg_notifications_group);
     m_notification->setCategory(NotificationGroup::groupType(m_eventType));
     m_notification->setHintValue("x-commhistoryd-data", serialized().toBase64());
     m_notification->setHintValue("x-nemo-hidden", m_hidden);
-
     NotificationManager::instance()->setNotificationProperties(m_notification, this, false);
 
     // No preview banner for existing notifications
