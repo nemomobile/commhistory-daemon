@@ -37,10 +37,18 @@
 
 using namespace RTComLogger;
 
-ML10N::MLocale mLocale;
+NotificationGroup::NotificationGroup(int type, QObject *parent)
+    : QObject(parent), m_type(type), mGroup(0)
+{
+    updateTimer.setInterval(0);
+    updateTimer.setSingleShot(true);
+    connect(&updateTimer, SIGNAL(timeout()), SLOT(updateGroup()));
 
-NotificationGroup::NotificationGroup(PersonalNotification::EventCollection collection, const QString &localUid, const QString &remoteUid, QObject *parent)
-    : QObject(parent), m_collection(collection), m_localUid(localUid), m_remoteUid(remoteUid), mGroup(0)
+    connect(this, SIGNAL(changed()), SLOT(updateGroupLater()));
+}
+
+NotificationGroup::NotificationGroup(Notification *group, QObject *parent)
+    : QObject(parent), m_type(eventType(group->category())), mGroup(group)
 {
     updateTimer.setInterval(0);
     updateTimer.setSingleShot(true);
@@ -73,51 +81,9 @@ int NotificationGroup::eventType(const QString &groupType)
     return -1;
 }
 
-QString NotificationGroup::groupName(PersonalNotification::EventCollection collection)
+int NotificationGroup::type() const
 {
-    switch (collection) {
-        case PersonalNotification::Voicemail:
-            return txt_qtn_msg_voicemail_group;
-
-        case PersonalNotification::Voice:
-            return txt_qtn_msg_missed_calls_group;
-
-        case PersonalNotification::Messaging:
-            return txt_qtn_msg_notifications_group;
-    }
-
-    return QString();
-}
-
-QString NotificationGroup::groupCategory(PersonalNotification::EventCollection collection)
-{
-    switch (collection) {
-        case PersonalNotification::Voicemail:
-            return QStringLiteral("x-nemo.messaging.voicemail.group");
-
-        case PersonalNotification::Voice:
-            return QStringLiteral("x-nemo.call.missed.group");
-
-        case PersonalNotification::Messaging:
-            return QStringLiteral("x-nemo.messaging.group");
-    }
-
-    return QString();
-}
-
-PersonalNotification::EventCollection NotificationGroup::collection() const
-{
-    return m_collection;
-}
-
-const QString &NotificationGroup::localUid() const
-{
-    return m_localUid;
-}
-
-const QString &NotificationGroup::remoteUid() const
-{
-    return m_remoteUid;
+    return m_type;
 }
 
 Notification *NotificationGroup::notification()
@@ -143,17 +109,20 @@ void NotificationGroup::updateGroup()
     if (!mGroup)
         mGroup = new Notification(this);
 
-    mGroup->setAppName(groupName(m_collection));
-    mGroup->setCategory(groupCategory(m_collection));
-    mGroup->setSummary(mLocale.joinStringList(contactNames()));
+    // Disable feedback from the notification definition; it's played by individual banners
+    mGroup->setAppName(txt_qtn_msg_notifications_group);
+    mGroup->setHintValue("x-nemo-feedback", QString());
+    mGroup->setCategory(groupType(type()));
     mGroup->setBody(notificationGroupText());
     mGroup->setItemCount(mNotifications.size());
-
-    // This group is only visible if the members are hidden
-    mGroup->setHintValue("x-nemo-hidden", !mNotifications[0]->hidden());
-
     NotificationManager::instance()->setNotificationProperties(mGroup, mNotifications[0],
             countConversations() > 1);
+
+    QString name;
+    ML10N::MLocale tempLocale;
+    if (type() != CommHistory::Event::VoicemailEvent)
+        name = tempLocale.joinStringList(contactNames());
+    mGroup->setSummary(name);
 
     // Find the most recent timestamp from grouped notifications
     QDateTime groupTimestamp;
@@ -210,9 +179,11 @@ QString NotificationGroup::notificationGroupText()
     if (!notifications)
         return QString();
 
-    switch (m_collection)
+    switch (type())
     {
-        case PersonalNotification::Messaging:
+        case CommHistory::Event::IMEvent:
+        case CommHistory::Event::SMSEvent:
+        case CommHistory::Event::MMSEvent:
         {
             if (notifications > 1)
                 message = txt_qtn_msg_notification_new_message(notifications);
@@ -220,12 +191,12 @@ QString NotificationGroup::notificationGroupText()
                 message = mNotifications[0]->notificationText();
             break;
         }
-        case PersonalNotification::Voice:
+        case CommHistory::Event::CallEvent:
         {
             message = txt_qtn_call_missed(notifications);
             break;
         }
-        case PersonalNotification::Voicemail:
+        case CommHistory::Event::VoicemailEvent:
         {
             // The amount of new / not listened voicemails
             message = mNotifications[0]->notificationText();
@@ -258,22 +229,6 @@ void NotificationGroup::addNotification(PersonalNotification *notification)
     // If notification->hasPendingEvents, the updateGroup slot will also publish the notification
     connect(notification, SIGNAL(hasPendingEventsChanged(bool)), SLOT(onNotificationChanged()));
     mNotifications.append(notification);
-
-    // Only missed call and voicemail notifications are grouped
-    if (m_collection == PersonalNotification::Voice ||
-        m_collection == PersonalNotification::Voicemail) {
-        if (mNotifications.count() > 1) {
-            // Hide the member notification
-            notification->setHidden(true);
-
-            // Also hide the first member, which would not have been hidden on addition
-            mNotifications.first()->setHidden(true);
-        } else {
-            // Ensure the notification is visible
-            notification->setHidden(false);
-        }
-    }
-
     emit changed();
 }
 
@@ -283,15 +238,6 @@ bool NotificationGroup::removeNotification(PersonalNotification *&notification)
         notification->removeNotification();
         delete notification;
         notification = 0;
-
-        if (m_collection == PersonalNotification::Voice ||
-            m_collection == PersonalNotification::Voicemail) {
-            if (mNotifications.count() == 1) {
-                // Un-hide the member notification
-                mNotifications.first()->setHidden(false);
-            }
-        }
-
         emit changed();
         return true;
     }

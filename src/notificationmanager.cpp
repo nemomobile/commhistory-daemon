@@ -99,7 +99,8 @@ void NotificationManager::init()
     connect(service, SIGNAL(observedConversationsChanged(QVariantList)),
                      SLOT(slotObservedConversationsChanged(QVariantList)));
 
-    groupModel();
+    if (hasMessageNotification())
+        groupModel();
 
     m_Initialised = true;
 }
@@ -113,10 +114,15 @@ void NotificationManager::syncNotifications()
     foreach (QObject *o, notifications) {
         Notification *n = static_cast<Notification*>(o);
 
-        if (n->hintValue("x-commhistoryd-data").isNull()) {
-            // This was a group notification, which will be recreated if required
-            n->close();
-            delete n;
+        if (n->previewBody().isEmpty() && !n->body().isEmpty() && n->hintValue("x-commhistoryd-data").isNull()) {
+            NotificationGroup *group = new NotificationGroup(n, this);
+            if (m_Groups.contains(group->type())) {
+                group->removeGroup();
+                delete group;
+                continue;
+            }
+
+            m_Groups.insert(group->type(), group);
         } else {
             PersonalNotification *pn = new PersonalNotification(this);
             if (!pn->restore(n)) {
@@ -133,6 +139,17 @@ void NotificationManager::syncNotifications()
 
     foreach (PersonalNotification *pn, pnList)
         resolveNotification(pn);
+
+    // Remove groups with no events or unresolved events
+    for (QMap<int,NotificationGroup*>::iterator it = m_Groups.begin(); it != m_Groups.end(); ) {
+        NotificationGroup *group = *it;
+        if (typeCounts[group->type()] < 1) {
+            group->removeGroup();
+            delete group;
+            it = m_Groups.erase(it);
+        } else
+            it++;
+    }
 }
 
 NotificationManager* NotificationManager::instance()
@@ -157,8 +174,7 @@ bool NotificationManager::updateEditedEvent(const CommHistory::Event& event, con
         }
     }
 
-    EventGroupProperties groupProperties(eventGroup(PersonalNotification::collection(event.type()), event.localUid(), event.remoteUid()));
-    NotificationGroup *eventGroup = m_Groups.value(groupProperties);
+    NotificationGroup *eventGroup = m_Groups.value(event.type());
     if (!eventGroup)
         return false;
 
@@ -322,7 +338,7 @@ bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& even
     return false;
 }
 
-void NotificationManager::removeNotifications(const QString &accountPath, const QList<int> &removeTypes)
+void NotificationManager::removeNotifications(const QString &accountPath, bool messagesOnly)
 {
     DEBUG() << Q_FUNC_INFO << "Removing notifications of account " << accountPath;
 
@@ -330,12 +346,19 @@ void NotificationManager::removeNotifications(const QString &accountPath, const 
 
     // remove matched notifications and update group
     foreach (NotificationGroup *group, m_Groups) {
-        if (group->localUid() != accountPath) {
+        int eventType = group->type();
+
+        // If removal should be done based on Inbox being observed then remove only those notifications
+        // that belong to messaging-ui area:
+        if (messagesOnly && (eventType != CommHistory::Event::IMEvent && eventType != CommHistory::Event::SMSEvent
+             && eventType != CommHistory::Event::MMSEvent && eventType != VOICEMAIL_SMS_EVENT_TYPE)) {
+            DEBUG() << Q_FUNC_INFO << "Skipping " << eventType << " type of notification";
             continue;
         }
 
         foreach (PersonalNotification *notification, group->notifications()) {
-            if (removeTypes.isEmpty() || removeTypes.contains(notification->eventType())) {
+            // Remove only a notification matching to the account:
+            if (notification->account() == accountPath) {
                 DEBUG() << Q_FUNC_INFO << "Removing notification: accountPath: " << notification->account() << " remoteUid: " << notification->remoteUid();
                 group->removeNotification(notification);
             }
@@ -356,16 +379,15 @@ void NotificationManager::removeConversationNotifications(const QString &localUi
                                                           const QString &remoteUid,
                                                           CommHistory::Group::ChatType chatType)
 {
-    QHash<EventGroupProperties, NotificationGroup *>::const_iterator it = m_Groups.constBegin(), end = m_Groups.constEnd();
-    for ( ; it != end; ++it) {
-        NotificationGroup *group(it.value());
-        if (group->localUid() != localUid)
+    foreach (NotificationGroup *group, m_Groups) {
+        int eventType = group->type();
+        if (eventType != CommHistory::Event::IMEvent
+             && eventType != CommHistory::Event::SMSEvent
+             && eventType != CommHistory::Event::MMSEvent
+             && eventType != VOICEMAIL_SMS_EVENT_TYPE)
             continue;
 
         foreach (PersonalNotification *notification, group->notifications()) {
-            if (notification->collection() != PersonalNotification::Messaging)
-                continue;
-
             QString notificationRemoteUidStr;
             // For p-to-p chat we use remote uid for comparison and for MUC we use target (channel) id:
             if (chatType == CommHistory::Group::ChatTypeP2P)
@@ -401,18 +423,19 @@ void NotificationManager::slotInboxObservedChanged()
     // Cannot be passed as a parameter, because this slot is also used for m_notificationTimer
     bool observed = CommHistoryService::instance()->inboxObserved();
     if (observed) {
-        QList<int> removeTypes;
-        removeTypes << CommHistory::Event::IMEvent << CommHistory::Event::SMSEvent << CommHistory::Event::MMSEvent << VOICEMAIL_SMS_EVENT_TYPE;
-
         if (!isFilteredInbox()) {
-            // remove sms, mms and im notifications
-            removeNotificationTypes(removeTypes);
+            // remove sms, mms and im notification groups
+            // remove meegotouch groups
+            removeNotificationGroup(CommHistory::Event::IMEvent);
+            removeNotificationGroup(CommHistory::Event::SMSEvent);
+            removeNotificationGroup(CommHistory::Event::MMSEvent);
+            removeNotificationGroup(VOICEMAIL_SMS_EVENT_TYPE);
         } else {
             // Filtering is in use, remove only notifications of that account whose threads are visible in inbox:
             QString filteredAccountPath = filteredInboxAccountPath();
             DEBUG() << Q_FUNC_INFO << "Removing only notifications belonging to account " << filteredAccountPath;
             if (!filteredAccountPath.isEmpty())
-                removeNotifications(filteredAccountPath, removeTypes);
+                removeNotifications(filteredAccountPath, true);
         }
     }
 }
@@ -420,7 +443,7 @@ void NotificationManager::slotInboxObservedChanged()
 void NotificationManager::slotCallHistoryObservedChanged(bool observed)
 {
     if (observed) {
-        removeNotificationTypes(QList<int>() << CommHistory::Event::CallEvent);
+        removeNotificationGroup(CommHistory::Event::CallEvent);
     }
 }
 
@@ -434,26 +457,29 @@ QString NotificationManager::filteredInboxAccountPath()
     return CommHistoryService::instance()->inboxFilterAccount();
 }
 
-void NotificationManager::removeNotificationTypes(const QList<int> &types)
+bool NotificationManager::removeNotificationGroup(int type)
 {
-    DEBUG() << Q_FUNC_INFO << types;
+    DEBUG() << Q_FUNC_INFO << type;
 
-    foreach (NotificationGroup *group, m_Groups) {
-        foreach (PersonalNotification *notification, group->notifications()) {
-            if (types.contains(notification->eventType())) {
-                group->removeNotification(notification);
-            }
-        }
-    }
+    QMap<int,NotificationGroup*>::iterator it = m_Groups.find(type);
+    if (it == m_Groups.end())
+        return false;
+
+    (*it)->removeGroup();
+    delete *it;
+    m_Groups.erase(it);
+
+    return true;
 }
 
 void NotificationManager::addNotification(PersonalNotification *notification)
 {
-    EventGroupProperties groupProperties(eventGroup(notification->collection(), notification->account(), notification->remoteUid()));
-    NotificationGroup *group = m_Groups.value(groupProperties);
+    uint eventType = notification->eventType();
+
+    NotificationGroup *group = m_Groups.value(eventType);
     if (!group) {
-        group = new NotificationGroup(groupProperties.collection, groupProperties.localUid, groupProperties.remoteUid, this);
-        m_Groups.insert(groupProperties, group);
+        group = new NotificationGroup(eventType, this);
+        m_Groups.insert(eventType, group);
     }
 
     group->addNotification(notification);
@@ -550,10 +576,16 @@ static QVariantMap dbusAction(const QString &name, const QString &service, const
 
 void NotificationManager::setNotificationProperties(Notification *notification, PersonalNotification *pn, bool grouped)
 {
+    QString appName;
     QVariantList remoteActions;
 
-    switch (pn->collection()) {
-        case PersonalNotification::Messaging:
+    switch (pn->eventType()) {
+        case CommHistory::Event::IMEvent:
+        case CommHistory::Event::SMSEvent:
+        case CommHistory::Event::MMSEvent:
+        case VOICEMAIL_SMS_EVENT_TYPE:
+
+            appName = txt_qtn_msg_notifications_group;
 
             if (pn->eventType() != VOICEMAIL_SMS_EVENT_TYPE && grouped) {
                 remoteActions.append(dbusAction("default",
@@ -579,7 +611,9 @@ void NotificationManager::setNotificationProperties(Notification *notification, 
                                             SHOW_INBOX_METHOD));
             break;
 
-        case PersonalNotification::Voice:
+        case CommHistory::Event::CallEvent:
+
+            appName = txt_qtn_msg_missed_calls_group;
 
             remoteActions.append(dbusAction("default",
                                             CALL_HISTORY_SERVICE_NAME,
@@ -595,7 +629,9 @@ void NotificationManager::setNotificationProperties(Notification *notification, 
                                             QVariantList() << CALL_HISTORY_PARAMETER));
             break;
 
-        case PersonalNotification::Voicemail:
+        case CommHistory::Event::VoicemailEvent:
+
+            appName = txt_qtn_msg_voicemail_group;
 
             remoteActions.append(dbusAction("default",
                                             CALL_HISTORY_SERVICE_NAME,
@@ -610,6 +646,7 @@ void NotificationManager::setNotificationProperties(Notification *notification, 
             break;
     }
 
+    notification->setAppName(appName);
     notification->setRemoteActions(remoteActions);
 }
 
@@ -724,6 +761,13 @@ void NotificationManager::showVoicemailNotification(int count)
     qWarning() << Q_FUNC_INFO << "Stub";
 }
 
+bool NotificationManager::hasMessageNotification() const
+{
+    return m_Groups.contains(CommHistory::Event::IMEvent) ||
+           m_Groups.contains(CommHistory::Event::SMSEvent) ||
+           m_Groups.contains(CommHistory::Event::MMSEvent);
+}
+
 void NotificationManager::slotGroupDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
 {
     DEBUG() << Q_FUNC_INFO;
@@ -735,14 +779,10 @@ void NotificationManager::slotGroupDataChanged(const QModelIndex &topLeft, const
         QModelIndex row = m_GroupModel->index(i, 0);
         CommHistory::Group group = m_GroupModel->group(row);
         if (group.isValid()) {
-            const QString remoteUid = group.remoteUids().first();
-            const QString localUid = group.localUid();
+            QString remoteUid = group.remoteUids().first();
+            QString localUid = group.localUid();
 
             foreach (NotificationGroup *g, m_Groups) {
-                if (g->localUid() != localUid) {
-                    continue;
-                }
-
                 foreach (PersonalNotification *pn, g->notifications()) {
                     // If notification is for MUC and matches to changed group...
                     if (!pn->chatName().isEmpty() && pn->account() == localUid &&
