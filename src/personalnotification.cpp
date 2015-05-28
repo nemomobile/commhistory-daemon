@@ -38,6 +38,7 @@ PersonalNotification::PersonalNotification(QObject* parent) : QObject(parent),
     m_chatType(CommHistory::Group::ChatTypeP2P),
     m_contactId(0),
     m_hasPendingEvents(false),
+    m_hidden(false),
     m_notification(0)
 {
 }
@@ -54,6 +55,7 @@ PersonalNotification::PersonalNotification(const QString& remoteUid,
     m_eventType(eventType), m_targetId(channelTargetId), m_chatType(chatType),
     m_contactId(contactId), m_notificationText(lastNotification),
     m_hasPendingEvents(true),
+    m_hidden(false),
     m_notification(0)
 {
 }
@@ -112,9 +114,11 @@ void PersonalNotification::publishNotification()
         m_notification->setTimestamp(QDateTime::currentDateTimeUtc());
     }
 
-    m_notification->setAppName(txt_qtn_msg_notifications_group);
+    m_notification->setAppName(NotificationGroup::groupName(collection()));
     m_notification->setCategory(NotificationGroup::groupType(m_eventType));
     m_notification->setHintValue("x-commhistoryd-data", serialized().toBase64());
+    m_notification->setHintValue("x-nemo-hidden", m_hidden);
+
     NotificationManager::instance()->setNotificationProperties(m_notification, this, false);
 
     // No preview banner for existing notifications
@@ -125,6 +129,9 @@ void PersonalNotification::publishNotification()
         m_notification->setPreviewSummary(name);
         m_notification->setPreviewBody(notificationText());
     }
+
+    m_notification->setSummary(name);
+    m_notification->setBody(notificationText());
 
     m_notification->publish();
 
@@ -157,6 +164,20 @@ QString PersonalNotification::notificationName() const
         return locale.toLocalizedNumbers(remoteUid());
     } else
         return remoteUid();
+}
+
+PersonalNotification::EventCollection PersonalNotification::collection() const
+{
+    return collection(m_eventType);
+}
+
+PersonalNotification::EventCollection PersonalNotification::collection(uint eventType)
+{
+    if (eventType == CommHistory::Event::VoicemailEvent)
+        return Voicemail;
+    if (eventType == CommHistory::Event::CallEvent)
+        return Voice;
+    return Messaging;
 }
 
 QString PersonalNotification::remoteUid() const
@@ -226,6 +247,11 @@ QDateTime PersonalNotification::timestamp() const
         return m_notification->timestamp();
 
     return QDateTime();
+}
+
+bool PersonalNotification::hidden() const
+{
+    return m_hidden;
 }
 
 void PersonalNotification::setRemoteUid(const QString& remoteUid)
@@ -320,6 +346,14 @@ void PersonalNotification::setSmsReplaceNumber(const QString &number)
 {
     if (m_smsReplaceNumber != number) {
         m_smsReplaceNumber = number;
+        setHasPendingEvents(true);
+    }
+}
+
+void PersonalNotification::setHidden(bool hide)
+{
+    if (m_hidden != hide) {
+        m_hidden = hide;
         setHasPendingEvents(true);
     }
 }

@@ -24,6 +24,8 @@
 #ifndef NOTIFICATIONGROUP_H
 #define NOTIFICATIONGROUP_H
 
+#include "personalnotification.h"
+
 #include <QObject>
 #include <QString>
 #include <QMetaType>
@@ -37,21 +39,24 @@ namespace CommHistory {
 
 namespace RTComLogger {
 
-class PersonalNotification;
-
 class NotificationGroup : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit NotificationGroup(int type, QObject *parent = 0);
-    explicit NotificationGroup(Notification *mGroup, QObject* parent = 0);
+    NotificationGroup(PersonalNotification::EventCollection collection, const QString &localUid, const QString &remoteUid, QObject *parent = 0);
     virtual ~NotificationGroup();
 
     static QString groupType(int eventType);
     static int eventType(const QString &groupType);
 
-    int type() const;
+    static QString groupName(PersonalNotification::EventCollection collection);
+    static QString groupCategory(PersonalNotification::EventCollection collection);
+
+    PersonalNotification::EventCollection collection() const;
+    const QString &localUid() const;
+    const QString &remoteUid() const;
+
     Notification *notification();
     QList<PersonalNotification*> notifications() const;
 
@@ -87,7 +92,9 @@ private slots:
     void onNotificationChanged();
 
 private:
-    int m_type;
+    PersonalNotification::EventCollection m_collection;
+    QString m_localUid;
+    QString m_remoteUid;
     Notification *mGroup;
     QList<PersonalNotification*> mNotifications;
     QTimer updateTimer;
