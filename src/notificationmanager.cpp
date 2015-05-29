@@ -223,7 +223,7 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
     }
 
     PersonalNotification *notification = new PersonalNotification(event.remoteUid(),
-            event.localUid(), event.type(), channelTargetId, chatType);
+            event.localUid(), event.type(), channelTargetId, chatType, event.startTime());
     notification->setNotificationText(text);
     notification->setSmsReplaceNumber(event.headers().value(REPLACE_TYPE));
 
