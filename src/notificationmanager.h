@@ -34,6 +34,8 @@
 #include <QMultiHash>
 #include <QModelIndex>
 
+#include <qofonomessagewaiting.h>
+
 #include <CommHistory/Event>
 #include <CommHistory/Group>
 #include <CommHistory/GroupModel>
@@ -145,6 +147,7 @@ private Q_SLOTS:
     void slotContactRemoved(quint32 localId);
     void slotContactUnknown(const QPair<QString,QString> &address);
     void slotClassZeroError(const QDBusError &error);
+    void slotVoicemailWaitingChanged(bool waiting);
 
 private:
     NotificationManager( QObject* parent = 0);
@@ -183,6 +186,8 @@ private:
 
     Ngf::Client *m_ngfClient;
     quint32 m_ngfEvent;
+
+    QOfonoMessageWaiting *m_messageWaiting;
 
 #ifdef UNIT_TEST
     friend class Ut_NotificationManager;
