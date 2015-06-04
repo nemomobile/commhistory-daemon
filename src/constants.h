@@ -55,6 +55,11 @@ namespace RTComLogger {
 #define VOICEMAIL_METHOD       QLatin1String("voicemail")
 #define REPLACE_TYPE           QLatin1String("sms-replace-number")
 
+#define VOICEMAIL_WAITING_SERVICE      QLatin1String("com.jolla.voicecall.ui")
+#define VOICEMAIL_WAITING_OBJECT_PATH  QLatin1String("/")
+#define VOICEMAIL_WAITING_INTERFACE    QLatin1String("com.jolla.voicecall.ui")
+#define VOICEMAIL_WAITING_METHOD       QLatin1String("openUrl")
+
 // Custom hints for identifying notifications
 #define ACCOUNT_PATH_HINT   QLatin1String("x-org-nemomobile-qmlmessages.account.path")
 #define CONTACT_ID_HINT     QLatin1String("x-org-nemomobile-qmlmessages.contact.id")
@@ -112,6 +117,9 @@ static const int _eventTypesCount = sizeof(_eventTypes) / sizeof(EventTypes);
 // Custom system info notification types for commhistoryd:
 const QString ErrorCategory = "x-nemo.messaging.error";
 const QString StrongErrorCategory = "x-nemo.messaging.error.strong";
+
+const QString voicemailWaitingCategory = "x-nemo.messaging.voicemail-waiting";
+
 }
 
 #endif //#define CONSTANTS_H

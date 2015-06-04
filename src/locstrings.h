@@ -76,6 +76,9 @@
 //% "Voicemail"
 #define txt_qtn_call_type_voicemail qtTrId("qtn_call_type_voicemail")
 
+//% "Tap to listen"
+#define txt_qtn_voicemail_prompt qtTrId("qtn_voicemail_prompt")
+
 //% "Multimedia message was delivered to %1"
 #define txt_qtn_msg_notification_delivered(STR) qtTrId("qtn_mms_info_delivered").arg(STR)
 //% "Multimedia message was read by %1"

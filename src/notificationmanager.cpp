@@ -63,6 +63,7 @@ NotificationManager::NotificationManager(QObject* parent)
         , m_GroupModel(0)
         , m_ngfClient(0)
         , m_ngfEvent(0)
+        , m_messageWaiting(0)
 {
 }
 
@@ -89,6 +90,9 @@ void NotificationManager::init()
     m_ngfClient = new Ngf::Client(this);
     connect(m_ngfClient, SIGNAL(eventFailed(quint32)), SLOT(slotNgfEventFinished(quint32)));
     connect(m_ngfClient, SIGNAL(eventCompleted(quint32)), SLOT(slotNgfEventFinished(quint32)));
+
+    m_messageWaiting = new QOfonoMessageWaiting(this);
+    connect(m_messageWaiting, SIGNAL(voicemailWaitingChanged(bool)), SLOT(slotVoicemailWaitingChanged(bool)));
 
     // Loads old state
     syncNotifications();
@@ -535,17 +539,10 @@ QString NotificationManager::notificationText(const CommHistory::Event& event, c
     return text;
 }
 
-static QVariantMap dbusAction(const QString &name, const QString &service, const QString &path, const QString &iface,
-                              const QString &method, const QVariantList &arguments = QVariantList())
+static QVariant dbusAction(const QString &name, const QString &service, const QString &path, const QString &iface,
+                           const QString &method, const QVariantList &arguments = QVariantList())
 {
-    QVariantMap action;
-    action.insert(QStringLiteral("name"), name);
-    action.insert(QStringLiteral("service"), service);
-    action.insert(QStringLiteral("path"), path);
-    action.insert(QStringLiteral("iface"), iface);
-    action.insert(QStringLiteral("method"), method);
-    action.insert(QStringLiteral("arguments"), arguments);
-    return action;
+    return Notification::remoteAction(name, QString(), service, path, iface, method, arguments);
 }
 
 void NotificationManager::setNotificationProperties(Notification *notification, PersonalNotification *pn, bool grouped)
@@ -769,5 +766,70 @@ void NotificationManager::slotNgfEventFinished(quint32 id)
 {
     if (id == m_ngfEvent)
         m_ngfEvent = 0;
+}
+
+void NotificationManager::slotVoicemailWaitingChanged(bool waiting)
+{
+    uint currentId = 0;
+
+    // See if there is a current notification for voicemail waiting
+    QList<QObject*> notifications = Notification::notifications();
+    foreach (QObject *o, notifications) {
+        Notification *n = static_cast<Notification*>(o);
+        if (n->category() == voicemailWaitingCategory) {
+            if (waiting) {
+                // The notification is already present; do nothing
+                currentId = n->replacesId();
+            } else {
+                // Close this notification
+                n->close();
+            }
+        }
+    }
+    qDeleteAll(notifications);
+    notifications.clear();
+
+    if (waiting && (currentId == 0)) {
+        const int messageCount(m_messageWaiting->voicemailMessageCount());
+        const QString voicemailNumber(m_messageWaiting->voicemailMailboxNumber());
+
+        // Publish a new voicemail-waiting notification
+        Notification voicemailNotification;
+
+        voicemailNotification.setAppName(NotificationGroup::groupName(PersonalNotification::Voicemail));
+        voicemailNotification.setCategory(voicemailWaitingCategory);
+
+        voicemailNotification.setPreviewSummary(txt_qtn_call_voicemail_notification(messageCount));
+        voicemailNotification.setPreviewBody(txt_qtn_voicemail_prompt);
+
+        voicemailNotification.setSummary(voicemailNotification.previewSummary());
+        voicemailNotification.setBody(voicemailNotification.previewBody());
+
+        voicemailNotification.setItemCount(messageCount);
+
+        QString service;
+        QString path;
+        QString iface;
+        QString method;
+        QVariantList args;
+        if (!voicemailNumber.isEmpty()) {
+            service = VOICEMAIL_WAITING_SERVICE;
+            path = VOICEMAIL_WAITING_OBJECT_PATH;
+            iface = VOICEMAIL_WAITING_INTERFACE;
+            method = VOICEMAIL_WAITING_METHOD;
+            args.append(QVariant(QVariantList() << QString(QStringLiteral("tel://")) + voicemailNumber));
+        } else {
+            service = CALL_HISTORY_SERVICE_NAME;
+            path = CALL_HISTORY_OBJECT_PATH;
+            iface = CALL_HISTORY_INTERFACE;
+            method = CALL_HISTORY_METHOD;
+            args.append(CALL_HISTORY_PARAMETER);
+        }
+
+        voicemailNotification.setRemoteActions(QVariantList() << dbusAction("default", service, path, iface, method, args)
+                                                              << dbusAction("app", service, path, iface, method, args));
+
+        voicemailNotification.publish();
+    }
 }
 
