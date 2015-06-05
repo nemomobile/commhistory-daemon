@@ -237,14 +237,6 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
     notification->setEventToken(event.messageToken());
 
     resolveNotification(notification);
-
-    if (event.type() == CommHistory::Event::SMSEvent ||
-        event.type() == CommHistory::Event::MMSEvent) {
-        // ask mce to undim the screen
-        QString mceMethod = QString::fromLatin1(MCE_DISPLAY_ON_REQ);
-        QDBusMessage msg = QDBusMessage::createMethodCall(MCE_SERVICE, MCE_REQUEST_PATH, MCE_REQUEST_IF, mceMethod);
-        QDBusConnection::systemBus().call(msg, QDBus::NoBlock);
-    }
 }
 
 void NotificationManager::resolveNotification(PersonalNotification *pn)
