@@ -92,10 +92,14 @@ void NotificationManager::init()
     connect(m_ngfClient, SIGNAL(eventCompleted(quint32)), SLOT(slotNgfEventFinished(quint32)));
 
     m_messageWaiting = new QOfonoMessageWaiting(this);
-    connect(m_messageWaiting, SIGNAL(voicemailWaitingChanged(bool)), SLOT(slotVoicemailWaitingChanged(bool)));
+    connect(m_messageWaiting, SIGNAL(voicemailWaitingChanged(bool)), SLOT(slotVoicemailWaitingChanged()));
+    connect(m_messageWaiting, SIGNAL(voicemailMessageCountChanged(int)), SLOT(slotVoicemailWaitingChanged()));
 
     // Loads old state
     syncNotifications();
+
+    // Update the voicemail state
+    slotVoicemailWaitingChanged();
 
     CommHistoryService *service = CommHistoryService::instance();
     connect(service, SIGNAL(inboxObservedChanged(bool,QString)), SLOT(slotInboxObservedChanged()));
@@ -760,8 +764,13 @@ void NotificationManager::slotNgfEventFinished(quint32 id)
         m_ngfEvent = 0;
 }
 
-void NotificationManager::slotVoicemailWaitingChanged(bool waiting)
+void NotificationManager::slotVoicemailWaitingChanged()
 {
+    const bool waiting(m_messageWaiting->voicemailWaiting());
+    const int messageCount(m_messageWaiting->voicemailMessageCount());
+
+    DEBUG() << Q_FUNC_INFO << waiting << messageCount;
+
     uint currentId = 0;
 
     // See if there is a current notification for voicemail waiting
@@ -772,8 +781,10 @@ void NotificationManager::slotVoicemailWaitingChanged(bool waiting)
             if (waiting) {
                 // The notification is already present; do nothing
                 currentId = n->replacesId();
+                DEBUG() << "Extant voicemail waiting notification:" << n->replacesId();
             } else {
                 // Close this notification
+                DEBUG() << "Closing voicemail waiting notification:" << n->replacesId();
                 n->close();
             }
         }
@@ -781,8 +792,7 @@ void NotificationManager::slotVoicemailWaitingChanged(bool waiting)
     qDeleteAll(notifications);
     notifications.clear();
 
-    if (waiting && (currentId == 0)) {
-        const int messageCount(m_messageWaiting->voicemailMessageCount());
+    if (waiting) {
         const QString voicemailNumber(m_messageWaiting->voicemailMailboxNumber());
 
         // Publish a new voicemail-waiting notification
@@ -821,7 +831,9 @@ void NotificationManager::slotVoicemailWaitingChanged(bool waiting)
         voicemailNotification.setRemoteActions(QVariantList() << dbusAction("default", service, path, iface, method, args)
                                                               << dbusAction("app", service, path, iface, method, args));
 
+        voicemailNotification.setReplacesId(currentId);
         voicemailNotification.publish();
+        DEBUG() << (currentId ? "Updated" : "Created") << "voicemail waiting notification:" << voicemailNotification.replacesId();
     }
 }
 

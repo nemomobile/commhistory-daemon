@@ -147,7 +147,7 @@ private Q_SLOTS:
     void slotContactRemoved(quint32 localId);
     void slotContactUnknown(const QPair<QString,QString> &address);
     void slotClassZeroError(const QDBusError &error);
-    void slotVoicemailWaitingChanged(bool waiting);
+    void slotVoicemailWaitingChanged();
 
 private:
     NotificationManager( QObject* parent = 0);
