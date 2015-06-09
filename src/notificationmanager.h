@@ -53,6 +53,28 @@ namespace Ngf {
     class Client;
 }
 
+class MyMessageWaiting : public QObject
+{
+    Q_OBJECT
+
+public:
+    MyMessageWaiting(QObject *parent);
+
+    bool voicemailWaiting() const { return (sequence > 0); }
+    int voicemailMessageCount() const { return sequence; }
+    QString voicemailMailboxNumber() const { return sequence == 1 ? "1234567" : QString(); }
+
+signals:
+    void voicemailWaitingChanged(bool);
+    void voicemailMessageCountChanged(int);
+
+private slots:
+    void slotTimeout();
+
+private:
+    int sequence;
+};
+
 namespace RTComLogger {
 
 typedef QPair<QString,QString> TpContactUid;
@@ -187,7 +209,7 @@ private:
     Ngf::Client *m_ngfClient;
     quint32 m_ngfEvent;
 
-    QOfonoMessageWaiting *m_messageWaiting;
+    MyMessageWaiting *m_messageWaiting;
 
 #ifdef UNIT_TEST
     friend class Ut_NotificationManager;
