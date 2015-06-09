@@ -53,22 +53,6 @@
 using namespace RTComLogger;
 using namespace CommHistory;
 
-MyMessageWaiting::MyMessageWaiting(QObject *parent)
-    : QObject(parent)
-    , sequence(1)
-{
-    QTimer *t = new QTimer(this);
-    connect(t, SIGNAL(timeout()), this, SLOT(slotTimeout()));
-    t->setInterval(10000);
-    t->start();
-}
-void MyMessageWaiting::slotTimeout()
-{
-    sequence = (sequence+1) % 3;
-    emit voicemailWaitingChanged(voicemailWaiting());
-    emit voicemailMessageCountChanged(voicemailMessageCount());
-}
-
 NotificationManager* NotificationManager::m_pInstance = 0;
 
 // constructor
@@ -107,7 +91,7 @@ void NotificationManager::init()
     connect(m_ngfClient, SIGNAL(eventFailed(quint32)), SLOT(slotNgfEventFinished(quint32)));
     connect(m_ngfClient, SIGNAL(eventCompleted(quint32)), SLOT(slotNgfEventFinished(quint32)));
 
-    m_messageWaiting = new MyMessageWaiting(this);
+    m_messageWaiting = new QOfonoMessageWaiting(this);
     connect(m_messageWaiting, SIGNAL(voicemailWaitingChanged(bool)), SLOT(slotVoicemailWaitingChanged()));
     connect(m_messageWaiting, SIGNAL(voicemailMessageCountChanged(int)), SLOT(slotVoicemailWaitingChanged()));
 
