@@ -148,6 +148,9 @@ private Q_SLOTS:
     void slotContactUnknown(const QPair<QString,QString> &address);
     void slotClassZeroError(const QDBusError &error);
     void slotVoicemailWaitingChanged();
+    void slotModemAdded(QString path);
+    void slotModemRemoved(QString path);
+    void slotValidChanged(bool valid);
 
 private:
     NotificationManager( QObject* parent = 0);
@@ -171,6 +174,7 @@ private:
     bool isFilteredInbox();
     QString filteredInboxAccountPath();
     bool updateEditedEvent(const CommHistory::Event &event, const QString &text);
+    void addModem(QString path);
 
 private:
     static NotificationManager* m_pInstance;
@@ -187,7 +191,7 @@ private:
     Ngf::Client *m_ngfClient;
     quint32 m_ngfEvent;
 
-    QOfonoMessageWaiting *m_messageWaiting;
+    QHash<QString,QOfonoMessageWaiting*> interfaces;
 
 #ifdef UNIT_TEST
     friend class Ut_NotificationManager;
