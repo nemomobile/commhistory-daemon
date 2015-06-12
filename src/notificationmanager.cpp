@@ -44,6 +44,7 @@
 #include <mce/dbus-names.h>
 
 // Our includes
+#include "qofonomanager.h"
 #include "notificationmanager.h"
 #include "locstrings.h"
 #include "constants.h"
@@ -63,14 +64,32 @@ NotificationManager::NotificationManager(QObject* parent)
         , m_GroupModel(0)
         , m_ngfClient(0)
         , m_ngfEvent(0)
-        , m_messageWaiting(0)
 {
 }
 
 NotificationManager::~NotificationManager()
 {
+    qDeleteAll(interfaces.values());
     qDeleteAll(m_Groups);
     qDeleteAll(m_unresolvedEvents);
+}
+
+void NotificationManager::addModem(QString path)
+{
+    DEBUG() << "NotificationManager::addModem" << path;
+    QOfonoMessageWaiting *mw = new QOfonoMessageWaiting(this);
+    interfaces.insert(path, mw);
+
+    mw->setModemPath(path);
+
+    connect(mw, SIGNAL(voicemailWaitingChanged(bool)), SLOT(slotVoicemailWaitingChanged()));
+    connect(mw, SIGNAL(voicemailMessageCountChanged(int)), SLOT(slotVoicemailWaitingChanged()));
+    connect(mw, SIGNAL(validChanged(bool)), this, SLOT(slotValidChanged(bool)));
+
+    if (mw->isValid()) {
+        DEBUG() << "NotificationManager::addModem, mwi interface already valid";
+        slotVoicemailWaitingChanged();
+    }
 }
 
 void NotificationManager::init()
@@ -91,15 +110,18 @@ void NotificationManager::init()
     connect(m_ngfClient, SIGNAL(eventFailed(quint32)), SLOT(slotNgfEventFinished(quint32)));
     connect(m_ngfClient, SIGNAL(eventCompleted(quint32)), SLOT(slotNgfEventFinished(quint32)));
 
-    m_messageWaiting = new QOfonoMessageWaiting(this);
-    connect(m_messageWaiting, SIGNAL(voicemailWaitingChanged(bool)), SLOT(slotVoicemailWaitingChanged()));
-    connect(m_messageWaiting, SIGNAL(voicemailMessageCountChanged(int)), SLOT(slotVoicemailWaitingChanged()));
+    QOfonoManager* ofono = new QOfonoManager(this);
+    connect(ofono, SIGNAL(modemAdded(QString)), this, SLOT(slotModemAdded(QString)));
+    connect(ofono, SIGNAL(modemRemoved(QString)), this, SLOT(slotModemRemoved(QString)));
+    QStringList modems = ofono->modems();
+    DEBUG() << "Created modem manager, has modems: ";
+    foreach (QString path, modems) {
+        DEBUG() << "modem: " << path;
+        addModem(path);
+    }
 
     // Loads old state
     syncNotifications();
-
-    // Update the voicemail state
-    slotVoicemailWaitingChanged();
 
     CommHistoryService *service = CommHistoryService::instance();
     connect(service, SIGNAL(inboxObservedChanged(bool,QString)), SLOT(slotInboxObservedChanged()));
@@ -766,8 +788,9 @@ void NotificationManager::slotNgfEventFinished(quint32 id)
 
 void NotificationManager::slotVoicemailWaitingChanged()
 {
-    const bool waiting(m_messageWaiting->voicemailWaiting());
-    const int messageCount(m_messageWaiting->voicemailMessageCount());
+    QOfonoMessageWaiting *mw = (QOfonoMessageWaiting*)sender();
+    const bool waiting(mw->voicemailWaiting());
+    const int messageCount(mw->voicemailMessageCount());
 
     DEBUG() << Q_FUNC_INFO << waiting << messageCount;
 
@@ -793,7 +816,7 @@ void NotificationManager::slotVoicemailWaitingChanged()
     notifications.clear();
 
     if (waiting) {
-        const QString voicemailNumber(m_messageWaiting->voicemailMailboxNumber());
+        const QString voicemailNumber(mw->voicemailMailboxNumber());
 
         // Publish a new voicemail-waiting notification
         Notification voicemailNotification;
@@ -837,3 +860,24 @@ void NotificationManager::slotVoicemailWaitingChanged()
     }
 }
 
+void NotificationManager::slotModemAdded(QString path)
+{
+    DEBUG() << "NotificationManager::slotModemAdded: " << path;
+    delete interfaces.take(path);
+    addModem(path);
+}
+
+void NotificationManager::slotModemRemoved(QString path)
+{
+    DEBUG() << "NotificationManager::slotModemRemoved: " << path;
+    delete interfaces.take(path);
+}
+
+void NotificationManager::slotValidChanged(bool valid)
+{
+    DEBUG() << "NotificationManager::slotValidChanged to: " << valid;
+    QOfonoMessageWaiting *mw = (QOfonoMessageWaiting*)sender();
+    if (mw->isValid()) {
+        slotVoicemailWaitingChanged();
+    }
+}
