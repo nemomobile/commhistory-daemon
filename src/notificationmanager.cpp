@@ -818,19 +818,23 @@ void NotificationManager::slotVoicemailWaitingChanged()
     if (waiting) {
         const QString voicemailNumber(mw->voicemailMailboxNumber());
 
+        // If ofono reports zero voicemail messages, we don't know the real number; report 1 as a fallback
+        const int voicemailCount(messageCount > 0 ? messageCount : 1);
+
         // Publish a new voicemail-waiting notification
         Notification voicemailNotification;
 
         voicemailNotification.setAppName(NotificationGroup::groupName(PersonalNotification::Voicemail));
         voicemailNotification.setCategory(voicemailWaitingCategory);
 
-        voicemailNotification.setPreviewSummary(txt_qtn_call_voicemail_notification(messageCount));
+        // If ofono reports zero voicemail messages, we don't know the real number; report 1 as a fallback
+        voicemailNotification.setPreviewSummary(txt_qtn_call_voicemail_notification(voicemailCount));
         voicemailNotification.setPreviewBody(txt_qtn_voicemail_prompt);
 
         voicemailNotification.setSummary(voicemailNotification.previewSummary());
         voicemailNotification.setBody(voicemailNotification.previewBody());
 
-        voicemailNotification.setItemCount(messageCount);
+        voicemailNotification.setItemCount(voicemailCount);
 
         QString service;
         QString path;
