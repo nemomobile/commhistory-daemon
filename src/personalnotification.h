@@ -65,6 +65,8 @@ class PersonalNotification : public QObject, public Serialisable
                                         WRITE setSmsReplaceNumber)
     Q_PROPERTY(bool hidden READ hidden
                            WRITE setHidden)
+    Q_PROPERTY(QDateTime timestamp READ timestamp
+                                   WRITE setTimestamp)
 
 public:
     enum EventCollection { Messaging = 0, Voicemail, Voice };
@@ -75,6 +77,7 @@ public:
                          CommHistory::Event::EventType eventType = CommHistory::Event::UnknownType,
                          const QString& targetId = QString(),
                          CommHistory::Group::ChatType chatType = CommHistory::Group::ChatTypeP2P,
+                         const QDateTime& timestamp = QDateTime(),
                          uint contactId = 0,
                          const QString& lastNotification = QString(),
                          QObject* parent = 0);
@@ -124,6 +127,7 @@ public:
     void setChatName(const QString& chatName);
     void setEventToken(const QString& eventToken);
     void setSmsReplaceNumber(const QString& number);
+    void setTimestamp(const QDateTime& timestamp);
     void setHidden(bool hide = true);
 
 signals:
@@ -142,6 +146,7 @@ private:
     QString m_chatName;
     QString m_eventToken;
     QString m_smsReplaceNumber;
+    QDateTime m_timestamp;
     bool m_hidden;
 
     Notification *m_notification;

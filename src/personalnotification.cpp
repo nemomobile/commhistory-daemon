@@ -48,13 +48,14 @@ PersonalNotification::PersonalNotification(const QString& remoteUid,
                                            CommHistory::Event::EventType eventType,
                                            const QString& channelTargetId,
                                            CommHistory::Group::ChatType chatType,
+                                           const QDateTime& timestamp,
                                            uint contactId,
                                            const QString& lastNotification,
                                           QObject* parent) :
     QObject(parent), m_remoteUid(remoteUid), m_account(account),
     m_eventType(eventType), m_targetId(channelTargetId), m_chatType(chatType),
     m_contactId(contactId), m_notificationText(lastNotification),
-    m_hasPendingEvents(true),
+    m_hasPendingEvents(true), m_timestamp(timestamp),
     m_hidden(false),
     m_notification(0)
 {
@@ -109,10 +110,8 @@ void PersonalNotification::publishNotification()
     if (m_eventType != CommHistory::Event::VoicemailEvent)
         name = notificationName();
 
-    if (!m_notification) {
+    if (!m_notification)
         m_notification = new Notification(this);
-        m_notification->setTimestamp(QDateTime::currentDateTimeUtc());
-    }
 
     m_notification->setAppName(NotificationGroup::groupName(collection()));
     m_notification->setCategory(NotificationGroup::groupType(m_eventType));
@@ -132,6 +131,7 @@ void PersonalNotification::publishNotification()
 
     m_notification->setSummary(name);
     m_notification->setBody(notificationText());
+    m_notification->setTimestamp(m_timestamp);
 
     m_notification->publish();
 
@@ -243,10 +243,7 @@ QString PersonalNotification::smsReplaceNumber() const
 
 QDateTime PersonalNotification::timestamp() const
 {
-    if (m_notification)
-        return m_notification->timestamp();
-
-    return QDateTime();
+    return m_timestamp;
 }
 
 bool PersonalNotification::hidden() const
@@ -346,6 +343,14 @@ void PersonalNotification::setSmsReplaceNumber(const QString &number)
 {
     if (m_smsReplaceNumber != number) {
         m_smsReplaceNumber = number;
+        setHasPendingEvents(true);
+    }
+}
+
+void PersonalNotification::setTimestamp(const QDateTime &timestamp)
+{
+    if (m_timestamp != timestamp) {
+        m_timestamp = timestamp;
         setHasPendingEvents(true);
     }
 }
