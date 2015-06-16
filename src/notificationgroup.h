@@ -90,6 +90,8 @@ signals:
 
 private slots:
     void onNotificationChanged();
+    void onNotificationClosed(PersonalNotification *);
+    void onClosed(uint);
 
 private:
     PersonalNotification::EventCollection m_collection;
