@@ -39,6 +39,7 @@ PersonalNotification::PersonalNotification(QObject* parent) : QObject(parent),
     m_contactId(0),
     m_hasPendingEvents(false),
     m_hidden(false),
+    m_restored(false),
     m_notification(0)
 {
 }
@@ -56,6 +57,7 @@ PersonalNotification::PersonalNotification(const QString& remoteUid,
     m_contactId(contactId), m_notificationText(lastNotification),
     m_hasPendingEvents(true),
     m_hidden(false),
+    m_restored(false),
     m_notification(0)
 {
 }
@@ -87,6 +89,7 @@ bool PersonalNotification::restore(Notification *n)
         return false;
 
     m_notification = n;
+    m_restored = true;
     connect(m_notification, SIGNAL(closed(uint)), SLOT(onClosed(uint)));
     return true;
 }
@@ -145,6 +148,7 @@ void PersonalNotification::publishNotification()
     m_notification->publish();
 
     setHasPendingEvents(false);
+    m_restored = false;
 
     DEBUG() << m_notification->replacesId() << m_notification->category() << m_notification->summary() << m_notification->body() << m_notification->hintValue("x-nemo-hidden");
 }
@@ -262,6 +266,11 @@ QDateTime PersonalNotification::timestamp() const
 bool PersonalNotification::hidden() const
 {
     return m_hidden;
+}
+
+bool PersonalNotification::restored() const
+{
+    return m_restored;
 }
 
 void PersonalNotification::setRemoteUid(const QString& remoteUid)

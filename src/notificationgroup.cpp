@@ -160,7 +160,12 @@ void NotificationGroup::updateGroup()
 
     // Find the most recent timestamp from grouped notifications
     QDateTime groupTimestamp;
+    bool allRestored = true;
+
     foreach (PersonalNotification *pn, mNotifications) {
+        // Are all members restored from storage?
+        allRestored &= pn->restored();
+
         if (pn->hasPendingEvents()) {
             // Publish this notification to ensure it has a timestamp
             pn->publishNotification();
@@ -173,8 +178,8 @@ void NotificationGroup::updateGroup()
     }
     mGroup->setTimestamp(groupTimestamp);
 
-    if (membersHidden) {
-        // Show a preview banner for this group update
+    if (membersHidden && !allRestored) {
+        // Show a preview banner for this group update (unless we've just restored from storage)
         Notification preview;
 
         preview.setAppName(mGroup->appName());
