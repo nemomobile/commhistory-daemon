@@ -121,26 +121,32 @@ void PersonalNotification::publishNotification()
     m_notification->setCategory(NotificationGroup::groupType(m_eventType));
     m_notification->setHintValue("x-commhistoryd-data", serialized().toBase64());
     m_notification->setHintValue("x-nemo-hidden", m_hidden);
+    m_notification->setSummary(name);
+    m_notification->setBody(notificationText());
 
     NotificationManager::instance()->setNotificationProperties(m_notification, this, false);
 
-    // No preview banner for existing notifications
-    if (m_notification->replacesId()) {
-        m_notification->setPreviewSummary(QString());
-        m_notification->setPreviewBody(QString());
-    } else {
-        m_notification->setPreviewSummary(name);
-        m_notification->setPreviewBody(notificationText());
-    }
+    if (!m_hidden && m_notification->replacesId() == 0) {
+        // Show preview banner for notifications not previously reported
+        Notification preview;
 
-    m_notification->setSummary(name);
-    m_notification->setBody(notificationText());
+        preview.setAppName(m_notification->appName());
+        preview.setCategory(m_notification->category() + QStringLiteral(".preview"));
+        preview.setPreviewSummary(m_notification->summary());
+        preview.setPreviewBody(m_notification->body());
+
+        NotificationManager::instance()->setNotificationProperties(&preview, this, false);
+
+        preview.publish();
+
+        DEBUG() << preview.replacesId() << preview.category() << preview.previewSummary() << preview.previewBody();
+    }
 
     m_notification->publish();
 
     setHasPendingEvents(false);
 
-    DEBUG() << m_notification->category() << name << m_notification->previewBody();
+    DEBUG() << m_notification->replacesId() << m_notification->category() << m_notification->summary() << m_notification->body() << m_notification->hintValue("x-nemo-hidden");
 }
 
 void PersonalNotification::removeNotification()

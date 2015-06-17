@@ -152,16 +152,17 @@ void NotificationGroup::updateGroup()
     mGroup->setItemCount(mNotifications.size());
 
     // This group is only visible if the members are hidden
-    mGroup->setHintValue("x-nemo-hidden", !mNotifications[0]->hidden());
+    const bool membersHidden(mNotifications[0]->hidden());
+    mGroup->setHintValue("x-nemo-hidden", !membersHidden);
 
-    NotificationManager::instance()->setNotificationProperties(mGroup, mNotifications[0],
-            countConversations() > 1);
+    const bool grouped(countConversations() > 1);
+    NotificationManager::instance()->setNotificationProperties(mGroup, mNotifications[0], grouped);
 
     // Find the most recent timestamp from grouped notifications
     QDateTime groupTimestamp;
-
     foreach (PersonalNotification *pn, mNotifications) {
         if (pn->hasPendingEvents()) {
+            // Publish this notification to ensure it has a timestamp
             pn->publishNotification();
         }
 
@@ -170,9 +171,27 @@ void NotificationGroup::updateGroup()
             groupTimestamp = timestamp;
         }
     }
-
     mGroup->setTimestamp(groupTimestamp);
+
+    if (membersHidden) {
+        // Show a preview banner for this group update
+        Notification preview;
+
+        preview.setAppName(mGroup->appName());
+        preview.setCategory(mGroup->category() + QStringLiteral(".preview"));
+        preview.setPreviewSummary(mGroup->summary());
+        preview.setPreviewBody(mGroup->body());
+
+        NotificationManager::instance()->setNotificationProperties(&preview, mNotifications[0], grouped);
+
+        preview.publish();
+
+        DEBUG() << preview.replacesId() << preview.category() << preview.previewSummary() << preview.previewBody();
+    }
+
     mGroup->publish();
+
+    DEBUG() << mGroup->replacesId() << mGroup->category() << mGroup->summary() << mGroup->body() << mGroup->hintValue("x-nemo-hidden");
 }
 
 void NotificationGroup::updateGroupLater()
