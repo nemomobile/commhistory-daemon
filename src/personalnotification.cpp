@@ -87,6 +87,7 @@ bool PersonalNotification::restore(Notification *n)
         return false;
 
     m_notification = n;
+    connect(m_notification, SIGNAL(closed(uint)), SLOT(onClosed(uint)));
     return true;
 }
 
@@ -111,6 +112,8 @@ void PersonalNotification::publishNotification()
 
     if (!m_notification) {
         m_notification = new Notification(this);
+        connect(m_notification, SIGNAL(closed(uint)), SLOT(onClosed(uint)));
+
         m_notification->setTimestamp(QDateTime::currentDateTimeUtc());
     }
 
@@ -143,10 +146,11 @@ void PersonalNotification::publishNotification()
 void PersonalNotification::removeNotification()
 {
     DEBUG() << "removing notification" << m_notification;
-    if (m_notification)
+    if (m_notification) {
         m_notification->close();
-    delete m_notification;
-    m_notification = 0;
+        m_notification->deleteLater();
+        m_notification = 0;
+    }
 
     setHasPendingEvents(false);
 }
@@ -356,6 +360,11 @@ void PersonalNotification::setHidden(bool hide)
         m_hidden = hide;
         setHasPendingEvents(true);
     }
+}
+
+void PersonalNotification::onClosed(uint /*reason*/)
+{
+    emit notificationClosed(this);
 }
 
 QDataStream& operator<<(QDataStream &out, const RTComLogger::PersonalNotification &key)

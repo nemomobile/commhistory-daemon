@@ -128,6 +128,10 @@ public:
 
 signals:
     void hasPendingEventsChanged(bool hasPendingEvents);
+    void notificationClosed(PersonalNotification *);
+
+private slots:
+    void onClosed(uint);
 
 private:
     QString m_remoteUid;

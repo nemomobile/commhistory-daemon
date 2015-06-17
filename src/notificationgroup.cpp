@@ -140,8 +140,10 @@ void NotificationGroup::updateGroup()
     }
 
     // Publish group notification, not including preview banners/sounds.
-    if (!mGroup)
+    if (!mGroup) {
         mGroup = new Notification(this);
+        connect(mGroup, SIGNAL(closed(uint)), SLOT(onClosed(uint)));
+    }
 
     mGroup->setAppName(groupName(m_collection));
     mGroup->setCategory(groupCategory(m_collection));
@@ -171,7 +173,6 @@ void NotificationGroup::updateGroup()
 
     mGroup->setTimestamp(groupTimestamp);
     mGroup->publish();
-
 }
 
 void NotificationGroup::updateGroupLater()
@@ -242,7 +243,7 @@ void NotificationGroup::removeGroup()
 {
     if (mGroup) {
         mGroup->close();
-        delete mGroup;
+        mGroup->deleteLater();
         mGroup = 0;
     }
 
@@ -257,6 +258,7 @@ void NotificationGroup::addNotification(PersonalNotification *notification)
 
     // If notification->hasPendingEvents, the updateGroup slot will also publish the notification
     connect(notification, SIGNAL(hasPendingEventsChanged(bool)), SLOT(onNotificationChanged()));
+    connect(notification, SIGNAL(notificationClosed(PersonalNotification*)), SLOT(onNotificationClosed(PersonalNotification*)));
     mNotifications.append(notification);
 
     // Only missed call and voicemail notifications are grouped
@@ -281,7 +283,7 @@ bool NotificationGroup::removeNotification(PersonalNotification *&notification)
 {
     if (mNotifications.removeOne(notification)) {
         notification->removeNotification();
-        delete notification;
+        notification->deleteLater();
         notification = 0;
 
         if (m_collection == PersonalNotification::Voice ||
@@ -307,5 +309,15 @@ void NotificationGroup::onNotificationChanged()
 
     if (pn->hasPendingEvents())
         emit changed();
+}
+
+void NotificationGroup::onNotificationClosed(PersonalNotification *notification)
+{
+    removeNotification(notification);
+}
+
+void NotificationGroup::onClosed(uint /*reason*/)
+{
+    removeGroup();
 }
 
