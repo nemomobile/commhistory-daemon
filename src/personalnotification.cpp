@@ -39,6 +39,7 @@ PersonalNotification::PersonalNotification(QObject* parent) : QObject(parent),
     m_contactId(0),
     m_hasPendingEvents(false),
     m_hidden(false),
+    m_restored(false),
     m_notification(0)
 {
 }
@@ -56,6 +57,7 @@ PersonalNotification::PersonalNotification(const QString& remoteUid,
     m_contactId(contactId), m_notificationText(lastNotification),
     m_hasPendingEvents(true),
     m_hidden(false),
+    m_restored(false),
     m_notification(0)
 {
 }
@@ -87,6 +89,7 @@ bool PersonalNotification::restore(Notification *n)
         return false;
 
     m_notification = n;
+    m_restored = true;
     connect(m_notification, SIGNAL(closed(uint)), SLOT(onClosed(uint)));
     return true;
 }
@@ -121,26 +124,33 @@ void PersonalNotification::publishNotification()
     m_notification->setCategory(NotificationGroup::groupType(m_eventType));
     m_notification->setHintValue("x-commhistoryd-data", serialized().toBase64());
     m_notification->setHintValue("x-nemo-hidden", m_hidden);
+    m_notification->setSummary(name);
+    m_notification->setBody(notificationText());
 
     NotificationManager::instance()->setNotificationProperties(m_notification, this, false);
 
-    // No preview banner for existing notifications
-    if (m_notification->replacesId()) {
-        m_notification->setPreviewSummary(QString());
-        m_notification->setPreviewBody(QString());
-    } else {
-        m_notification->setPreviewSummary(name);
-        m_notification->setPreviewBody(notificationText());
-    }
+    if (!m_hidden && m_notification->replacesId() == 0) {
+        // Show preview banner for notifications not previously reported
+        Notification preview;
 
-    m_notification->setSummary(name);
-    m_notification->setBody(notificationText());
+        preview.setAppName(m_notification->appName());
+        preview.setCategory(m_notification->category() + QStringLiteral(".preview"));
+        preview.setPreviewSummary(m_notification->summary());
+        preview.setPreviewBody(m_notification->body());
+
+        NotificationManager::instance()->setNotificationProperties(&preview, this, false);
+
+        preview.publish();
+
+        DEBUG() << preview.replacesId() << preview.category() << preview.previewSummary() << preview.previewBody();
+    }
 
     m_notification->publish();
 
     setHasPendingEvents(false);
+    m_restored = false;
 
-    DEBUG() << m_notification->category() << name << m_notification->previewBody();
+    DEBUG() << m_notification->replacesId() << m_notification->category() << m_notification->summary() << m_notification->body() << m_notification->hintValue("x-nemo-hidden");
 }
 
 void PersonalNotification::removeNotification()
@@ -256,6 +266,11 @@ QDateTime PersonalNotification::timestamp() const
 bool PersonalNotification::hidden() const
 {
     return m_hidden;
+}
+
+bool PersonalNotification::restored() const
+{
+    return m_restored;
 }
 
 void PersonalNotification::setRemoteUid(const QString& remoteUid)

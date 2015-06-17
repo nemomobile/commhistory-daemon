@@ -111,6 +111,7 @@ public:
     QString smsReplaceNumber() const;
     QDateTime timestamp() const;
     bool hidden() const;
+    bool restored() const;
 
     void setRemoteUid(const QString& remoteUid);
     void setAccount(const QString& account);
@@ -147,6 +148,7 @@ private:
     QString m_eventToken;
     QString m_smsReplaceNumber;
     bool m_hidden;
+    bool m_restored;
 
     Notification *m_notification;
 
