@@ -129,8 +129,9 @@ void PersonalNotification::publishNotification()
 
     NotificationManager::instance()->setNotificationProperties(m_notification, this, false);
 
-    if (!m_hidden && m_notification->replacesId() == 0) {
-        // Show preview banner for notifications not previously reported
+    // Show preview banner for notifications not previously reported
+    // (missed calls have no preview as the incoming call dialog was just shown)
+    if ((collection() != Voice) && !m_hidden && m_notification->replacesId() == 0) {
         Notification preview;
 
         preview.setAppName(m_notification->appName());
