@@ -178,8 +178,9 @@ void NotificationGroup::updateGroup()
     }
     mGroup->setTimestamp(groupTimestamp);
 
-    if (membersHidden && !allRestored) {
-        // Show a preview banner for this group update (unless we've just restored from storage)
+    // Show preview banner for this group update unless we've just restored from storage
+    // (missed calls have no preview as the incoming call dialog was just shown)
+    if ((m_collection != PersonalNotification::Voice) && membersHidden && !allRestored) {
         Notification preview;
 
         preview.setAppName(mGroup->appName());
