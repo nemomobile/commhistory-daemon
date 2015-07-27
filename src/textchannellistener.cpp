@@ -106,6 +106,7 @@
 #define RESAVE_INTERVAL 5000 //ms
 
 using namespace RTComLogger;
+using namespace CommHistory;
 QTCONTACTS_USE_NAMESPACE
 QTVERSIT_USE_NAMESPACE
 
@@ -357,13 +358,10 @@ void TextChannelListener::slotGroupInserted(const QModelIndex &index, int start,
         CommHistory::Group group = m_GroupModel->group(row);
 
         DEBUG() << Q_FUNC_INFO << "Inserted group's account: " << group.localUid();
-        DEBUG() << Q_FUNC_INFO << "Inserted group's target: " << group.remoteUids().first();
+        DEBUG() << Q_FUNC_INFO << "Inserted group's target: " << group.recipients().value(0).remoteUid();
 
-        if (group.isValid()
-            && group.localUid() == m_Account->objectPath()
-            && CommHistory::remoteAddressMatch(group.localUid(),
-                                               group.remoteUids().first(),
-                                               targetId())) {
+        const Recipient recipient(m_Account->objectPath(), targetId());
+        if (group.isValid() && group.recipients().containsMatch(recipient)) {
             DEBUG() << Q_FUNC_INFO << "found listener for group" << group.id();
             m_Group = group;
             break;
@@ -400,12 +398,11 @@ int TextChannelListener::groupIdForRecipient(const QString &remoteUid)
     if (m_GroupModel->isReady()
         && m_GroupModel->rowCount() > 0
         && m_Account) {
+        const Recipient recipient(m_Account->objectPath(), remoteUid);
         for (int row = 0; row < m_GroupModel->rowCount(); row++) {
-            QModelIndex index = m_GroupModel->index(row, 0);
-            CommHistory::Group group = m_GroupModel->group(index);
-            if (group.isValid()
-                && group.localUid() == m_Account->objectPath()
-                && CommHistory::remoteAddressMatch(group.localUid(), group.remoteUids().first(), remoteUid)) {
+            const QModelIndex &index = m_GroupModel->index(row, 0);
+            const CommHistory::Group &group = m_GroupModel->group(index);
+            if (group.isValid() && group.recipients().containsMatch(recipient)) {
                 groupId = group.id();
                 DEBUG() << Q_FUNC_INFO << "found existing group:" << groupId;
                 break;
@@ -417,7 +414,7 @@ int TextChannelListener::groupIdForRecipient(const QString &remoteUid)
             CommHistory::Group group;
             group.setLocalUid(m_Account->objectPath());
 
-            group.setRemoteUids(QStringList() << remoteUid);
+            group.setRecipients(Recipient(m_Account->objectPath(), remoteUid));
             if (!m_GroupModel->addGroup(group)) {
                 qCritical() << Q_FUNC_INFO << "error adding group";
             }
@@ -442,10 +439,8 @@ int TextChannelListener::groupId()
             CommHistory::Group group;
             group.setLocalUid(m_Account->objectPath());
 
-            QStringList remoteUids;
             DEBUG() << Q_FUNC_INFO << targetId();
-            remoteUids << targetId();
-            group.setRemoteUids(remoteUids);
+            group.setRecipients(Recipient(m_Account->objectPath(), targetId()));
 
             if (m_IsGroupChat) {
                 CommHistory::Group::ChatType chatType = CommHistory::Group::ChatTypeP2P;
@@ -558,14 +553,11 @@ void TextChannelListener::slotOnModelReady(bool status)
     // otherwise add a new group only when a new message(received/sent) comes
     if (m_GroupModel->rowCount() > 0
         && m_Account) {
+        const Recipient recipient(m_Account->objectPath(), targetId());
         for (int row = 0; row < m_GroupModel->rowCount(); row++) {
-            QModelIndex index = m_GroupModel->index(row, 0);
-            CommHistory::Group group = m_GroupModel->group(index);
-            if (group.isValid()
-                && group.localUid() == m_Account->objectPath()
-                && CommHistory::remoteAddressMatch(group.localUid(),
-                                                   group.remoteUids().first(),
-                                                   targetId())) {
+            const QModelIndex &index = m_GroupModel->index(row, 0);
+            const CommHistory::Group &group = m_GroupModel->group(index);
+            if (group.isValid() && group.recipients().containsMatch(recipient)) {
                 m_Group = group;
 
                 DEBUG() << Q_FUNC_INFO << "found existing group:" << m_Group.id();
@@ -841,7 +833,7 @@ CommHistory::ConversationModel& TextChannelListener::conversationModel()
         m_pConversationModel->setPropertyMask(CommHistory::Event::PropertySet()
                                               << CommHistory::Event::Headers);
         // We are not interested in contact changes, just replace type of a message:
-        m_pConversationModel->enableContactChanges(false);
+        m_pConversationModel->setResolveContacts(EventModel::DoNotResolve);
         // Model should inform us when it is populated after calling getEvents:
         connect(m_pConversationModel, SIGNAL(modelReady(bool)),
                 this, SLOT(slotConvModelReady(bool)));
@@ -1019,7 +1011,7 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
             }
             event.setIsRead(true);
             event.setDirection(CommHistory::Event::Outbound);
-            event.setRemoteUid(targetId());
+            event.setRecipients(Recipient(m_Account->objectPath(), targetId()));
 
             QDateTime sentTime = QDateTime::currentDateTime();
             event.setStartTime(sentTime);
@@ -1156,12 +1148,12 @@ void TextChannelListener::handleMessageFailed(const Tp::ReceivedMessage &message
             } else if (CommHistory::localUidComparesPhoneNumbers(event.localUid())) {
                 // phone number
                 ML10N::MLocale locale;
-                recipient = locale.toLocalizedNumbers(event.remoteUid());
+                recipient = locale.toLocalizedNumbers(event.recipients().value(0).remoteUid());
                 recipient.insert(0, QChar(0x202A)); // left-to-right embedding
                 recipient.append(QChar(0x202C)); // pop directional formatting
             } else {
                 // IM address
-                recipient = event.remoteUid();
+                recipient = event.recipients().value(0).remoteUid();
             }
 
             // general error
@@ -1270,7 +1262,7 @@ void TextChannelListener::handleReceivedMessage(const Tp::ReceivedMessage &messa
              << m_Account->objectPath() << messageText;
 
     fillEventFromMessage(message, event);
-    event.setRemoteUid(remoteId);
+    event.setRecipients(Recipient(m_Account->objectPath(), remoteId));
 
     if (fromSelf) {
         event.setDirection(CommHistory::Event::Outbound);
@@ -1318,7 +1310,7 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
         fillEventFromMessage(message, event);
         event.setIsRead(true);
         event.setDirection(CommHistory::Event::Outbound);
-        event.setRemoteUid(remoteUid);
+        event.setRecipients(Recipient(m_Account->objectPath(), remoteUid));
         if (message.messageType() == Tp::ChannelTextMessageTypeAction)
             event.setIsAction(true);
     }
@@ -1597,7 +1589,7 @@ void TextChannelListener::slotPresenceChanged(const Tp::Presence &presence)
         CommHistory::Event event;
         event.setType(CommHistory::Event::StatusMessageEvent);
         event.setDirection(CommHistory::Event::Inbound);
-        event.setRemoteUid(remoteId);
+        event.setRecipients(Recipient(m_Account->objectPath(), remoteId));
         event.setGroupId(groupId());
         event.setLocalUid(m_Account->objectPath());
         event.setFreeText(newStatusMessage);

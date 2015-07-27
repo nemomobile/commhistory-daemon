@@ -39,15 +39,12 @@
 #include <CommHistory/Event>
 #include <CommHistory/Group>
 #include <CommHistory/GroupModel>
-#include <CommHistory/contactlistener.h>
+#include <CommHistory/ContactListener>
+#include <CommHistory/ContactResolver>
 
 // our includes
 #include "notificationgroup.h"
 #include "personalnotification.h"
-
-namespace CommHistory {
-    class GroupModel;
-}
 
 namespace Ngf {
     class Client;
@@ -65,9 +62,9 @@ class NotificationManager : public QObject
 {
     Q_OBJECT
 
-    typedef CommHistory::ContactListener::ContactAddress ContactAddress;
-
 public:
+    typedef CommHistory::RecipientList RecipientList;
+
     struct EventGroupProperties {
         PersonalNotification::EventCollection collection;
         QString localUid;
@@ -143,9 +140,9 @@ private Q_SLOTS:
     void slotGroupRemoved(const QModelIndex &index, int start, int end);
     void slotGroupDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
     void slotNgfEventFinished(quint32 id);
-    void slotContactUpdated(quint32 localId, const QString &name, const QList<ContactAddress> &addresses);
-    void slotContactRemoved(quint32 localId);
-    void slotContactUnknown(const QPair<QString,QString> &address);
+    void slotContactResolveFinished();
+    void slotContactChanged(const RecipientList &recipients);
+    void slotContactInfoChanged(const RecipientList &recipients);
     void slotClassZeroError(const QDBusError &error);
     void slotVoicemailWaitingChanged();
     void slotModemAdded(QString path);
@@ -176,15 +173,16 @@ private:
     bool updateEditedEvent(const CommHistory::Event &event, const QString &text);
     void addModem(QString path);
 
+    QString notificationText(const CommHistory::Event &event, const QString &details);
+
 private:
     static NotificationManager* m_pInstance;
     QHash<EventGroupProperties, NotificationGroup*> m_Groups;
     bool m_Initialised;
 
-    QList<PersonalNotification*> m_unresolvedEvents;
+    QList<PersonalNotification*> m_unresolvedNotifications;
 
-    QString notificationText(const CommHistory::Event &event, const QString &details);
-
+    CommHistory::ContactResolver *m_contactResolver;
     QSharedPointer<CommHistory::ContactListener> m_contactListener;
     CommHistory::GroupModel *m_GroupModel;
 

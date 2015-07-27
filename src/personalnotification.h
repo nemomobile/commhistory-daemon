@@ -32,6 +32,7 @@
 
 // commhistory
 #include <CommHistory/Group>
+#include <CommHistory/Recipient>
 
 class Notification;
 
@@ -52,7 +53,7 @@ class PersonalNotification : public QObject, public Serialisable
     // ...and the same goes for Group::ChatType.
     Q_PROPERTY(uint chatType READ chatType WRITE setChatType)
 
-    Q_PROPERTY(uint contactid READ contactId WRITE setContactId)
+    Q_PROPERTY(uint contactid READ contactId)
     Q_PROPERTY(QString notificationtext READ notificationText
                                         WRITE setNotificationText)
     Q_PROPERTY(bool haspendingevents READ hasPendingEvents
@@ -118,14 +119,16 @@ public:
     void setEventType(uint eventType);
     void setTargetId(const QString& targetId);
     void setChatType(uint chatType);
-    void setContactId(uint contactId);
-    void setContactName(const QString& contactName);
     void setNotificationText(const QString& notificationText);
     void setHasPendingEvents(bool hasPendingEvents = true);
     void setChatName(const QString& chatName);
     void setEventToken(const QString& eventToken);
     void setSmsReplaceNumber(const QString& number);
     void setHidden(bool hide = true);
+
+    const CommHistory::Recipient &recipient() const;
+
+    void updateRecipientData();
 
 signals:
     void hasPendingEventsChanged(bool hasPendingEvents);
@@ -140,8 +143,6 @@ private:
     uint m_eventType;
     QString m_targetId;
     uint m_chatType;
-    uint m_contactId;
-    QString m_contactName;
     QString m_notificationText;
     bool m_hasPendingEvents;
     QString m_chatName;
@@ -151,6 +152,7 @@ private:
     bool m_restored;
 
     Notification *m_notification;
+    CommHistory::Recipient m_recipient;
 
     QByteArray serialized() const;
 };

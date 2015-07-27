@@ -61,6 +61,7 @@ NotificationManager* NotificationManager::m_pInstance = 0;
 NotificationManager::NotificationManager(QObject* parent)
         : QObject(parent)
         , m_Initialised(false)
+        , m_contactResolver(0)
         , m_GroupModel(0)
         , m_ngfClient(0)
         , m_ngfEvent(0)
@@ -71,7 +72,7 @@ NotificationManager::~NotificationManager()
 {
     qDeleteAll(interfaces.values());
     qDeleteAll(m_Groups);
-    qDeleteAll(m_unresolvedEvents);
+    qDeleteAll(m_unresolvedNotifications);
 }
 
 void NotificationManager::addModem(QString path)
@@ -98,13 +99,15 @@ void NotificationManager::init()
         return;
     }
 
+    m_contactResolver = new ContactResolver(this);
+    connect(m_contactResolver, SIGNAL(finished()),
+            SLOT(slotContactResolveFinished()));
+
     m_contactListener = ContactListener::instance();
-    connect(m_contactListener.data(), SIGNAL(contactUpdated(quint32,QString,QList<ContactAddress>)),
-            SLOT(slotContactUpdated(quint32,QString,QList<ContactAddress>)));
-    connect(m_contactListener.data(), SIGNAL(contactRemoved(quint32)),
-            SLOT(slotContactRemoved(quint32)));
-    connect(m_contactListener.data(), SIGNAL(contactUnknown(QPair<QString,QString>)),
-            SLOT(slotContactUnknown(QPair<QString,QString>)));
+    connect(m_contactListener.data(), SIGNAL(contactChanged(RecipientList)),
+            SLOT(slotContactChanged(RecipientList)));
+    connect(m_contactListener.data(), SIGNAL(contactInfoChanged(RecipientList)),
+            SLOT(slotContactInfoChanged(RecipientList)));
 
     m_ngfClient = new Ngf::Client(this);
     connect(m_ngfClient, SIGNAL(eventFailed(quint32)), SLOT(slotNgfEventFinished(quint32)));
@@ -180,14 +183,14 @@ bool NotificationManager::updateEditedEvent(const CommHistory::Event& event, con
     if (event.messageToken().isEmpty())
         return false;
 
-    foreach (PersonalNotification *notification, m_unresolvedEvents) {
+    foreach (PersonalNotification *notification, m_unresolvedNotifications) {
         if (notification->eventToken() == event.messageToken()) {
             notification->setNotificationText(text);
             return true;
         }
     }
 
-    EventGroupProperties groupProperties(eventGroup(PersonalNotification::collection(event.type()), event.localUid(), event.remoteUid()));
+    EventGroupProperties groupProperties(eventGroup(PersonalNotification::collection(event.type()), event.localUid(), event.recipients().value(0).remoteUid()));
     NotificationGroup *eventGroup = m_Groups.value(groupProperties);
     if (!eventGroup)
         return false;
@@ -252,7 +255,7 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
         }
     }
 
-    PersonalNotification *notification = new PersonalNotification(event.remoteUid(),
+    PersonalNotification *notification = new PersonalNotification(event.recipients().value(0).remoteUid(),
             event.localUid(), event.type(), channelTargetId, chatType);
     notification->setNotificationText(text);
     notification->setSmsReplaceNumber(event.headers().value(REPLACE_TYPE));
@@ -267,13 +270,15 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
 
 void NotificationManager::resolveNotification(PersonalNotification *pn)
 {
-    if (pn->remoteUid() == QLatin1String("<hidden>") || !pn->chatName().isEmpty()) {
+    if (pn->remoteUid() == QLatin1String("<hidden>") ||
+        !pn->chatName().isEmpty() ||
+        pn->recipient().isContactResolved()) {
         // Add notification immediately
         addNotification(pn);
     } else {
         DEBUG() << Q_FUNC_INFO << "Trying to resolve contact for" << pn->account() << pn->remoteUid();
-        m_unresolvedEvents.append(pn);
-        m_contactListener->resolveContact(pn->account(), pn->remoteUid());
+        m_unresolvedNotifications.append(pn);
+        m_contactResolver->add(pn->recipient());
     }
 }
 
@@ -319,7 +324,7 @@ bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& even
 
     QString remoteMatch;
     if (chatType == CommHistory::Group::ChatTypeP2P)
-        remoteMatch = event.remoteUid();
+        remoteMatch = event.recipients().value(0).remoteUid();
     else
         remoteMatch = channelTargetId;
 
@@ -364,11 +369,11 @@ void NotificationManager::removeNotifications(const QString &accountPath, const 
         }
     }
 
-    for (QList<PersonalNotification*>::iterator it = m_unresolvedEvents.begin();
-            it != m_unresolvedEvents.end(); ) {
+    for (QList<PersonalNotification*>::iterator it = m_unresolvedNotifications.begin();
+            it != m_unresolvedNotifications.end(); ) {
         if ((*it)->account() == accountPath) {
             delete *it;
-            it = m_unresolvedEvents.erase(it);
+            it = m_unresolvedNotifications.erase(it);
         } else
             it++;
     }
@@ -378,6 +383,8 @@ void NotificationManager::removeConversationNotifications(const QString &localUi
                                                           const QString &remoteUid,
                                                           CommHistory::Group::ChatType chatType)
 {
+    const Recipient recipient(localUid, remoteUid);
+
     QHash<EventGroupProperties, NotificationGroup *>::const_iterator it = m_Groups.constBegin(), end = m_Groups.constEnd();
     for ( ; it != end; ++it) {
         NotificationGroup *group(it.value());
@@ -385,21 +392,19 @@ void NotificationManager::removeConversationNotifications(const QString &localUi
             continue;
 
         foreach (PersonalNotification *notification, group->notifications()) {
-            if (notification->collection() != PersonalNotification::Messaging)
+            if (notification->collection() != PersonalNotification::Messaging ||
+                notification->chatType() != chatType)
                 continue;
 
-            QString notificationRemoteUidStr;
             // For p-to-p chat we use remote uid for comparison and for MUC we use target (channel) id:
+            bool match(false);
             if (chatType == CommHistory::Group::ChatTypeP2P)
-                notificationRemoteUidStr = notification->remoteUid();
+                match = recipient.matches(notification->recipient());
             else
-                notificationRemoteUidStr = notification->targetId();
+                match = recipient.matches(Recipient(notification->account(), notification->targetId()));
 
-            if (notification->account() == localUid
-                    && CommHistory::remoteAddressMatch(localUid, notificationRemoteUidStr, remoteUid)
-                    && (CommHistory::Group::ChatType)(notification->chatType()) == chatType) {
+            if (match)
                 group->removeNotification(notification);
-            }
         }
     }
 }
@@ -412,7 +417,7 @@ void NotificationManager::slotObservedConversationsChanged(const QVariantList &c
             continue;
 
         removeConversationNotifications(values[0].toString(), values[1].toString(),
-                                        (CommHistory::Group::ChatType)values[2].toUInt());
+                                        static_cast<CommHistory::Group::ChatType>(values[2].toUInt()));
     }
 }
 
@@ -483,7 +488,7 @@ void NotificationManager::addNotification(PersonalNotification *notification)
 
 int NotificationManager::pendingEventCount()
 {
-    return m_unresolvedEvents.size();
+    return m_unresolvedNotifications.size();
 }
 
 QString NotificationManager::notificationText(const CommHistory::Event& event, const QString &details)
@@ -628,66 +633,47 @@ void NotificationManager::setNotificationProperties(Notification *notification, 
     notification->setRemoteActions(remoteActions);
 }
 
-void NotificationManager::slotContactUpdated(quint32 localId, const QString &contactName,
-                                             const QList<ContactListener::ContactAddress> &addresses)
+void NotificationManager::slotContactResolveFinished()
 {
-    DEBUG() << Q_FUNC_INFO << localId << contactName;
+    DEBUG() << Q_FUNC_INFO;
 
-    // Check all existing notifications and update if necessary
-    foreach (NotificationGroup *group, m_Groups) {
-        foreach (PersonalNotification *notification, group->notifications()) {
-            if (ContactListener::addressMatchesList(notification->account(),
-                        notification->remoteUid(), addresses)) {
-                DEBUG() << "Match existing notification" << notification->account() << notification->remoteUid();
-                notification->setContactId(localId);
-                notification->setContactName(contactName);
-            }
-        }
+    // All events are now resolved
+    foreach (PersonalNotification *notification, m_unresolvedNotifications) {
+        DEBUG() << "Resolved contact for notification" << notification->account() << notification->remoteUid() << notification->contactId();
+        notification->updateRecipientData();
+        addNotification(notification);
     }
 
-    // Check all unresolved events for a match, and add notifications for any that do
-    for (QList<PersonalNotification*>::iterator it = m_unresolvedEvents.begin(); it != m_unresolvedEvents.end(); ) {
-        PersonalNotification *notification = *it;
-
-        if (ContactListener::addressMatchesList(notification->account(),
-                    notification->remoteUid(), addresses)) {
-            notification->setContactId(localId);
-            notification->setContactName(contactName);
-            DEBUG() << "Resolved contact for notification" << notification->account() << notification->remoteUid();
-            addNotification(notification);
-            it = m_unresolvedEvents.erase(it);
-        } else
-            it++;
-    }
+    m_unresolvedNotifications.clear();
 }
 
-void NotificationManager::slotContactRemoved(quint32 localId)
+void NotificationManager::slotContactChanged(const RecipientList &recipients)
 {
-    DEBUG() << Q_FUNC_INFO << localId;
+    DEBUG() << Q_FUNC_INFO << recipients;
 
     // Check all existing notifications and update if necessary
     foreach (NotificationGroup *group, m_Groups) {
         foreach (PersonalNotification *notification, group->notifications()) {
-            if (notification->contactId() == localId) {
-                notification->setContactId(0);
-                notification->setContactName(QString());
+            if (recipients.contains(notification->recipient())) {
+                DEBUG() << "Contact changed for notification" << notification->account() << notification->remoteUid() << notification->contactId();
+                notification->updateRecipientData();
             }
         }
     }
 }
 
-void NotificationManager::slotContactUnknown(const QPair<QString,QString> &address)
+void NotificationManager::slotContactInfoChanged(const RecipientList &recipients)
 {
-    for (QList<PersonalNotification*>::iterator it = m_unresolvedEvents.begin(); it != m_unresolvedEvents.end(); ) {
-        PersonalNotification *notification = *it;
+    DEBUG() << Q_FUNC_INFO << recipients;
 
-        if (address.first == notification->account() &&
-                CommHistory::remoteAddressMatch(address.first, notification->remoteUid(), address.second)) {
-            DEBUG() << "Unknown contact for notification" << notification->account() << notification->remoteUid();
-            addNotification(notification);
-            it = m_unresolvedEvents.erase(it);
-        } else
-            it++;
+    // Check all existing notifications and update if necessary
+    foreach (NotificationGroup *group, m_Groups) {
+        foreach (PersonalNotification *notification, group->notifications()) {
+            if (recipients.contains(notification->recipient())) {
+                DEBUG() << "Contact info changed for notification" << notification->account() << notification->remoteUid() << notification->contactId();
+                notification->updateRecipientData();
+            }
+        }
     }
 }
 
@@ -700,7 +686,7 @@ CommHistory::GroupModel* NotificationManager::groupModel()
 {
     if (!m_GroupModel) {
         m_GroupModel = new CommHistory::GroupModel(this);
-        m_GroupModel->enableContactChanges(false);
+        m_GroupModel->setResolveContacts(GroupManager::DoNotResolve);
         connect(m_GroupModel,
                 SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
                 this,
@@ -725,10 +711,9 @@ void NotificationManager::slotGroupRemoved(const QModelIndex &index, int start, 
     for (int i = start; i <= end; i++) {
         QModelIndex row = m_GroupModel->index(i, 0, index);
         Group group = m_GroupModel->group(row);
-        if (group.isValid()
-            && !group.remoteUids().isEmpty()) {
+        if (group.isValid() && !group.recipients().isEmpty()) {
             removeConversationNotifications(group.localUid(),
-                                            group.remoteUids().first(),
+                                            group.recipients().value(0).remoteUid(),
                                             group.chatType());
         }
     }
@@ -750,7 +735,7 @@ void NotificationManager::slotGroupDataChanged(const QModelIndex &topLeft, const
         QModelIndex row = m_GroupModel->index(i, 0);
         CommHistory::Group group = m_GroupModel->group(row);
         if (group.isValid()) {
-            const QString remoteUid = group.remoteUids().first();
+            const QString remoteUid = group.recipients().value(0).remoteUid();
             const QString localUid = group.localUid();
 
             foreach (NotificationGroup *g, m_Groups) {
