@@ -1930,6 +1930,12 @@ void TextChannelListener::tryToClose()
     }
 }
 
+void TextChannelListener::closed()
+{
+    m_pendingMessageIds.remove(m_Channel->objectPath());
+    ChannelListener::closed();
+}
+
 void TextChannelListener::finishedWithError(const QString& errorName,
                                             const QString& errorMessage)
 {
