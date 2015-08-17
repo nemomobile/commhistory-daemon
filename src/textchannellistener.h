@@ -162,6 +162,7 @@ private:
 
     bool hasPendingOperations() const;
     void tryToClose();
+    void closed();
 
     CommHistory::Group getGroupById(int groupId) const;
 

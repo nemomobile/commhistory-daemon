@@ -76,7 +76,7 @@ public Q_SLOTS:
     /*!
      * \brief emits channelClosed signal
      */
-    void closed();
+    virtual void closed();
 
 Q_SIGNALS:
     /*!
