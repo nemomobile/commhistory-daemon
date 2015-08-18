@@ -255,7 +255,7 @@ void Ut_TextChannelListener::imSending()
 
     QVERIFY(g.isValid());
     QCOMPARE(g.localUid(), IM_ACCOUNT_PATH);
-    QCOMPARE(g.remoteUids().first(), IM_USERNAME);
+    QCOMPARE(g.recipients().value(0).remoteUid(), IM_USERNAME);
     QCOMPARE(g.lastMessageText(), message);
     QCOMPARE(g.lastEventType(), CommHistory::Event::IMEvent);
 
@@ -360,7 +360,7 @@ void Ut_TextChannelListener::receiving()
 
     QVERIFY(g.isValid());
     QCOMPARE(g.localUid(), accountPath);
-    QCOMPARE(g.remoteUids().first(), username);
+    QCOMPARE(g.recipients().value(0).remoteUid(), username);
     QCOMPARE(g.lastMessageText(), message);
     if (cellular)
         QCOMPARE(g.lastEventType(), CommHistory::Event::SMSEvent);
@@ -448,7 +448,7 @@ void Ut_TextChannelListener::smsSending()
 
     QVERIFY(g.isValid());
     QCOMPARE(g.localUid(), SMS_ACCOUNT_PATH);
-    QCOMPARE(g.remoteUids().first(), SMS_NUMBER);
+    QCOMPARE(g.recipients().value(0).remoteUid(), SMS_NUMBER);
     QCOMPARE(g.lastMessageText(), message);
     QCOMPARE(g.lastEventType(), CommHistory::Event::SMSEvent);
     QVERIFY(g.lastEventStatus() == CommHistory::Event::SendingStatus
@@ -774,7 +774,7 @@ void Ut_TextChannelListener::receiveVCard()
 
     QVERIFY(g.isValid());
     QCOMPARE(g.localUid(), SMS_ACCOUNT_PATH);
-    QCOMPARE(g.remoteUids().first(), SMS_NUMBER);
+    QCOMPARE(g.recipients().value(0).remoteUid(), SMS_NUMBER);
     QVERIFY(g.lastMessageText().isEmpty());
 
     QEXPECT_FAIL("", "current test doesn't set vcard filename", Continue);
@@ -890,7 +890,7 @@ void Ut_TextChannelListener::groups()
 
         QVERIFY(tcl.m_Group.isValid());
         QCOMPARE(tcl.m_Group.localUid(), SMS_ACCOUNT_PATH);
-        QCOMPARE(tcl.m_Group.remoteUids().first(), SMS_NUMBER);
+        QCOMPARE(tcl.m_Group.recipients().value(0).remoteUid(), SMS_NUMBER);
         QCOMPARE(tcl.m_Group.lastMessageText(), message);
         QCOMPARE(tcl.m_Group.lastEventType(), CommHistory::Event::SMSEvent);
 
@@ -937,7 +937,7 @@ void Ut_TextChannelListener::groups()
 
         QVERIFY(tcl.m_Group.isValid());
         QCOMPARE(tcl.m_Group.localUid(), SMS_ACCOUNT_PATH);
-        QCOMPARE(tcl.m_Group.remoteUids().first(), SMS_NUMBER);
+        QCOMPARE(tcl.m_Group.recipients().value(0).remoteUid(), SMS_NUMBER);
         QCOMPARE(tcl.m_Group.lastMessageText(), message);
         QCOMPARE(tcl.m_Group.lastEventType(), CommHistory::Event::SMSEvent);
 
@@ -1012,7 +1012,7 @@ void Ut_TextChannelListener::receivingFromSelf()
 
     QVERIFY(g.isValid());
     QCOMPARE(g.localUid(), IM_ACCOUNT_PATH);
-    QCOMPARE(g.remoteUids().first(), IM_REMOTE_ID);
+    QCOMPARE(g.recipients().value(0).remoteUid(), IM_REMOTE_ID);
     QCOMPARE(g.lastMessageText(), message);
     QCOMPARE(g.lastEventType(), CommHistory::Event::IMEvent);
 
@@ -1089,7 +1089,7 @@ void Ut_TextChannelListener::supersedes()
 
     QVERIFY(g.isValid());
     QCOMPARE(g.localUid(), IM_ACCOUNT_PATH);
-    QCOMPARE(g.remoteUids().first(), IM_USERNAME);
+    QCOMPARE(g.recipients().value(0).remoteUid(), IM_USERNAME);
     QCOMPARE(g.lastMessageText(), originalText);
     QCOMPARE(g.lastEventType(), CommHistory::Event::IMEvent);
 
@@ -1132,7 +1132,7 @@ void Ut_TextChannelListener::supersedes()
 
     QVERIFY(g.isValid());
     QCOMPARE(g.localUid(), IM_ACCOUNT_PATH);
-    QCOMPARE(g.remoteUids().first(), IM_USERNAME);
+    QCOMPARE(g.recipients().value(0).remoteUid(), IM_USERNAME);
     QCOMPARE(g.lastMessageText(), editedText);
     QCOMPARE(g.lastEventType(), CommHistory::Event::IMEvent);
 

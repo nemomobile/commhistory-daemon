@@ -201,7 +201,7 @@ void Ut_StreamChannelListener::invalidated()
 
     CommHistory::Event e = model.event(model.index(0,0));
     QCOMPARE(e.localUid(), ACCOUNT_PATH);
-    QCOMPARE(e.remoteUid(), NUMBER);
+    QCOMPARE(e.recipients().value(0).remoteUid(), NUMBER);
 
     if (startCall) {
         QVERIFY(startTime.toTime_t() < e.endTime().toTime_t());
@@ -357,7 +357,7 @@ void Ut_StreamChannelListener::normalCall()
 
     CommHistory::Event e = model.event(model.index(0,0));
     QCOMPARE(e.localUid(), ACCOUNT_PATH);
-    QCOMPARE(e.remoteUid(), NUMBER);
+    QCOMPARE(e.recipients().value(0).remoteUid(), NUMBER);
     QVERIFY(startTime.toTime_t() <= e.startTime().toTime_t());
     justWait(1000); // account for rounding errors with clock_monotonic vs. QDateTime
     QVERIFY(QDateTime::currentDateTime().toTime_t() >= e.endTime().toTime_t());
@@ -475,7 +475,7 @@ void Ut_StreamChannelListener::emergency()
     CommHistory::Event e = model.event(model.index(0,0));
     qDebug() << e.toString();
     QCOMPARE(e.localUid(), ACCOUNT_PATH);
-    QCOMPARE(e.remoteUid(), QString("112"));
+    QCOMPARE(e.recipients().value(0).remoteUid(), QString("112"));
     QVERIFY(startTime.toTime_t() <= e.startTime().toTime_t());
     justWait(1000); // account for rounding errors with clock_monotonic vs. QDateTime
     QVERIFY(QDateTime::currentDateTime().toTime_t() >= e.endTime().toTime_t());

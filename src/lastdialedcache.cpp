@@ -52,7 +52,7 @@ void LastDialedCache::onRowsInserted(const QModelIndex &parent, int start, int e
     Q_UNUSED(end);
 
     if (start == 0)
-        writeLastDialed(model->event(model->index(0, 0)).remoteUid());
+        writeLastDialed(model->event(model->index(0, 0)).recipients().value(0).remoteUid());
 }
 
 void LastDialedCache::onRowsRemoved(const QModelIndex &parent, int start, int end)
@@ -63,7 +63,7 @@ void LastDialedCache::onRowsRemoved(const QModelIndex &parent, int start, int en
     if (model->rowCount() == 0)
         removeLastDialed();
     else if (start == 0)
-        writeLastDialed(model->event(model->index(0, 0)).remoteUid());
+        writeLastDialed(model->event(model->index(0, 0)).recipients().value(0).remoteUid());
 }
 
 void LastDialedCache::onModelReset()
@@ -71,7 +71,7 @@ void LastDialedCache::onModelReset()
     if (model->rowCount() == 0)
         removeLastDialed();
     else
-        writeLastDialed(model->event(model->index(0, 0)).remoteUid());
+        writeLastDialed(model->event(model->index(0, 0)).recipients().value(0).remoteUid());
 }
 
 void LastDialedCache::writeLastDialed(const QString &number)

@@ -13,7 +13,7 @@ NotificationManager::NotificationManager(QObject *parent) :
     // Temporary override until qtpim supports QTCONTACTS_MANAGER_OVERRIDE
     m_pContactManager = new QContactManager(QString::fromLatin1("org.nemomobile.contacts.sqlite"));
     m_GroupModel = new CommHistory::GroupModel(this);
-    m_GroupModel->enableContactChanges(false);
+    m_GroupModel->setResolveContacts(CommHistory::GroupManager::DoNotResolve);
 
     if (!m_GroupModel->getGroups()) {
         qCritical() << "Failed to request group ";

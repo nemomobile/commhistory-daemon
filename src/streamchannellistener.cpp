@@ -38,6 +38,7 @@
 #define SAVING_INTERVAL 5*60000 // 5 minute
 
 using namespace RTComLogger;
+using namespace CommHistory;
 
 StreamChannelListener::StreamChannelListener(const Tp::AccountPtr &account,
                                              const Tp::ChannelPtr &channel,
@@ -66,7 +67,7 @@ StreamChannelListener::StreamChannelListener(const Tp::AccountPtr &account,
     m_Event.setType(CommHistory::Event::CallEvent);
     if (m_Account)
         m_Event.setLocalUid(m_Account->objectPath());
-    m_Event.setRemoteUid(targetId());
+    m_Event.setRecipients(Recipient(m_Event.localUid(), targetId()));
 
     m_Direction = CommHistory::Event::Inbound;
 

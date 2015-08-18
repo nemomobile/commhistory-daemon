@@ -38,6 +38,7 @@
 #define MESSAGE_TEXT QLatin1String("Testing notifications!")
 
 using namespace RTComLogger;
+using namespace CommHistory;
 
 Ut_NotificationManager::Ut_NotificationManager() : eventId(1)
 {
@@ -88,7 +89,7 @@ CommHistory::Event Ut_NotificationManager::createEvent(CommHistory::Event::Event
     event.setStartTime(QDateTime::currentDateTime());
     event.setEndTime(QDateTime::currentDateTime());
     event.setLocalUid(DUT_ACCOUNT_PATH);
-    event.setRemoteUid(remoteUid);
+    event.setRecipients(Recipient(DUT_ACCOUNT_PATH, remoteUid));
 
     if (type == CommHistory::Event::IMEvent || type == CommHistory::Event::SMSEvent) {
         event.setFreeText(MESSAGE_TEXT);
@@ -104,7 +105,7 @@ CommHistory::Event Ut_NotificationManager::createEvent(CommHistory::Event::Event
 
 PersonalNotification *Ut_NotificationManager::getNotification(const CommHistory::Event &event)
 {
-    NotificationManager::EventGroupProperties groupProperties(NotificationManager::eventGroup(PersonalNotification::collection(event.type()), event.localUid(), event.remoteUid()));
+    NotificationManager::EventGroupProperties groupProperties(NotificationManager::eventGroup(PersonalNotification::collection(event.type()), event.localUid(), event.recipients().value(0).remoteUid()));
     NotificationGroup *group = nm->m_Groups.value(groupProperties);
     foreach (PersonalNotification *pn, group->notifications()) {
         if (pn->eventToken() == event.messageToken())
@@ -130,7 +131,7 @@ void Ut_NotificationManager::testShowNotification()
     QTRY_VERIFY(n);
     QTRY_VERIFY(n->replacesId() > 0);
 
-    NotificationManager::EventGroupProperties groupProperties(NotificationManager::eventGroup(PersonalNotification::collection(event.type()), event.localUid(), event.remoteUid()));
+    NotificationManager::EventGroupProperties groupProperties(NotificationManager::eventGroup(PersonalNotification::collection(event.type()), event.localUid(), event.recipients().value(0).remoteUid()));
     NotificationGroup *group = nm->m_Groups.value(groupProperties);
     Notification *groupNotification = group->notification();
     QVERIFY(groupNotification);

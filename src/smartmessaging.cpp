@@ -114,7 +114,7 @@ void SmartMessaging::ReceiveBusinessCard(QByteArray vcard, QVariantHash info)
     event.setEndTime(event.startTime());
     event.setDirection(Event::Inbound);
     event.setLocalUid(RING_ACCOUNT_PATH);
-    event.setRemoteUid(from);
+    event.setRecipients(Recipient(RING_ACCOUNT_PATH, from));
     event.setStatus(Event::DownloadingStatus);
     if (!setGroupForEvent(event)) {
         qCritical() << "Failed to handle group for vCard notification event; message dropped:" << event.toString();

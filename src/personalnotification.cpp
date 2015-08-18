@@ -32,11 +32,11 @@
 #include <MLocale>
 
 using namespace RTComLogger;
+using namespace CommHistory;
 
 PersonalNotification::PersonalNotification(QObject* parent) : QObject(parent),
     m_eventType(CommHistory::Event::UnknownType),
     m_chatType(CommHistory::Group::ChatTypeP2P),
-    m_contactId(0),
     m_hasPendingEvents(false),
     m_hidden(false),
     m_restored(false),
@@ -54,11 +54,12 @@ PersonalNotification::PersonalNotification(const QString& remoteUid,
                                           QObject* parent) :
     QObject(parent), m_remoteUid(remoteUid), m_account(account),
     m_eventType(eventType), m_targetId(channelTargetId), m_chatType(chatType),
-    m_contactId(contactId), m_notificationText(lastNotification),
+    m_notificationText(lastNotification),
     m_hasPendingEvents(true),
     m_hidden(false),
     m_restored(false),
-    m_notification(0)
+    m_notification(0),
+    m_recipient(account, remoteUid)
 {
 }
 
@@ -89,6 +90,7 @@ bool PersonalNotification::restore(Notification *n)
         return false;
 
     m_notification = n;
+    m_recipient = Recipient(account(), remoteUid());
     m_restored = true;
     connect(m_notification, SIGNAL(closed(uint)), SLOT(onClosed(uint)));
     return true;
@@ -222,12 +224,12 @@ uint PersonalNotification::chatType() const
 
 QString PersonalNotification::contactName() const
 {
-    return m_contactName;
+    return m_recipient.displayName();
 }
 
 uint PersonalNotification::contactId() const
 {
-    return m_contactId;
+    return m_recipient.contactId();
 }
 
 
@@ -314,22 +316,6 @@ void PersonalNotification::setChatType(uint chatType)
     }
 }
 
-void PersonalNotification::setContactName(const QString& contactName)
-{
-    if (m_contactName != contactName) {
-        m_contactName = contactName;
-        setHasPendingEvents(true);
-    }
-}
-
-void PersonalNotification::setContactId(uint contactId)
-{
-    if (m_contactId != contactId) {
-        m_contactId = contactId;
-        setHasPendingEvents(true);
-    }
-}
-
 void PersonalNotification::setNotificationText(const QString& notificationText)
 {
     if (m_notificationText != notificationText) {
@@ -376,6 +362,16 @@ void PersonalNotification::setHidden(bool hide)
         m_hidden = hide;
         setHasPendingEvents(true);
     }
+}
+
+const Recipient &PersonalNotification::recipient() const
+{
+    return m_recipient;
+}
+
+void PersonalNotification::updateRecipientData()
+{
+    setHasPendingEvents(true);
 }
 
 void PersonalNotification::onClosed(uint /*reason*/)

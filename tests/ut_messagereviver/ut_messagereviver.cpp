@@ -30,6 +30,7 @@
 #include <QSignalSpy>
 
 #include <CommHistory/EventModel>
+#include <CommHistory/Recipient>
 
 #include "TelepathyQt/Types"
 #include "TelepathyQt/Account"
@@ -44,6 +45,7 @@
 #define NUMBER QLatin1String("+1111")
 
 using namespace RTComLogger;
+using namespace CommHistory;
 
 namespace {
     bool waitSignal(QSignalSpy &spy, int msec)
@@ -70,10 +72,10 @@ Ut_MessageReviver::~Ut_MessageReviver()
  */
 void Ut_MessageReviver::initTestCase()
 {
-    groupModel.enableContactChanges(false);
+    groupModel.setResolveContacts(GroupManager::DoNotResolve);
     CommHistory::Group group;
     group.setLocalUid(ACCOUNT_PATH);
-    group.setRemoteUids(QStringList() << NUMBER);
+    group.setRecipients(Recipient(ACCOUNT_PATH, NUMBER));
     groupModel.addGroup(group);
 
     CommHistory::EventModel model;
@@ -87,7 +89,7 @@ void Ut_MessageReviver::initTestCase()
     event.setEndTime(QDateTime::currentDateTime());
     event.setLocalUid(ACCOUNT_PATH);
     event.setGroupId(group.id());
-    event.setRemoteUid(NUMBER);
+    event.setRecipients(group.recipients());
     event.setFreeText("blah");
     event.setMessageToken("mrtc1");
     model.addEvent(event, false);
