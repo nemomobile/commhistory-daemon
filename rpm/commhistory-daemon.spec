@@ -1,6 +1,6 @@
 Name:       commhistory-daemon
 Summary:    Communications event history database daemon
-Version:    0.7.1
+Version:    0.7.2
 Release:    1
 Group:      Communications/Telephony and IM
 License:    LGPL
@@ -29,7 +29,6 @@ BuildRequires:  python
 Requires:  libcommhistory-qt5 >= 1.8.1
 Requires:  libqofono-qt5 >= 0.66
 Requires:  mapplauncherd-qt5
-Requires:  mms-engine >= 1.0.37
 
 Obsoletes: smshistory <= 0.1.8
 Provides: smshistory > 0.1.8
