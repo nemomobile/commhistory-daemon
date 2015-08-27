@@ -388,6 +388,12 @@ QDataStream& operator<<(QDataStream &out, const RTComLogger::PersonalNotificatio
 QDataStream& operator>>(QDataStream &in, RTComLogger::PersonalNotification &key)
 {
     key.deSerialize(in, key);
+
+    // Hidden property is not in the serialization from earlier forms
+    if (!key.property("hidden").isValid()) {
+        key.setProperty("hidden", QVariant::fromValue(false));
+    }
+
     return in;
 }
 
