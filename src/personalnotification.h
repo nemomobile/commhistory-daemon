@@ -41,6 +41,9 @@ class PersonalNotification : public QObject, public Serialisable
 {
     Q_OBJECT
 
+    // These properties determine the serialization of this object; if you change
+    // them in any way, you must account for it in the serialization functions
+
     Q_PROPERTY(QString remoteuid READ remoteUid WRITE setRemoteUid)
     Q_PROPERTY(QString account READ account WRITE setAccount)
 
