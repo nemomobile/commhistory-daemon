@@ -1,5 +1,0 @@
-<set description="commhistory-daemon-tests:ut_streamchannellistener" name="ut_streamchannellistener">
-    <case description="commhistory-daemon-tests:ut_streamchannellistener" name="streamchannellistener">
-        <step expected_result="0">/opt/tests/@PROJECT_NAME@/ut_streamchannellistener</step>
-    </case>
-</set>
