@@ -102,6 +102,8 @@
 #define CHANNEL_PROPERTY_SUBJECT QLatin1String("subject")
 #define CHANNEL_PROPERTY_SUBJECT_CONTACT QLatin1String("subject-contact")
 
+#define PENDING_MESSAGE_ID_PROPERTY_NAME QLatin1String("pending-message-id")
+
 #define SUBSCRIBER_ID_PROPERTY_NAME ("SubscriberIdentity")
 #define SUBSCRIBER_IDENTITY_HEADER_KEY ("subscriber-identity")
 
@@ -153,77 +155,41 @@ T partValue(const Tp::MessagePart &part, const QString &key, const T &defaultVal
 
 bool isVoicemail(const Tp::MessagePart &header)
 {
-    if (header.contains(MAILBOX_NOTIFICATION)) {
-        QVariant mailboxVar = header.value(MAILBOX_NOTIFICATION).variant();
-        if (mailboxVar.isValid())
-            return (mailboxVar.value<QString>() == TXT_VOICE);
-    }
-
-    return false;
+    return (partValue<QString>(header, MAILBOX_NOTIFICATION) == TXT_VOICE);
 }
 
 QString replaceType(const Tp::MessagePart &header)
 {
-    if (header.contains(REPLACE_TYPE)) {
-        QVariant typeVar = header.value(REPLACE_TYPE).variant();
-        if (typeVar.isValid())
-            return typeVar.value<QString>();
-    }
-
-    return QString();
+    return partValue<QString>(header, REPLACE_TYPE);
 }
 
 QString voicemailType(const Tp::MessagePart &header)
 {
-    if (header.contains(VOICEMAIL_TYPE)) {
-        // check whether it's skype or sms voicemail, aka
-        // "x-nokia-voicemail-type" is "skype" or "tel"
-        // Both SMS and Skype voicemail notifications (x-nokia-mailbox-notification
-        // with value "voice") MUST have this header
-        QVariant typeVar = header.value(VOICEMAIL_TYPE).variant();
-        if (typeVar.isValid())
-            return typeVar.value<QString>();
-    }
-
-    return QString();
+    // check whether it's skype or sms voicemail, aka
+    // "x-nokia-voicemail-type" is "skype" or "tel"
+    // Both SMS and Skype voicemail notifications (x-nokia-mailbox-notification
+    // with value "voice") MUST have this header
+    return partValue<QString>(header, VOICEMAIL_TYPE);
 }
 
 bool mailboxHasUnread(const Tp::MessagePart &header)
 {
-    if (header.contains(MAILBOX_HAS_UNREAD)) {
-        QVariant typeVar = header.value(MAILBOX_HAS_UNREAD).variant();
-        if (typeVar.isValid())
-            return typeVar.value<bool>();
-    }
-
-    return false;
+    return partValue<bool>(header, MAILBOX_HAS_UNREAD, false);
 }
 
 uint mailboxUnreadCount(const Tp::MessagePart &header)
 {
-    if (header.contains(MAILBOX_UNREAD_COUNT)) {
-        QVariant countVar = header.value(MAILBOX_UNREAD_COUNT).variant();
-        if (countVar.isValid())
-            return countVar.value<uint>();
-    }
-
-    return 0;
+    return partValue<uint>(header, MAILBOX_UNREAD_COUNT, 0u);
 }
 
 QString supersedesToken(const Tp::MessagePart &header)
 {
-    if (header.contains(SUPERSEDES_TOKEN)) {
-        QVariant typeVar = header.value(SUPERSEDES_TOKEN).variant();
-        if (typeVar.isValid())
-            return typeVar.value<QString>();
-    }
-
-    return QString();
+    return partValue<QString>(header, SUPERSEDES_TOKEN);
 }
 
 uint pendingId(const Tp::ReceivedMessage &message)
 {
-    return message.header().value("pending-message-id").variant().toUInt();
+    return partValue<uint>(message.header(), PENDING_MESSAGE_ID_PROPERTY_NAME, 0u);
 }
 
 QString subscriberIdentity(const Tp::MessagePart &header)
