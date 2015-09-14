@@ -102,6 +102,9 @@
 #define CHANNEL_PROPERTY_SUBJECT QLatin1String("subject")
 #define CHANNEL_PROPERTY_SUBJECT_CONTACT QLatin1String("subject-contact")
 
+#define SUBSCRIBER_ID_PROPERTY_NAME ("SubscriberIdentity")
+#define SUBSCRIBER_IDENTITY_HEADER_KEY ("subscriber-identity")
+
 #define MAX_SAVE_ATTEMPTS 3
 #define RESAVE_INTERVAL 5000 //ms
 
@@ -135,6 +138,18 @@ CommHistory::Event::PropertySet deliveryHandlingProperties = CommHistory::Event:
                                                  << CommHistory::Event::ReportReadRequested
                                                  << CommHistory::Event::ReportRead;
 
+
+template<typename T>
+T partValue(const Tp::MessagePart &part, const QString &key, const T &defaultValue = T())
+{
+    if (part.contains(key)) {
+        const QVariant var(part.value(key).variant());
+        if (var.isValid())
+            return var.value<T>();
+    }
+
+    return defaultValue;
+}
 
 bool isVoicemail(const Tp::MessagePart &header)
 {
@@ -209,6 +224,11 @@ QString supersedesToken(const Tp::MessagePart &header)
 uint pendingId(const Tp::ReceivedMessage &message)
 {
     return message.header().value("pending-message-id").variant().toUInt();
+}
+
+QString subscriberIdentity(const Tp::MessagePart &header)
+{
+    return partValue<QString>(header, SUBSCRIBER_IDENTITY_HEADER_KEY);
 }
 
 } // anonymous namespace
@@ -1252,6 +1272,11 @@ void TextChannelListener::handleReceivedMessage(const Tp::ReceivedMessage &messa
 
     event.setMessageToken(message.messageToken());
     DEBUG() << "Message token is: " << message.messageToken();
+
+    const Tp::MessagePart &header(message.header());
+    const QString subscriberId(subscriberIdentity(header));
+    if (!subscriberId.isEmpty())
+        event.setSubscriberIdentity(subscriberId);
 }
 
 void TextChannelListener::slotMessageSent(const Tp::Message &message,
@@ -1291,6 +1316,12 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
 
     event.setMessageToken(messageToken);
     DEBUG() << "Message token is: " << messageToken;
+
+    const QVariantMap properties = m_Channel->immutableProperties();
+    const QVariant &siProp = properties.value(SUBSCRIBER_ID_PROPERTY_NAME);
+    if (siProp.isValid()) {
+        event.setSubscriberIdentity(siProp.toString());
+    }
 
     // according to latest ui spec, sending status
     // should be set only for sms / mms messages

@@ -34,6 +34,7 @@
 #define CURRENT_SERVICE_POINT_PROPERTY_NAME ("CurrentServicePoint")
 #define INITIAL_SERVICE_POINT_PROPERTY TP_QT_IFACE_CHANNEL_INTERFACE_SERVICE_POINT+QLatin1String(".InitialServicePoint")
 #define STREAM_CHANNEL_INITIAL_VIDEO_PROPERTY TP_QT_IFACE_CHANNEL_TYPE_STREAMED_MEDIA+QLatin1String(".InitialVideo")
+#define SUBSCRIBER_ID_PROPERTY_NAME ("SubscriberIdentity")
 
 #define SAVING_INTERVAL 5*60000 // 5 minute
 
@@ -71,7 +72,7 @@ StreamChannelListener::StreamChannelListener(const Tp::AccountPtr &account,
 
     m_Direction = CommHistory::Event::Inbound;
 
-    QVariantMap properties = m_Channel->immutableProperties();
+    const QVariantMap properties = m_Channel->immutableProperties();
     if (properties.contains(TP_QT_IFACE_CHANNEL+QLatin1String(".Requested"))) {
         if (properties.value(TP_QT_IFACE_CHANNEL+QLatin1String(".Requested")).toBool())
             m_Direction = CommHistory::Event::Outbound;
@@ -81,13 +82,18 @@ StreamChannelListener::StreamChannelListener(const Tp::AccountPtr &account,
     if (properties.value(STREAM_CHANNEL_INITIAL_VIDEO_PROPERTY).toBool())
         m_Event.setIsVideoCall(true);
 
-    QVariant spProp = m_Channel->immutableProperties().value(INITIAL_SERVICE_POINT_PROPERTY);
+    const QVariant &spProp = properties.value(INITIAL_SERVICE_POINT_PROPERTY);
     if (spProp.isValid()) {
         const Tp::ServicePoint sp = qdbus_cast<Tp::ServicePoint>(spProp);
         if (sp.servicePointType == Tp::ServicePointTypeEmergency) {
             DEBUG() << Q_FUNC_INFO << "*** EMERGENCY CALL, service =" << sp.service;
             m_Event.setIsEmergencyCall(true);
         }
+    }
+
+    const QVariant &siProp = properties.value(SUBSCRIBER_ID_PROPERTY_NAME);
+    if (siProp.isValid()) {
+        m_Event.setSubscriberIdentity(siProp.toString());
     }
 
     // postpone adding event for incoming event to speed up call handling
