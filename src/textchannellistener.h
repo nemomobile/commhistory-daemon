@@ -125,7 +125,6 @@ private:
     void channelListenerReady();
     void requestConversationId();
     int groupId();
-    int groupIdForRecipient(const QString& remoteUid);
     void handleTpProperties();
 
     // delivery report

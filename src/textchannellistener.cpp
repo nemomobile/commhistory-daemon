@@ -391,42 +391,6 @@ void TextChannelListener::slotGroupRemoved(const QModelIndex &index, int start, 
     }
 }
 
-int TextChannelListener::groupIdForRecipient(const QString &remoteUid)
-{
-    int groupId = -1;
-    // if group exist, read group id right away
-    if (m_GroupModel->isReady()
-        && m_GroupModel->rowCount() > 0
-        && m_Account) {
-        const Recipient recipient(m_Account->objectPath(), remoteUid);
-        for (int row = 0; row < m_GroupModel->rowCount(); row++) {
-            const QModelIndex &index = m_GroupModel->index(row, 0);
-            const CommHistory::Group &group = m_GroupModel->group(index);
-            if (group.isValid() && group.recipients().containsMatch(recipient)) {
-                groupId = group.id();
-                DEBUG() << Q_FUNC_INFO << "found existing group:" << groupId;
-                break;
-            }
-        }
-
-        if (groupId == -1) {
-            // add a new group
-            CommHistory::Group group;
-            group.setLocalUid(m_Account->objectPath());
-
-            group.setRecipients(Recipient(m_Account->objectPath(), remoteUid));
-            if (!m_GroupModel->addGroup(group)) {
-                qCritical() << Q_FUNC_INFO << "error adding group";
-            }
-            else {
-                groupId = group.id();
-                DEBUG() << Q_FUNC_INFO << "added new group:" << groupId;
-            }
-        }
-    }
-    return groupId;
-}
-
 int TextChannelListener::groupId()
 {
     DEBUG() << Q_FUNC_INFO;
