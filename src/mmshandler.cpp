@@ -93,6 +93,7 @@ QString MmsHandler::messageNotification(const QString &imsi, const QString &from
     event.setLocalUid(RING_ACCOUNT_PATH);
     event.setRecipients(Recipient(RING_ACCOUNT_PATH, from));
     event.setSubject(subject);
+    event.setSubscriberIdentity(imsi);
     event.setExtraProperty(MMS_PROPERTY_IMSI, imsi);
     event.setExtraProperty(MMS_PROPERTY_EXPIRY, expiry);
     event.setExtraProperty(MMS_PROPERTY_PUSH_DATA, data.toBase64());
@@ -404,7 +405,6 @@ void MmsHandler::messageSent(const QString &recId, const QString &mmsId)
 
 void MmsHandler::deliveryReport(const QString &imsi, const QString &mmsId, const QString &recipient, int status)
 {
-    Q_UNUSED(imsi);
     Q_UNUSED(recipient); // No handling for read/delivery reports from multiple recipients
 
     enum DeliveryStatus {
@@ -426,6 +426,8 @@ void MmsHandler::deliveryReport(const QString &imsi, const QString &mmsId, const
         qWarning() << "Ignoring MMS message delivery state for unknown event" << mmsId;
         return;
     }
+
+    event.setSubscriberIdentity(imsi);
 
     switch (status) {
         case Expired:
@@ -449,7 +451,6 @@ void MmsHandler::deliveryReport(const QString &imsi, const QString &mmsId, const
 
 void MmsHandler::readReport(const QString &imsi, const QString &mmsId, const QString &recipient, int status)
 {
-    Q_UNUSED(imsi);
     Q_UNUSED(recipient); // No handling for read/delivery reports from multiple recipients
 
     Event event;
@@ -461,6 +462,8 @@ void MmsHandler::readReport(const QString &imsi, const QString &mmsId, const QSt
         qWarning() << "Ignoring MMS message read state for unknown event" << mmsId;
         return;
     }
+
+    event.setSubscriberIdentity(imsi);
 
     if (status == 0)
         event.setReadStatus(Event::ReadStatusRead);

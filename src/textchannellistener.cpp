@@ -102,6 +102,11 @@
 #define CHANNEL_PROPERTY_SUBJECT QLatin1String("subject")
 #define CHANNEL_PROPERTY_SUBJECT_CONTACT QLatin1String("subject-contact")
 
+#define PENDING_MESSAGE_ID_PROPERTY_NAME QLatin1String("pending-message-id")
+
+#define SUBSCRIBER_ID_PROPERTY_NAME ("SubscriberIdentity")
+#define SUBSCRIBER_IDENTITY_HEADER_KEY ("subscriber-identity")
+
 #define MAX_SAVE_ATTEMPTS 3
 #define RESAVE_INTERVAL 5000 //ms
 
@@ -136,79 +141,60 @@ CommHistory::Event::PropertySet deliveryHandlingProperties = CommHistory::Event:
                                                  << CommHistory::Event::ReportRead;
 
 
-bool isVoicemail(const Tp::MessagePart &header)
+template<typename T>
+T partValue(const Tp::MessagePart &part, const QString &key, const T &defaultValue = T())
 {
-    if (header.contains(MAILBOX_NOTIFICATION)) {
-        QVariant mailboxVar = header.value(MAILBOX_NOTIFICATION).variant();
-        if (mailboxVar.isValid())
-            return (mailboxVar.value<QString>() == TXT_VOICE);
+    if (part.contains(key)) {
+        const QVariant var(part.value(key).variant());
+        if (var.isValid())
+            return var.value<T>();
     }
 
-    return false;
+    return defaultValue;
+}
+
+bool isVoicemail(const Tp::MessagePart &header)
+{
+    return (partValue<QString>(header, MAILBOX_NOTIFICATION) == TXT_VOICE);
 }
 
 QString replaceType(const Tp::MessagePart &header)
 {
-    if (header.contains(REPLACE_TYPE)) {
-        QVariant typeVar = header.value(REPLACE_TYPE).variant();
-        if (typeVar.isValid())
-            return typeVar.value<QString>();
-    }
-
-    return QString();
+    return partValue<QString>(header, REPLACE_TYPE);
 }
 
 QString voicemailType(const Tp::MessagePart &header)
 {
-    if (header.contains(VOICEMAIL_TYPE)) {
-        // check whether it's skype or sms voicemail, aka
-        // "x-nokia-voicemail-type" is "skype" or "tel"
-        // Both SMS and Skype voicemail notifications (x-nokia-mailbox-notification
-        // with value "voice") MUST have this header
-        QVariant typeVar = header.value(VOICEMAIL_TYPE).variant();
-        if (typeVar.isValid())
-            return typeVar.value<QString>();
-    }
-
-    return QString();
+    // check whether it's skype or sms voicemail, aka
+    // "x-nokia-voicemail-type" is "skype" or "tel"
+    // Both SMS and Skype voicemail notifications (x-nokia-mailbox-notification
+    // with value "voice") MUST have this header
+    return partValue<QString>(header, VOICEMAIL_TYPE);
 }
 
 bool mailboxHasUnread(const Tp::MessagePart &header)
 {
-    if (header.contains(MAILBOX_HAS_UNREAD)) {
-        QVariant typeVar = header.value(MAILBOX_HAS_UNREAD).variant();
-        if (typeVar.isValid())
-            return typeVar.value<bool>();
-    }
-
-    return false;
+    return partValue<bool>(header, MAILBOX_HAS_UNREAD, false);
 }
 
 uint mailboxUnreadCount(const Tp::MessagePart &header)
 {
-    if (header.contains(MAILBOX_UNREAD_COUNT)) {
-        QVariant countVar = header.value(MAILBOX_UNREAD_COUNT).variant();
-        if (countVar.isValid())
-            return countVar.value<uint>();
-    }
-
-    return 0;
+    return partValue<uint>(header, MAILBOX_UNREAD_COUNT, 0u);
 }
 
 QString supersedesToken(const Tp::MessagePart &header)
 {
-    if (header.contains(SUPERSEDES_TOKEN)) {
-        QVariant typeVar = header.value(SUPERSEDES_TOKEN).variant();
-        if (typeVar.isValid())
-            return typeVar.value<QString>();
-    }
-
-    return QString();
+    return partValue<QString>(header, SUPERSEDES_TOKEN);
 }
 
 uint pendingId(const Tp::ReceivedMessage &message)
 {
-    return message.header().value("pending-message-id").variant().toUInt();
+    return partValue<uint>(message.header(), PENDING_MESSAGE_ID_PROPERTY_NAME, 0u);
+}
+
+QString subscriberIdentity(const Tp::MessagePart &header)
+{
+    return partValue<QString>(header, SUBSCRIBER_IDENTITY_HEADER_KEY);
 }
 
 } // anonymous namespace
@@ -389,42 +375,6 @@ void TextChannelListener::slotGroupRemoved(const QModelIndex &index, int start, 
             break;
         }
     }
-}
-
-int TextChannelListener::groupIdForRecipient(const QString &remoteUid)
-{
-    int groupId = -1;
-    // if group exist, read group id right away
-    if (m_GroupModel->isReady()
-        && m_GroupModel->rowCount() > 0
-        && m_Account) {
-        const Recipient recipient(m_Account->objectPath(), remoteUid);
-        for (int row = 0; row < m_GroupModel->rowCount(); row++) {
-            const QModelIndex &index = m_GroupModel->index(row, 0);
-            const CommHistory::Group &group = m_GroupModel->group(index);
-            if (group.isValid() && group.recipients().containsMatch(recipient)) {
-                groupId = group.id();
-                DEBUG() << Q_FUNC_INFO << "found existing group:" << groupId;
-                break;
-            }
-        }
-
-        if (groupId == -1) {
-            // add a new group
-            CommHistory::Group group;
-            group.setLocalUid(m_Account->objectPath());
-
-            group.setRecipients(Recipient(m_Account->objectPath(), remoteUid));
-            if (!m_GroupModel->addGroup(group)) {
-                qCritical() << Q_FUNC_INFO << "error adding group";
-            }
-            else {
-                groupId = group.id();
-                DEBUG() << Q_FUNC_INFO << "added new group:" << groupId;
-            }
-        }
-    }
-    return groupId;
 }
 
 int TextChannelListener::groupId()
@@ -1288,6 +1238,11 @@ void TextChannelListener::handleReceivedMessage(const Tp::ReceivedMessage &messa
 
     event.setMessageToken(message.messageToken());
     DEBUG() << "Message token is: " << message.messageToken();
+
+    const Tp::MessagePart &header(message.header());
+    const QString subscriberId(subscriberIdentity(header));
+    if (!subscriberId.isEmpty())
+        event.setSubscriberIdentity(subscriberId);
 }
 
 void TextChannelListener::slotMessageSent(const Tp::Message &message,
@@ -1327,6 +1282,12 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
 
     event.setMessageToken(messageToken);
     DEBUG() << "Message token is: " << messageToken;
+
+    const QVariantMap properties = m_Channel->immutableProperties();
+    const QVariant &siProp = properties.value(SUBSCRIBER_ID_PROPERTY_NAME);
+    if (siProp.isValid()) {
+        event.setSubscriberIdentity(siProp.toString());
+    }
 
     // according to latest ui spec, sending status
     // should be set only for sms / mms messages
