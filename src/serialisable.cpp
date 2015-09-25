@@ -50,10 +50,12 @@ void Serialisable::deSerialize(QDataStream& in, QObject& object)
 {
     for(int i = 1; i < object.metaObject()->propertyCount(); i++) {
        QMetaProperty prop = object.metaObject()->property(i);
-       const char* propName = prop.name();
-       QVariant variant;
-       if (!in.atEnd())
-           in >> variant;
-       object.setProperty(propName, variant);
+       if (prop.isWritable()) {
+           const char* propName = prop.name();
+           QVariant variant;
+           if (!in.atEnd())
+               in >> variant;
+           object.setProperty(propName, variant);
+       }
     }
 }
