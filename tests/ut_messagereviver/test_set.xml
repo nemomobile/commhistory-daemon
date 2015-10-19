@@ -1,5 +1,0 @@
-<set description="commhistory-daemon-tests:ut_messagereviver" name="ut_messagereviver">
-    <case description="commhistory-daemon-tests:ut_messagereviver" name="messagereviver">
-        <step expected_result="0">/opt/tests/@PROJECT_NAME@/ut_messagereviver</step>
-    </case>
-</set>

@@ -1,7 +1,0 @@
-#ifndef _RTComTelepathyQt4_Connection_HEADER_GUARD_
-#define _RTComTelepathyQt4_Connection_HEADER_GUARD_
-
-#include "cli-connection.h"
-
-#endif
-// vim:set ft=cpp:

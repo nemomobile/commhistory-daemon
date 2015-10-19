@@ -1,7 +1,0 @@
-#ifndef _TelepathyQt4_Global_HEADER_GUARD_
-#define _TelepathyQt4_Global_HEADER_GUARD_
-
-#include "TelepathyQt/global.h"
-
-#endif
-// vim:set ft=cpp:
